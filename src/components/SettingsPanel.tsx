@@ -1,5 +1,10 @@
 import type { ThemeMode, WritingSettings } from '../types';
-import { DEFAULT_SETTINGS, THEME_LABELS } from '../types';
+import {
+  DEFAULT_SETTINGS,
+  EDITOR_WIDTH_MAX,
+  EDITOR_WIDTH_MIN,
+  THEME_LABELS,
+} from '../types';
 import { Icon, type IconName } from './Icon';
 
 interface SettingsPanelProps {
@@ -118,6 +123,22 @@ export function SettingsPanel({
             />
           </div>
 
+          <div className="range-field">
+            <div className="range-meta">
+              <label htmlFor="editor-width">编辑宽度</label>
+              <output htmlFor="editor-width">{settings.editorWidth} px</output>
+            </div>
+            <input
+              id="editor-width"
+              type="range"
+              min={EDITOR_WIDTH_MIN}
+              max={EDITOR_WIDTH_MAX}
+              step={10}
+              value={settings.editorWidth}
+              onChange={(event) => onSettingsChange({ editorWidth: Number(event.target.value) })}
+            />
+          </div>
+
           <div className="type-preview" style={{ fontSize: settings.fontSize, lineHeight: settings.lineHeight }}>
             让文字慢下来。
           </div>
@@ -137,8 +158,8 @@ export function SettingsPanel({
         </section>
 
         <div className="settings-version">
-          <span>PaperScape 0.1.0</span>
-          <span>第一阶段</span>
+          <span>PaperScape 0.2.0</span>
+          <span>第二阶段</span>
         </div>
       </div>
     </aside>

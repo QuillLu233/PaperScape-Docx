@@ -27,6 +27,7 @@ interface MenuBarProps {
   onUndo: () => void;
   onRedo: () => void;
   onSelectAll: () => void;
+  onFind: () => void;
   onToggleLeft: () => void;
   onToggleRight: () => void;
   onThemeChange: (mode: ThemeMode) => void;
@@ -44,6 +45,7 @@ export function MenuBar({
   onUndo,
   onRedo,
   onSelectAll,
+  onFind,
   onToggleLeft,
   onToggleRight,
   onThemeChange,
@@ -88,6 +90,7 @@ export function MenuBar({
         { label: '重做', shortcut: 'Ctrl+Shift+Z', onSelect: onRedo },
         { separator: true },
         { label: '全选正文', shortcut: 'Ctrl+A', onSelect: onSelectAll },
+        { label: '查找与替换', shortcut: 'Ctrl+F', onSelect: onFind },
       ],
     },
     {

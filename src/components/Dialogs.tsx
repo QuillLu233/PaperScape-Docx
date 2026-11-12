@@ -55,10 +55,13 @@ function Modal({ title, eyebrow, onClose, children }: ModalProps) {
 const SHORTCUTS = [
   ['新建章节', ['Ctrl', 'N']],
   ['保存到本地', ['Ctrl', 'S']],
-  ['显示 / 隐藏章节目录', ['Ctrl', 'B']],
-  ['显示 / 隐藏设置面板', ['Ctrl', 'Shift', 'B']],
-  ['撤销 / 重做', ['Ctrl', 'Z']],
+  ['查找与替换', ['Ctrl', 'F']],
+  ['加粗', ['Ctrl', 'B']],
+  ['斜体 / 下划线', ['Ctrl', 'I', '/', 'Ctrl', 'U']],
+  ['撤销 / 重做', ['Ctrl', 'Z', '/', 'Ctrl', 'Shift', 'Z']],
   ['全选正文', ['Ctrl', 'A']],
+  ['章节目录（编辑区外）', ['Ctrl', 'B']],
+  ['设置面板', ['Ctrl', 'Shift', 'B']],
   ['关闭菜单或对话框', ['Esc']],
 ];
 
@@ -91,7 +94,7 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
         </span>
         <div>
           <p className="about-name">PaperScape 纸境</p>
-          <p className="about-version">0.1.0 · 第一阶段</p>
+          <p className="about-version">0.2.0 · 第二阶段</p>
         </div>
       </div>
       <p className="modal-lead">
@@ -100,11 +103,12 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
       <div className="about-facts">
         <span>Tauri 2</span>
         <span>React 19</span>
+        <span>Tiptap 3</span>
         <span>TypeScript</span>
         <span>Tailwind CSS</span>
       </div>
       <p className="modal-footnote">
-        本阶段聚焦窗口、布局与基础写作体验。Word 导入导出和复杂背景系统将在后续阶段加入。
+        本阶段已升级为 Tiptap 富文本编辑器，支持标题、字体、颜色、列表、图片、表格、查找替换与长文写作。
       </p>
     </Modal>
   );

@@ -1,33 +1,49 @@
 # PaperScape 纸境
 
-一个安静、轻量的 Windows 桌面写作空间。第一阶段聚焦于可靠的桌面窗口、清晰的三栏工作区和舒适的中文写作体验。
+一个安静、轻量的 Windows 桌面写作空间。第二阶段将正文升级为真正可用的 Tiptap 富文本编辑器，同时保留第一阶段已经验证的窗口、三栏布局与主题系统。
 
-> 当前版本：0.1.0（第一阶段）
-> 技术栈：Tauri 2 + React 19 + TypeScript + Tailwind CSS 4 + Vite 8
+> 当前版本：0.2.0（第二阶段）
+> 技术栈：Tauri 2 + React 19 + Tiptap 3 + TypeScript + Tailwind CSS 4 + Vite 8
 
 ## 界面预览
 
-以下截图来自**真实 Tauri 窗口**（Windows 150% DPI，1280×820 逻辑尺寸）：
+以下截图来自**真实 Tauri 窗口**（Windows 150% DPI）：
 
-| 浅色 · 三栏 | 深色 · 三栏 |
+| 浅色 · 富文本工具栏 | 深色 · 富文本工具栏 |
 | --- | --- |
-| ![浅色界面](docs/screenshots/tauri-light.png) | ![深色界面](docs/screenshots/tauri-dark.png) |
+| ![浅色界面](docs/screenshots/p2-light.png) | ![深色界面](docs/screenshots/p2-dark.png) |
 
-![折叠面板](docs/screenshots/tauri-collapsed.png)
+![表格编辑](docs/screenshots/phase2-table.png)
 
 ## 已完成
 
+### 桌面与工作区
+
 - 无原生标题栏的标准 Windows 桌面窗口，支持拖动、八方向缩放、最大化、还原、最小化和关闭。
 - 窗口按当前显示器的逻辑尺寸自适应并居中，兼容 125% / 150% 等 Windows 缩放比例。
-- 三栏布局：左侧章节目录、中间正文编辑区、右侧设置面板。
+- 三栏布局：左侧章节目录、中间正文编辑区、右侧设置面板，左右面板可折叠。
 - 中文优先的菜单、对话框、状态栏和快捷键。
 - 浅色 / 深色 / 跟随系统三套外观，配色使用低对比暖纸色。
-- 左右面板可折叠，状态与主题、排版偏好持久化到本地。
-- 章节的新建、切换、标题与正文编辑，自动保存到本地存储。
-- TypeScript 严格检查、Vitest + Testing Library 单元测试。
-- 自定义应用图标与 NSIS 打包配置。
+- 章节新建、切换、本地自动保存，主题、排版与面板状态跨重启持久化。
 
-本阶段不包含 Word 导入导出、复杂背景系统、云同步或富文本排版。
+### Tiptap 富文本编辑器
+
+- 中文、英文与中英混排输入，兼容 Chromium/WebView2 的 IME composition 事件。
+- 标题 H1/H2/H3 与普通段落。
+- 加粗、斜体、下划线、删除线，支持 `Ctrl+B` / `Ctrl+I` / `Ctrl+U`。
+- 字体、字号、文字颜色。
+- 左对齐、居中、右对齐、两端对齐；段落行距与首行缩进。
+- 有序列表、无序列表。
+- 撤销 / 重做，工具栏与中文菜单均接入 Tiptap 历史记录。
+- 当前章节与全文实时字数统计。
+- 查找与替换：匹配高亮、上一个/下一个、单项替换、全部替换，支持跨行内格式边界匹配。
+- 图片插入（本地文件转 Data URL，自动压缩较大图片）与 3×3 表格插入、加行、加列、删除表格。
+- 编辑区宽度可调（640–980 px）。
+- 中文标点与中英文混排换行使用 `line-break: strict`、`overflow-wrap` 和 `text-wrap: pretty`。
+- 编辑器实例与章节内容通过 `key` 隔离；主题、面板、工具栏状态变化不会重置正在输入的内容。
+- 长文性能：`shouldRerenderOnTransaction: false`、工具栏 `useEditorState` 选择性订阅、字数/摘要缓存、400 ms 防抖持久化。
+
+Word 导入导出、复杂背景、云同步和账号系统仍不在本阶段范围内。
 
 ## 开发环境
 
@@ -103,24 +119,45 @@ pnpm tauri:build
 
 ```text
 src/
-  App.tsx                 应用状态与快捷键
+  App.tsx                 应用状态、章节切换与快捷键
   components/
     TitleBar.tsx          自绘标题栏、菜单入口、面板与窗口按钮
-    MenuBar.tsx           中文菜单
+    MenuBar.tsx           中文菜单（编辑菜单接入 Tiptap 命令）
     ResizeHandles.tsx     八方向缩放热区
     ChapterSidebar.tsx    左侧章节目录
-    EditorPane.tsx        中间编辑区
-    SettingsPanel.tsx     右侧设置面板
+    EditorPane.tsx        Tiptap 编辑器生命周期与章节切换隔离
+    EditorToolbar.tsx     富文本工具栏
+    FindReplaceBar.tsx    查找与替换
+    SettingsPanel.tsx     主题、字号、行距、编辑宽度
     Dialogs.tsx           快捷键与关于对话框
-    StatusBar.tsx         底部保存与字数状态
+    StatusBar.tsx         本章/全文字数与保存状态
+  editor/
+    editorConfig.ts       StarterKit / TextStyleKit / TableKit 等扩展
+    image.ts              图片读取与压缩
+    extensions/
+      BlockStyle.ts       段落行距与首行缩进
+      SearchHighlight.ts  查找匹配、装饰高亮与替换
   hooks/                  主题、面板、工作区、窗口状态
-  lib/window.ts           Tauri 窗口 API 的安全封装
-  lib/workspace.ts        本地持久化
+  lib/
+    richText.ts           HTML 文本转换、旧数据迁移与计数
+    workspace.ts          本地持久化（v1 → v2 富文本迁移）
+  test/setup.ts           ProseMirror 的 jsdom 布局 API 兼容层
 src-tauri/
-  src/lib.rs              Tauri 入口
+  src/lib.rs              Tauri 入口与高 DPI 窗口自适应
   tauri.conf.json         无边框窗口与打包配置
   capabilities/           最小窗口权限
 ```
+
+## 富文本实现说明
+
+- 正文使用真实的 Tiptap 3 / ProseMirror 编辑器，不使用 `contenteditable` 手写替代。
+- 章节内容以 Tiptap HTML 保存在 `paperscape.workspace.v1` 中，内部 `version: 2`；旧的纯文本数据会自动转换为段落，不丢失换行。
+- 每个章节以 `key={chapter.id}` 挂载独立编辑器。正文更新只写回章节数据，不把 React state 回灌给正在编辑的实例，因此持续输入、主题切换和自动保存不会重置光标。
+- 中文字符统计缓存为 `characterCount`，章节摘要缓存为 `excerpt`，长文编辑时侧栏和状态栏无需反复解析 HTML。
+- localStorage 写入采用 400 ms 防抖，并在关闭页面时强制 flush。
+- 查找匹配支持跨加粗/斜体等行内标记的短语；替换通过 ProseMirror transaction 完成，可撤销。
+- 表格使用 TableKit（含列宽拖拽），图片嵌入为 Data URL；大图会缩放到最大 1600 px 并转为 JPEG。
+- 中文输入法依赖 ProseMirror 原生 composition 事件处理，应用没有拦截或改写 `compositionstart/update/end`。
 
 ## 窗口实现说明
 
@@ -136,4 +173,4 @@ src-tauri/
 - 中文优先；英文只用于品牌和辅助标签。
 - 暖纸色背景、低饱和鼠尾草绿强调色，避免高对比和装饰性渐变。
 - 不使用连续动画；仅保留 150ms 的面板折叠过渡，并尊重 `prefers-reduced-motion`。
-- 编辑区以内容为中心，最大宽度约 790px，保证长文阅读舒适度。
+- 编辑区默认以 790px 为中心排版，可在 640–980px 之间调整，保证长文阅读舒适度。

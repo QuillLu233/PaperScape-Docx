@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChapterSidebar } from './components/ChapterSidebar';
 import { AboutDialog, ShortcutsDialog } from './components/Dialogs';
-import { EditorPane } from './components/EditorPane';
+import { EditorPane, type EditorPaneHandle } from './components/EditorPane';
 import { MenuBar } from './components/MenuBar';
 import { ResizeHandles } from './components/ResizeHandles';
 import { SettingsPanel } from './components/SettingsPanel';
@@ -11,9 +11,13 @@ import { usePanels } from './hooks/usePanels';
 import { useTheme } from './hooks/useTheme';
 import { useWindowState } from './hooks/useWindowState';
 import { useWorkspace } from './hooks/useWorkspace';
-import { countCharacters } from './lib/text';
 
 type DialogName = 'shortcuts' | 'about' | null;
+
+function isTextEditingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return Boolean(target.closest('input, textarea, select, [contenteditable="true"]'));
+}
 
 export default function App() {
   const {
@@ -32,61 +36,64 @@ export default function App() {
   const { leftOpen, rightOpen, toggleLeft, toggleRight } = usePanels();
   const { isMaximized, minimize, toggleMaximize, close } = useWindowState();
   const [dialog, setDialog] = useState<DialogName>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<EditorPaneHandle>(null);
 
   const createChapter = useCallback(() => {
     addChapter();
-    window.setTimeout(() => textareaRef.current?.focus(), 0);
+    window.setTimeout(() => editorRef.current?.focus(), 60);
   }, [addChapter]);
 
-  useEffect(() => {
-    textareaRef.current?.focus();
+  const focusEditor = useCallback(() => {
+    editorRef.current?.focus();
   }, []);
+
+  const undo = useCallback(() => editorRef.current?.undo(), []);
+  const redo = useCallback(() => editorRef.current?.redo(), []);
+  const selectAll = useCallback(() => editorRef.current?.selectAll(), []);
+  const openFind = useCallback(() => editorRef.current?.openFind(), []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(focusEditor, 80);
+    return () => window.clearTimeout(timer);
+  }, [focusEditor]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey)) return;
       const key = event.key.toLowerCase();
+      const inEditor = Boolean((event.target as HTMLElement | null)?.closest?.('.tiptap'));
 
-      if (key === 'b') {
+      if (key === 'b' && !event.shiftKey) {
+        // Inside Tiptap, Ctrl+B is bold. Outside editable fields it keeps the
+        // phase-one panel shortcut.
+        if (inEditor) return;
+        if (isTextEditingTarget(event.target)) return;
         event.preventDefault();
-        if (event.shiftKey) toggleRight();
-        else toggleLeft();
+        toggleLeft();
+      } else if (key === 'b' && event.shiftKey) {
+        event.preventDefault();
+        toggleRight();
       } else if (key === 'n') {
         event.preventDefault();
         createChapter();
       } else if (key === 's') {
         event.preventDefault();
         saveNow();
+      } else if (key === 'f') {
+        event.preventDefault();
+        openFind();
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [createChapter, saveNow, toggleLeft, toggleRight]);
+  }, [createChapter, openFind, saveNow, toggleLeft, toggleRight]);
 
   useEffect(() => {
-    if (dialog) textareaRef.current?.blur();
+    if (dialog) editorRef.current?.blur();
   }, [dialog]);
 
-  const focusEditor = () => {
-    textareaRef.current?.focus();
-  };
-
-  const undo = () => {
-    focusEditor();
-    document.execCommand('undo');
-  };
-
-  const redo = () => {
-    focusEditor();
-    document.execCommand('redo');
-  };
-
-  const selectAll = () => {
-    focusEditor();
-    textareaRef.current?.select();
-  };
+  const fullCharacterCount = chapters.reduce((total, chapter) => total + chapter.characterCount, 0);
 
   return (
     <div className={`app-shell${isMaximized ? ' is-maximized' : ''}`}>
@@ -112,6 +119,7 @@ export default function App() {
             onUndo={undo}
             onRedo={redo}
             onSelectAll={selectAll}
+            onFind={openFind}
             onToggleLeft={toggleLeft}
             onToggleRight={toggleRight}
             onThemeChange={setMode}
@@ -132,11 +140,12 @@ export default function App() {
         />
 
         <EditorPane
+          key={activeChapter.id}
+          ref={editorRef}
           chapter={activeChapter}
           index={activeIndex}
           total={chapters.length}
           settings={settings}
-          textareaRef={textareaRef}
           onUpdate={updateActiveChapter}
         />
 
@@ -153,7 +162,8 @@ export default function App() {
       <StatusBar
         chapterIndex={activeIndex}
         chapterCount={chapters.length}
-        characterCount={countCharacters(activeChapter.content)}
+        characterCount={activeChapter.characterCount}
+        fullCharacterCount={fullCharacterCount}
         savedAt={savedAt}
       />
 

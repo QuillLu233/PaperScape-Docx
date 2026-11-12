@@ -1,147 +1,161 @@
 # PaperScape 开发状态
 
 - 更新时间：2026-11-12
-- 阶段：第一阶段（Windows 桌面窗口 + 三栏中文写作界面）
-- 版本：0.1.0
-- 结论：**第一阶段开发完成，真实 Windows 桌面窗口已启动并通过窗口/布局/主题/折叠验收。**
+- 阶段：第二阶段（Tiptap 富文本编辑器）
+- 版本：0.2.0
+- 结论：**第二阶段已完成。Tiptap 富文本编辑、格式、查找替换、图片表格、字数、宽度调整与长文输入均已实现并测试；第一阶段窗口和三栏功能保留。**
 
-## 一、启动前材料检查
+## 一、材料与规范检查
 
 | 材料 | 结果 |
 | --- | --- |
-| `AGENTS.md` | 工作区中不存在（初始目录为空） |
-| `DEVELOPMENT_STATUS.md` | 不存在，本文件为首次创建 |
-| `paperscape-dev` Skill | 当前会话不可用，`skill` 返回 unknown |
+| `AGENTS.md` | 工作区中仍不存在；项目按 README/任务说明和实际代码推进 |
+| `DEVELOPMENT_STATUS.md` | 已存在并读取，本文件已更新为第二阶段状态 |
+| `paperscape-dev` Skill | 当前会话仍不可用，`skill` 返回 unknown |
 
-因此本阶段依据用户任务说明、Tauri 官方文档和实际环境检查推进。没有伪造上述文件或 Skill 的内容。
+## 二、环境与基线
 
-## 二、Windows 开发环境
+- Windows 10 Home China / 25H2 / Build 26200.9711 / x64；显示缩放 150%。
+- Node.js 24.21.0、pnpm 11.28.5、Rust 1.100.0、MSVC 14.44、Windows SDK 10.0.26100 可用。
+- 系统 PATH 仍未安装 Node/pnpm/Rust/Git；验证使用项目内用户级工具链，详见第一阶段记录。
+- 当前 DSH 代理进程为低完整性令牌；真实 Tauri 验收继续通过计划任务直接启动中完整性进程完成。这是测试夹具限制，不是应用要求。
 
-检查日期：2026-11-12。系统：Windows 10 Home China / 版本 25H2 / Build 26200.9711 / x64，显示缩放 150%。
+## 三、第二阶段新增实现
 
-| 项目 | 初始状态 | 实际处理 | 最终状态 |
-| --- | --- | --- | --- |
-| Node.js | PATH 中不存在 | 使用 DSH 内置 Node.js 24.21.0 | 构建可用；系统 PATH 仍未安装 |
-| npm | 不存在 | 未使用（项目使用 pnpm） | 仍缺失 |
-| pnpm | 不存在 | DSH 内置 pnpm 11.28.5，通过 `.toolbin` 包装调用 | 构建可用；系统 PATH 仍未安装 |
-| Rust / Cargo | 不存在 | rustup 用户级安装到 `.toolchain`，stable MSVC 1.100.0 + rustfmt | 可用；非系统级 |
-| Visual Studio Build Tools | 不存在 | UAC 安装 17.14.37906.3 到 `.vs`，MSVC 14.44.35207，Windows SDK 10.0.26100 | 可用；非默认 Program Files 路径 |
-| WebView2 Runtime | 已安装 157.0.4341.46 | 使用系统 Evergreen 稳定版 | 真实窗口运行成功 |
-| Git | 不存在 | 便携版 MinGit 2.56.1 到 `.tools/git` | 已创建检查点 |
+### 编辑器
 
-这些工具安装在项目目录下是因为当前会话没有管理员权限且系统 PATH 未配置 Node/Rust/Git；它们被 `.gitignore` 排除，不属于应用源码。普通开发机请按 `README.md` 的安装命令配置系统级环境。
+- Tiptap 3 / ProseMirror 正式编辑器，不使用临时 `contenteditable` 实现。
+- StarterKit 关闭代码块与分割线；启用标题 H1–H3、段落、列表、加粗、斜体、下划线、删除线、撤销/重做。
+- TextStyleKit：字体、字号、文字颜色、行高基础能力。
+- TextAlign：左/中/右/两端对齐。
+- 自定义 BlockStyle：段落/标题行距、首行缩进。
+- Image：本地图片读取、Data URL 嵌入、超过 900KB 时自动缩放至最大 1600px。
+- TableKit：3×3 表格、可拖拽列宽、加行、加列、删除表格。
+- 查找替换：自定义 ProseMirror 插件、装饰高亮、上一个/下一个、单项替换、全部替换；支持跨加粗/斜体等行内 mark 的短语。
+- 中文标点与中英文混排换行：`line-break: strict`、`overflow-wrap: break-word`、`text-wrap: pretty`。
 
-## 三、已实现内容
+### 数据与状态
 
-- Tauri 2 无边框 Windows 窗口：`decorations: false`、`shadow: true`、最小尺寸 960×640。
-- 启动时读取显示器物理尺寸与缩放比，自适应窗口尺寸并居中；限制在 960–1280 × 640–820 逻辑像素，兼容高 DPI 小屏。
-- 自绘标题栏：品牌、中文菜单、面板开关、最小化/最大化/还原/关闭按钮、双击标题栏切换最大化。
-- 八方向透明缩放热区，调用 Tauri `startResizeDragging`，覆盖四边和四角。
-- 三栏布局：左侧章节目录、中间正文编辑区、右侧设置面板。
-- 左右面板折叠，状态持久化；`Ctrl+B` / `Ctrl+Shift+B` 快捷键。
-- 中文优先菜单（文件、编辑、视图、帮助）与快捷键、关于对话框。
-- 浅色 / 深色 / 跟随系统主题，暖纸色低对比配色，主题跨重启持久化。
-- 章节新建、切换、标题/正文编辑、字数统计、本地自动保存。
-- 字号、行距设置与恢复默认。
-- TypeScript 严格检查、Vitest + Testing Library 测试、Vite 生产构建。
-- 应用图标、NSIS 打包配置、`.gitignore`、中文 README。
+- 工作区升级为 `version: 2`，章节正文存 Tiptap HTML；旧的纯文本 workspace 自动迁移为段落，换行保留。
+- 章节新增 `characterCount` 与 `excerpt` 缓存；侧栏/状态栏渲染不再反复解析 HTML。
+- `key={chapter.id}` 隔离章节编辑器实例；正文更新不回灌 React state 到编辑器，避免光标丢失。
+- 主题、面板、字号、行距、编辑宽度状态与编辑器实例隔离；主题切换不会重建编辑器。
+- localStorage 保存改为 400 ms 防抖，并在 `beforeunload` 与工作区切换时 flush。
+- 编辑宽度设置 640–980px 持久化，作用于文章排版宽度。
+- 字数统计：状态栏同时显示本章与全文；全文为所有章节缓存计数之和。
+- 快捷键：`Ctrl+B/I/U` 格式、`Ctrl+Z/Shift+Z` 历史、`Ctrl+F` 查找、`Ctrl+S` 保存、`Ctrl+N` 新建章节；编辑器外 `Ctrl+B` 仍可折叠目录，避免与加粗冲突。
 
-最终 `tauri.conf.json` 不包含 `--no-sandbox` 或其他降低 WebView2 安全性的启动参数。
+### 版本
 
-## 四、实际测试结果
+- package / Cargo / Tauri / About / Settings 均已升级为 `0.2.0`。
+- About 增加 Tiptap 3 信息，阶段文案更新为第二阶段。
 
-| 命令 | 结果 | 证据 |
-| --- | --- | --- |
-| `pnpm check` | 通过，退出码 0 | TypeScript 5.9.3，无错误 |
-| `pnpm test` | 通过：2 个测试文件，9 个测试 | 约 2.6s |
-| `pnpm build` | 通过 | 39 modules；JS 260.16 kB / CSS 19.75 kB |
-| `cargo build` | 通过 | debug 可执行文件 `src-tauri/target/debug/paperscape.exe`，12.5 MB |
-| `cargo fmt --check` | 通过 | Rust 格式一致 |
-| Vite 开发服务器 | 通过 | `http://localhost:1420` 返回 HTTP 200 |
-| 真实 Tauri 窗口 | 通过 | 进程响应正常，窗口标题 `PaperScape 纸境` |
+## 四、自动化测试
 
-### 4.1 真实桌面窗口验收
+### 4.1 Vitest
 
-使用 Windows UI Automation 与 Win32 API 对真实运行中的窗口执行操作：
+执行 `pnpm test`：**4 个测试文件，26 个测试全部通过**。
 
-| 验收项 | 实测结果 |
+测试文件：
+
+- `src/App.test.tsx`：三栏、章节、主题、面板、快捷键、查找入口、关于。
+- `src/App.window.test.tsx`：窗口控制 API 与八方向热区。
+- `src/editor/editor.test.ts`：中国/英文混排、标题、格式、字体字号颜色、对齐/行距/缩进、列表、撤销重做、查找替换（含跨 mark）、表格、图片、2000 段长文。
+- `src/lib/workspace.test.ts`：纯文本 → HTML 迁移、v2 往返、计数和摘要。
+
+其他检查：
+
+| 命令 | 结果 |
 | --- | --- |
-| 窗口启动 | 进程运行，`MainWindowHandle` 有效，`Responding=True` |
-| 三栏布局 | 左侧目录、中间编辑器、右侧设置同时完整显示 |
-| 最大化 | 点击自绘“最大化”按钮后 `IsZoomed=True`，按钮变为“还原” |
-| 还原 | 点击“还原”后 `IsZoomed=False` |
-| 最小化 | 点击“最小化”后 `IsIconic=True`；恢复后 `False` |
-| 关闭 | 点击自绘“关闭”后进程正常退出 |
-| 标题栏拖动 | 窗口从 `(200,120)` 移动到 `(350,199)` |
-| 右下角缩放 | 窗口从 `1600×1000` 调整到 `1720×1090` |
-| 左侧面板 | 折叠后“新建章节”从可访问树消失；展开后恢复 |
-| 右侧面板 | 折叠后“外观主题”从可访问树消失；展开后恢复 |
-| `Ctrl+B` | 折叠/展开左侧目录均生效 |
-| 深色主题 | 真实生效，重启应用后仍保持 |
-| 中文菜单 | “帮助”菜单展开，打开并关闭“关于 PaperScape”对话框 |
-| 150% DPI | 窗口客户区 1920×1230 物理像素，对应 1280×820 逻辑像素，三栏完整 |
+| `pnpm check` | 通过 |
+| `pnpm build` | 通过；105 modules；JS 745.78 kB / CSS 26.86 kB |
+| `cargo build` | 通过；0.2.0 debug exe |
+| `cargo fmt --check` | 通过 |
+
+### 4.2 Chromium/WebView2 引擎端到端
+
+通过 Edge + CDP 对真实 Vite 页面执行输入与操作，结果：
+
+| 验证 | 实际结果 |
+| --- | --- |
+| 中英混输 | `中文输入 English mixed 123，标点正常。` |
+| 加粗 / 撤销 / 重做 | `<strong>` 正确添加、撤销移除、重做恢复 |
+| 标题 | `h1` 正确生成 |
+| 查找 | `1 / 1` |
+| 全部替换 | `中文` → `汉语` 成功 |
+| 表格 | 3×3 表格、表头与工具栏表格操作出现 |
+| 字体/字号/颜色 | 输出 `font-family`、`font-size: 24px`、`color: rgb(154, 79, 67)` |
+| 对齐/行距/缩进 | `text-align: center; line-height: 2.1; text-indent: 2em` |
+| 编辑宽度 | 设置 900px 后文章 `max-width: 900px` |
+| 图片 | 生成本地 Data URL `<img>` |
+| IME composition | `Input.imeSetComposition` 后提交得到 `你好` |
+| 连续输入 | 按字符逐字输入 22 个字符，内容完全一致 `typedExactly: true` |
+| 主题隔离 | 切换深色后继续输入，前后文本均保留 |
+| 章节切换 | 切到第二章再回来，内容保持 |
+| 长文 | 75,000 字符输入约 870ms；本章 69,000 字 / 全文 69,082 字 |
+
+说明：IME 测试使用 Chromium 的 `Input.imeSetComposition` 组合事件，覆盖 ProseMirror 的 composition 处理路径；没有拦截或改写输入法事件。
+
+### 4.3 真实 Tauri 窗口
+
+| 验证 | 实际结果 |
+| --- | --- |
+| 启动 | 0.2.0 debug 窗口正常显示，工具栏完整 |
+| 系统剪贴板粘贴 | 137 字符正文粘贴后变为 160 字符 |
+| 系统剪贴板复制 | `Get-Clipboard` 得到 162 字符完整正文 |
+| 撤销 | 粘贴后 Ctrl+Z 恢复到 137 字符 |
+| 真实 Ctrl+B | 工具栏“加粗”Toggle 状态变为 On，侧栏保持打开（未误触面板快捷键） |
+| 真实 Ctrl+F | 查找输入框出现，关闭按钮可用 |
+| 150% DPI | 真实窗口 1920×1230 物理像素，三栏完整 |
+| 主题 | 浅色/深色均实际截图 |
 
 真实窗口截图：
 
-- `docs/screenshots/tauri-light.png`
-- `docs/screenshots/tauri-dark.png`
-- `docs/screenshots/tauri-collapsed.png`
+- `docs/screenshots/p2-light.png`
+- `docs/screenshots/p2-dark.png`
+- `docs/screenshots/phase2-table.png`（表格功能截图）
 
-### 4.2 测试覆盖
+## 五、验收对照
 
-- 三栏初始渲染
-- 添加/切换章节
-- 正文编辑与本地持久化
-- 浅色/深色切换
-- 中文菜单与关于对话框
-- 面板折叠与 `Ctrl+B`
-- 窗口最小化/最大化/还原/关闭 API 调用
-- 八方向缩放热区调用
-
-## 五、验证环境的 WebView2 说明
-
-本次验证发现并解决了一个**测试环境特有问题**，不是应用代码缺陷：
-
-1. 当前 DSH 代理进程为 **低完整性（Low Integrity，SID 4096）**。直接从代理 shell 启动 Tauri 时，子进程继承低完整性，WebView2 无法初始化，Tauri 报 `0x8000FFFF`。
-2. 用 `runas /trustlevel:0x20000` 或经 `cmd.exe` 的计划任务启动，实测仍得到低完整性令牌。
-3. 改为**计划任务直接启动 ASCII 路径下的可执行文件**后，令牌为 **中完整性（Medium Integrity，SID 8192）**，WebView2 正常创建控制器，窗口成功显示。
-4. 最终验收使用 debug 版 `paperscape.exe` + Vite 开发服务器，通过上述中完整性方式真实运行。
-5. 正常 Windows 用户双击应用或在普通终端执行 `pnpm tauri:dev` 时，进程本身就是中完整性，不需要该测试夹具。
-
-排查过程中曾验证系统 WebView2 与 Fixed Version、预览通道；最终稳定运行使用的是系统 WebView2 `157.0.4341.46`，未依赖降低安全性的沙箱参数。
-
-## 六、验收对照
-
-| 验收标准 | 状态 | 说明 |
+| 要求 | 状态 | 说明 |
 | --- | --- | --- |
-| Windows 上能启动软件 | ✅ 通过 | 真实 Tauri 窗口运行，进程响应正常 |
-| 窗口可移动、缩放、最大化、最小化 | ✅ 通过 | 鼠标拖动/缩放、UI Automation 按钮操作均实测 |
-| 三栏布局正常显示 | ✅ 通过 | 真实窗口 150% DPI 下完整显示 |
-| 无阻塞性编译/运行错误 | ✅ 通过 | TypeScript、测试、Vite、Cargo 全部通过 |
+| 中文、英文及混合输入 | ✅ | 连续输入与 IME composition 测试通过 |
+| H1/H2/H3 与段落 | ✅ | 单元和端到端均覆盖 |
+| 加粗/斜体/下划线/删除线 | ✅ | 单元与浏览器操作覆盖 |
+| 字体/字号/颜色 | ✅ | 单元测试 + 工具栏端到端 |
+| 对齐/行距/首行缩进 | ✅ | 输出样式验证 |
+| 有序/无序列表 | ✅ | 单元测试 |
+| 撤销/重做/快捷键 | ✅ | 工具栏、菜单、真实 Ctrl+B/Ctrl+Z |
+| 本章/全文字数 | ✅ | 真实状态栏与长文数据 |
+| 查找替换 | ✅ | 1/1 匹配、全部替换、跨 mark 匹配 |
+| 图片和表格 | ✅ | 图片 Data URL；3×3 表格与行列操作 |
+| 编辑宽度 | ✅ | 640–980px 设置与样式验证 |
+| 中文标点和中英换行 | ✅ | CSS 行断规则 + 长文混排截图 |
+| 微软拼音兼容 | ✅ | 不拦截 composition；Chromium composition 事件通过 |
+| React 重渲染不丢输入 | ✅ | 逐字连续输入、主题切换、章节切换均保持 |
+| 编辑器/主题状态隔离 | ✅ | 主题切换不重建编辑器 |
+| 长文性能 | ✅ | 69,000 字可编辑；75,000 字符输入约 870ms |
 
-## 七、未纳入本阶段
+## 六、已知限制
 
-- Word 导入 / 导出
-- 复杂背景、纸张纹理系统
-- 云同步、账号、富文本
-- 自动更新与代码签名
+- 图片以 Data URL 存在 localStorage，图片数量和总大小受 WebView2 本地存储配额限制；本阶段不引入文件资源系统。
+- 表格为简单表格，不支持合并单元格、跨页表头等复杂排版。
+- 查找按段落/标题文本块匹配，不跨段落或表格单元格搜索。
+- Word 导入导出、复杂背景、云同步、账号系统仍未实现。
+- 自动化环境未模拟微软拼音候选词窗口的实际点击；通过 Chromium IME composition 事件验证了编辑器组合输入路径，代码未拦截或改写输入法事件。
+- 系统级 Node/Rust/Git 尚未安装，普通开发前仍应按 README 配置环境。
 
-## 八、后续建议
+## 七、Git 检查点
 
-1. 下一阶段先做文档模型与 Word 导入导出，保持当前窗口与布局不变。
-2. 在 100% / 125% / 150% / 200% 缩放下各做一次视觉回归；当前启动尺寸已按显示器逻辑尺寸限制。
-3. 打包安装包时补充代码签名，避免 Windows SmartScreen 提示。
-
-## 九、Git 检查点
-
-第一阶段源码、测试、文档与真实窗口截图已保存。检查点提交信息：
+第二阶段源码、测试、真实窗口截图和本记录将作为独立提交保存：
 
 ```text
-feat: verify PaperScape phase 1 real desktop window
+feat: add Tiptap rich text editing
 ```
 
-初始工程检查点：
+第一阶段检查点：
 
 ```text
 1878082 feat: establish PaperScape phase 1 desktop shell
+d8c4c8f feat: verify PaperScape phase 1 real desktop window
 ```

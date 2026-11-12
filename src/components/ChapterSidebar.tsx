@@ -1,5 +1,4 @@
 import type { Chapter } from '../types';
-import { countCharacters, excerpt } from '../lib/text';
 import { Icon } from './Icon';
 
 interface ChapterSidebarProps {
@@ -58,9 +57,9 @@ export function ChapterSidebar({
                   <span className="chapter-number">{String(index + 1).padStart(2, '0')}</span>
                   <span className="chapter-copy">
                     <span className="chapter-name">{chapter.title || '未命名章节'}</span>
-                    <span className="chapter-excerpt">{excerpt(chapter.content)}</span>
+                    <span className="chapter-excerpt">{chapter.excerpt || '空白章节'}</span>
                   </span>
-                  <span className="chapter-count">{countCharacters(chapter.content)}</span>
+                  <span className="chapter-count">{chapter.characterCount}</span>
                 </button>
               </li>
             );

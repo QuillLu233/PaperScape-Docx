@@ -5,6 +5,9 @@ export type IconName =
   | 'panel-left'
   | 'panel-right'
   | 'chevron-down'
+  | 'chevron-left'
+  | 'chevron-right'
+  | 'chevron-up'
   | 'sun'
   | 'moon'
   | 'monitor'
@@ -15,7 +18,21 @@ export type IconName =
   | 'check'
   | 'minus'
   | 'reset'
-  | 'keyboard';
+  | 'keyboard'
+  | 'undo'
+  | 'redo'
+  | 'search'
+  | 'replace'
+  | 'image'
+  | 'table'
+  | 'align-left'
+  | 'align-center'
+  | 'align-right'
+  | 'align-justify'
+  | 'bullet-list'
+  | 'ordered-list'
+  | 'indent'
+  | 'outdent';
 
 const ICONS: Record<IconName, ReactNode> = {
   plus: <path d="M8 3.5v9M3.5 8h9" />,
@@ -32,6 +49,9 @@ const ICONS: Record<IconName, ReactNode> = {
     </>
   ),
   'chevron-down': <path d="m4.5 6.25 3.5 3.5 3.5-3.5" />,
+  'chevron-left': <path d="M9.5 3.5 6 7l3.5 3.5" />,
+  'chevron-right': <path d="M6.5 3.5 10 7l-3.5 3.5" />,
+  'chevron-up': <path d="m4.5 9.75 3.5-3.5 3.5 3.5" />,
   sun: (
     <>
       <circle cx="8" cy="8" r="2.6" />
@@ -66,6 +86,73 @@ const ICONS: Record<IconName, ReactNode> = {
     <>
       <rect x="1.8" y="4" width="12.4" height="8" rx="1.3" />
       <path d="M4.2 6.4h.01M6.6 6.4h.01M9 6.4h.01M11.4 6.4h.01M4.2 9.6h.01M6.6 9.6h.01M9 9.6h.01M11.4 9.6h.01" />
+    </>
+  ),
+  undo: (
+    <>
+      <path d="M3.2 6.3 6.4 3.1" />
+      <path d="M3.2 6.3h5.1a4 4 0 0 1 0 8H6" />
+    </>
+  ),
+  redo: (
+    <>
+      <path d="m12.8 6.3-3.2-3.2" />
+      <path d="M12.8 6.3H7.7a4 4 0 0 0 0 8H10" />
+    </>
+  ),
+  search: (
+    <>
+      <circle cx="7" cy="7" r="4.1" />
+      <path d="m10.2 10.2 3 3" />
+    </>
+  ),
+  replace: (
+    <>
+      <path d="M3.2 5.2h7.4M8.4 3 10.6 5.2 8.4 7.4" />
+      <path d="M12.8 10.8H5.4M7.6 8.6 5.4 10.8l2.2 2.2" />
+    </>
+  ),
+  image: (
+    <>
+      <rect x="2" y="2.8" width="12" height="10.4" rx="1.3" />
+      <circle cx="5.6" cy="6.1" r="1" />
+      <path d="m2.6 11.6 3.2-3 2.5 2.2 2-1.8 3.1 2.6" />
+    </>
+  ),
+  table: (
+    <>
+      <rect x="2" y="2.8" width="12" height="10.4" rx="1" />
+      <path d="M2 6.1h12M2 9.5h12M6 6.1v7.1M10 6.1v7.1" />
+    </>
+  ),
+  'align-left': <path d="M2.5 3.5h11M2.5 6.5h8M2.5 9.5h11M2.5 12.5h6.5" />,
+  'align-center': <path d="M2.5 3.5h11M4 6.5h8M2.5 9.5h11M4.75 12.5h6.5" />,
+  'align-right': <path d="M2.5 3.5h11M5.5 6.5h8M2.5 9.5h11M7 12.5h6.5" />,
+  'align-justify': <path d="M2.5 3.5h11M2.5 6.5h11M2.5 9.5h11M2.5 12.5h11" />,
+  'bullet-list': (
+    <>
+      <circle cx="3.2" cy="4" r=".7" fill="currentColor" stroke="none" />
+      <circle cx="3.2" cy="8" r=".7" fill="currentColor" stroke="none" />
+      <circle cx="3.2" cy="12" r=".7" fill="currentColor" stroke="none" />
+      <path d="M5.7 4h7.8M5.7 8h7.8M5.7 12h7.8" />
+    </>
+  ),
+  'ordered-list': (
+    <>
+      <path d="M2.2 3h1.1v2.2M2.4 5.2h1.4M2.2 7.8c.3-.5 1.3-.5 1.3.2 0 .5-.5.8-1.3 1.3h1.4M2.2 11.1h1.4v1.2H2.2v1.2h1.4" />
+      <path d="M6 4h7.5M6 8h7.5M6 12h7.5" />
+    </>
+  ),
+  indent: (
+    <>
+      <path d="M2.5 2.8h11M2.5 12.8h11M6.8 5.5h6.7M6.8 8h6.7M6.8 10.5h6.7" />
+      <path d="m2.4 6.1 2 2-2 2z" fill="currentColor" stroke="none" />
+    </>
+  ),
+  outdent: (
+    <>
+      <path d="M2.5 2.8h11M2.5 12.8h11M6.8 5.5h6.7M6.8 8h6.7M6.8 10.5h6.7" />
+      <path d="m4.4 6.1-2 2 2 2z" fill="currentColor" stroke="none" />
     </>
   ),
 };

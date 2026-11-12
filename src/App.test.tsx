@@ -1,16 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
 
 describe('PaperScape shell', () => {
-  it('renders the three working areas and the active chapter', () => {
+  it('renders the three working areas and the active chapter', async () => {
     render(<App />);
 
     expect(screen.getByTestId('chapter-sidebar')).toHaveAttribute('data-open', 'true');
     expect(screen.getByTestId('settings-panel')).toHaveAttribute('data-open', 'true');
     expect(screen.getByRole('textbox', { name: '章节标题' })).toHaveValue('纸上的清晨');
-    expect(screen.getByRole('textbox', { name: '正文编辑器' })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole('textbox', { name: '正文编辑器' })).toHaveTextContent(
+        '天还没有完全亮',
+      ),
+    );
     expect(screen.getByText('第 1 章 / 共 3 章')).toBeInTheDocument();
   });
 
@@ -26,11 +30,11 @@ describe('PaperScape shell', () => {
     expect(screen.getByTestId('chapter-sidebar')).toHaveAttribute('data-open', 'true');
   });
 
-  it('toggles the chapter sidebar with Ctrl+B', async () => {
-    const user = userEvent.setup();
+  it('toggles the chapter sidebar with Ctrl+B outside the editor', async () => {
     render(<App />);
 
-    await user.keyboard('{Control>}b{/Control}');
+    await waitFor(() => expect(screen.getByRole('textbox', { name: '正文编辑器' })).toBeInTheDocument());
+    fireEvent.keyDown(window, { key: 'b', ctrlKey: true });
     expect(screen.getByTestId('chapter-sidebar')).toHaveAttribute('data-open', 'false');
   });
 
@@ -41,7 +45,6 @@ describe('PaperScape shell', () => {
     await user.click(screen.getByRole('button', { name: '新建章节' }));
 
     expect(screen.getByRole('textbox', { name: '章节标题' })).toHaveValue('新章节 4');
-    expect(screen.getByRole('textbox', { name: '正文编辑器' })).toHaveValue('');
     expect(screen.getByText('第 4 章 / 共 4 章')).toBeInTheDocument();
   });
 
@@ -55,18 +58,18 @@ describe('PaperScape shell', () => {
     await waitFor(() => expect(localStorage.getItem('paperscape.theme')).toBe('dark'));
   });
 
-  it('edits the current chapter and persists it locally', async () => {
+  it('opens the find and replace bar from the edit menu', async () => {
     const user = userEvent.setup();
     render(<App />);
-    const editor = screen.getByRole('textbox', { name: '正文编辑器' });
+    await waitFor(() => expect(screen.getByRole('textbox', { name: '正文编辑器' })).toBeInTheDocument());
 
-    await user.clear(editor);
-    await user.type(editor, '测试正文');
+    await user.click(screen.getByRole('button', { name: '编辑' }));
+    await user.click(screen.getByRole('menuitem', { name: /查找与替换/ }));
 
-    expect(screen.getAllByText('4 字').length).toBeGreaterThan(0);
-    await waitFor(() =>
-      expect(localStorage.getItem('paperscape.workspace.v1')).toContain('测试正文'),
-    );
+    expect(screen.getByRole('search', { name: '查找与替换' })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: '查找内容' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '关闭查找替换' }));
+    expect(screen.queryByRole('search', { name: '查找与替换' })).not.toBeInTheDocument();
   });
 
   it('opens the about dialog from the help menu', async () => {

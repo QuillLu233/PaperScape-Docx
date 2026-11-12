@@ -1,15 +1,32 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Chapter, WritingSettings, WorkspaceSnapshot } from '../types';
 import { createChapter, loadWorkspace, saveWorkspace } from '../lib/workspace';
+
+type ChapterPatch = Partial<Pick<Chapter, 'title' | 'content' | 'characterCount' | 'excerpt'>>;
 
 export function useWorkspace() {
   const [snapshot, setSnapshot] = useState<WorkspaceSnapshot>(() => loadWorkspace());
   const [savedAt, setSavedAt] = useState(() => Date.now());
+  const snapshotRef = useRef(snapshot);
+  snapshotRef.current = snapshot;
+
+  // Debounced persistence keeps long HTML documents from hitting localStorage on every keystroke.
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      saveWorkspace(snapshot);
+      setSavedAt(Date.now());
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [snapshot]);
 
   useEffect(() => {
-    saveWorkspace(snapshot);
-    setSavedAt(Date.now());
-  }, [snapshot]);
+    const flush = () => saveWorkspace(snapshotRef.current);
+    window.addEventListener('beforeunload', flush);
+    return () => {
+      window.removeEventListener('beforeunload', flush);
+      flush();
+    };
+  }, []);
 
   const activeChapter =
     snapshot.chapters.find((chapter) => chapter.id === snapshot.activeId) ?? snapshot.chapters[0];
@@ -38,7 +55,7 @@ export function useWorkspace() {
     });
   }, []);
 
-  const updateActiveChapter = useCallback((patch: Partial<Pick<Chapter, 'title' | 'content'>>) => {
+  const updateActiveChapter = useCallback((patch: ChapterPatch) => {
     setSnapshot((current) => ({
       ...current,
       chapters: current.chapters.map((chapter) =>
@@ -57,9 +74,9 @@ export function useWorkspace() {
   }, []);
 
   const saveNow = useCallback(() => {
-    saveWorkspace(snapshot);
+    saveWorkspace(snapshotRef.current);
     setSavedAt(Date.now());
-  }, [snapshot]);
+  }, []);
 
   return {
     chapters: snapshot.chapters,
