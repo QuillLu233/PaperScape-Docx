@@ -1,0 +1,25 @@
+node_modules
+.pnpm-store
+dist
+dist-ssr
+*.local
+.DS_Store
+Thumbs.db
+
+# Local development tooling (not part of the application)
+.downloads
+.tmp
+.toolbin
+.toolchain
+.tools
+.vs
+
+# Tauri build output
+src-tauri/target
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.swp
+.webview-data
