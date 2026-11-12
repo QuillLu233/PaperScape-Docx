@@ -199,15 +199,15 @@ export function SettingsPanel({
           <div className="storage-card">
             <span className="status-dot" aria-hidden="true" />
             <div>
-              <p>章节、主题与偏好保存在本机</p>
-              <p className="storage-detail">背景图片使用本机 IndexedDB 缓存，不上传云端。</p>
+              <p>章节与本项目偏好保存在项目文件夹</p>
+              <p className="storage-detail">正文是独立的 Tiptap JSON 章节文件；背景图片使用本机 IndexedDB 缓存。</p>
             </div>
           </div>
         </section>
 
         <div className="settings-version">
-          <span>PaperScape 0.3.0</span>
-          <span>第三阶段</span>
+          <span>PaperScape 0.4.0</span>
+          <span>第四阶段</span>
         </div>
       </div>
     </aside>

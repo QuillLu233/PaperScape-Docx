@@ -1,19 +1,26 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
 import { BackgroundLayer } from './components/BackgroundLayer';
 import { ChapterSidebar } from './components/ChapterSidebar';
+import { ConfirmDialog } from './components/ConfirmDialog';
 import { AboutDialog, ShortcutsDialog } from './components/Dialogs';
 import { EditorPane, type EditorPaneHandle } from './components/EditorPane';
+import { HistoryDialog } from './components/HistoryDialog';
 import { Icon } from './components/Icon';
 import { MenuBar } from './components/MenuBar';
+import { ProjectLauncher } from './components/ProjectLauncher';
+import { RenameChapterDialog } from './components/RenameChapterDialog';
 import { ResizeHandles } from './components/ResizeHandles';
 import { SettingsPanel } from './components/SettingsPanel';
 import { StatusBar } from './components/StatusBar';
 import { TitleBar } from './components/TitleBar';
-import { useAppearance } from './appearance/useAppearance';
+import { useProjectAppearance } from './appearance/useProjectAppearance';
+import { DEFAULT_APPEARANCE } from './appearance/presets';
+import { DEFAULT_SETTINGS } from './types';
 import { usePanels } from './hooks/usePanels';
 import { useTheme } from './hooks/useTheme';
 import { useWindowState } from './hooks/useWindowState';
-import { useWorkspace } from './hooks/useWorkspace';
+import { useProject } from './project/useProject';
+import type { ChapterSummary, HistoryEntry, RecoveryCandidate } from './project/types';
 
 type DialogName = 'shortcuts' | 'about' | null;
 
@@ -31,42 +38,90 @@ function hasImageFile(event: DragEvent<HTMLElement>): boolean {
 }
 
 export default function App() {
+  const projectController = useProject();
   const {
-    projectId,
+    recent,
+    project,
     chapters,
     activeChapter,
     activeIndex,
-    settings,
+    documentRevision,
+    loading,
+    saving,
     savedAt,
+    dirty,
+    error,
+    warnings,
+    recovery,
+    createProject,
+    openProject,
+    openRecent,
+    importLegacy,
+    closeProject,
     selectChapter,
-    addChapter,
     updateActiveChapter,
-    updateSettings,
+    addChapter,
+    renameChapter,
+    moveChapter,
+    deleteChapter,
     saveNow,
-  } = useWorkspace();
+    updateSettings,
+    history,
+    restoreHistory,
+    restoreRecovery,
+    discardRecovery,
+    dismissWarning,
+    clearError,
+  } = projectController;
   const { mode: themeMode, setMode: setThemeMode } = useTheme();
   const { leftOpen, rightOpen, toggleLeft, toggleRight } = usePanels();
   const { isMaximized, minimize, toggleMaximize, close } = useWindowState();
+  const [dialog, setDialog] = useState<DialogName>(null);
+  const [focusMode, setFocusMode] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<ChapterSummary | null>(null);
+  const [historyTarget, setHistoryTarget] = useState<ChapterSummary | null>(null);
+  const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [discardTarget, setDiscardTarget] = useState<RecoveryCandidate | null>(null);
+  const [busy, setBusy] = useState(false);
+  const dragDepth = useRef(0);
+  const editorRef = useRef<EditorPaneHandle>(null);
+
+  const appearance = project?.appearance ?? DEFAULT_APPEARANCE;
+  const settings = project?.settings ?? DEFAULT_SETTINGS;
+  const appearanceController = useProjectAppearance(appearance, projectController.updateAppearance);
   const {
-    appearance,
     backgroundUrl,
     savedThemes,
     setMode: setWritingMode,
     updateBackground,
-    updatePaper,
     setReadingOpacity,
+    updatePaper,
     applyPreset,
     applySavedTheme,
     saveCurrentTheme,
     deleteSavedTheme,
     setBackgroundFromFile,
-  } = useAppearance(projectId);
-  const [dialog, setDialog] = useState<DialogName>(null);
-  const [focusMode, setFocusMode] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
-  const [notice, setNotice] = useState('');
-  const dragDepth = useRef(0);
-  const editorRef = useRef<EditorPaneHandle>(null);
+  } = appearanceController;
+
+  const isProjectOpen = Boolean(project && activeChapter);
+
+  const showNotice = useCallback((message: string) => setNotice(message), []);
+
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(''), 3200);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
+  useEffect(() => {
+    if (!activeChapter?.id) return;
+    const timer = window.setTimeout(() => editorRef.current?.focus(), 80);
+    return () => window.clearTimeout(timer);
+  }, [activeChapter?.id]);
 
   const toggleFocusMode = useCallback(() => {
     setFocusMode((current) => !current);
@@ -81,73 +136,67 @@ export default function App() {
     [setWritingMode],
   );
 
-  const createChapter = useCallback(() => {
-    addChapter();
-    window.setTimeout(() => editorRef.current?.focus(), 60);
+  const handleCreateChapter = useCallback(async () => {
+    const ok = await addChapter();
+    if (ok) window.setTimeout(() => editorRef.current?.focus(), 50);
   }, [addChapter]);
 
-  const focusEditor = useCallback(() => {
-    editorRef.current?.focus();
-  }, []);
+  const handleSelectChapter = useCallback(
+    (id: string) => {
+      if (!isProjectOpen || activeChapter?.id === id) return;
+      void selectChapter(id).then((ok) => {
+        if (ok) window.setTimeout(() => editorRef.current?.focus(), 50);
+      });
+    },
+    [activeChapter?.id, isProjectOpen, selectChapter],
+  );
 
-  const undo = useCallback(() => editorRef.current?.undo(), []);
-  const redo = useCallback(() => editorRef.current?.redo(), []);
-  const selectAll = useCallback(() => editorRef.current?.selectAll(), []);
-  const openFind = useCallback(() => editorRef.current?.openFind(), []);
+  const handleCloseProject = useCallback(async () => {
+    const ok = await closeProject();
+    if (ok) showNotice('项目已保存并关闭');
+  }, [closeProject, showNotice]);
 
-  useEffect(() => {
-    const timer = window.setTimeout(focusEditor, 80);
-    return () => window.clearTimeout(timer);
-  }, [focusEditor]);
+  const handleSaveProject = useCallback(async () => {
+    const ok = await saveNow('manual');
+    if (ok) showNotice('项目已保存');
+  }, [saveNow, showNotice]);
 
-  useEffect(() => {
-    if (!notice) return;
-    const timer = window.setTimeout(() => setNotice(''), 3200);
-    return () => window.clearTimeout(timer);
-  }, [notice]);
+  const handleNewProject = useCallback(async () => {
+    if (project) {
+      const ok = await closeProject();
+      if (!ok) return;
+    }
+    setFocusMode(false);
+  }, [closeProject, project]);
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && focusMode && !dialog) {
-        setFocusMode(false);
+  const handleOpenProject = useCallback(async () => {
+    const ok = await openProject();
+    if (ok) setFocusMode(false);
+  }, [openProject]);
+
+  const handleOpenRecent = useCallback(
+    async (path: string) => {
+      const ok = await openRecent(path);
+      if (ok) setFocusMode(false);
+    },
+    [openRecent],
+  );
+
+  const handleAddBackground = useCallback(
+    async (file: File) => {
+      if (!isProjectOpen) {
+        showNotice('请先打开一个项目');
         return;
       }
-      if (!(event.ctrlKey || event.metaKey)) return;
-      const key = event.key.toLowerCase();
-      const inEditor = Boolean((event.target as HTMLElement | null)?.closest?.('.tiptap'));
-
-      if (key === 'f' && event.shiftKey) {
-        event.preventDefault();
-        toggleFocusMode();
-      } else if (key === 'b' && !event.shiftKey) {
-        // Inside Tiptap, Ctrl+B is bold. Outside editable fields it keeps the
-        // phase-one panel shortcut.
-        if (inEditor) return;
-        if (isTextEditingTarget(event.target)) return;
-        event.preventDefault();
-        toggleLeft();
-      } else if (key === 'b' && event.shiftKey) {
-        event.preventDefault();
-        toggleRight();
-      } else if (key === 'n') {
-        event.preventDefault();
-        createChapter();
-      } else if (key === 's') {
-        event.preventDefault();
-        saveNow();
-      } else if (key === 'f') {
-        event.preventDefault();
-        openFind();
+      try {
+        await setBackgroundFromFile(file);
+        showNotice('背景已更换');
+      } catch (backgroundError) {
+        showNotice(backgroundError instanceof Error ? backgroundError.message : '背景图片读取失败');
       }
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [createChapter, dialog, focusMode, openFind, saveNow, toggleFocusMode, toggleLeft, toggleRight]);
-
-  useEffect(() => {
-    if (dialog) editorRef.current?.blur();
-  }, [dialog]);
+    },
+    [isProjectOpen, setBackgroundFromFile, showNotice],
+  );
 
   const onBackgroundDrop = useCallback(
     async (event: DragEvent<HTMLElement>) => {
@@ -159,22 +208,214 @@ export default function App() {
       if (!file) {
         if (event.dataTransfer.files.length > 0) {
           event.preventDefault();
-          setNotice('请拖入 JPG、PNG 或 WebP 图片');
+          showNotice('请拖入 JPG、PNG 或 WebP 图片');
         }
         return;
       }
       event.preventDefault();
-      try {
-        await setBackgroundFromFile(file);
-        setNotice('背景已更换');
-      } catch (error) {
-        setNotice(error instanceof Error ? error.message : '背景图片读取失败');
-      }
+      await handleAddBackground(file);
     },
-    [setBackgroundFromFile],
+    [handleAddBackground, showNotice],
   );
 
-  const fullCharacterCount = chapters.reduce((total, chapter) => total + chapter.characterCount, 0);
+  const openHistory = useCallback(
+    async (chapter: ChapterSummary) => {
+      setHistoryTarget(chapter);
+      setHistoryEntries([]);
+      setHistoryLoading(true);
+      try {
+        setHistoryEntries(await history(chapter.id));
+      } catch (historyError) {
+        showNotice(historyError instanceof Error ? historyError.message : '历史版本读取失败');
+        setHistoryTarget(null);
+      } finally {
+        setHistoryLoading(false);
+      }
+    },
+    [history, showNotice],
+  );
+
+  const handleRestoreHistory = useCallback(
+    async (file: string) => {
+      if (!historyTarget) return;
+      setBusy(true);
+      const ok = await restoreHistory(historyTarget.id, file);
+      setBusy(false);
+      if (ok) {
+        setHistoryTarget(null);
+        showNotice('已恢复历史版本；恢复前内容也已备份');
+      }
+    },
+    [historyTarget, restoreHistory, showNotice],
+  );
+
+  const handleDeleteChapter = useCallback(async () => {
+    if (!deleteTarget) return;
+    setBusy(true);
+    const ok = await deleteChapter(deleteTarget.id);
+    setBusy(false);
+    if (ok) {
+      setDeleteTarget(null);
+      showNotice('章节已移入项目回收目录');
+    }
+  }, [deleteChapter, deleteTarget, showNotice]);
+
+  const handleRestoreRecovery = useCallback(
+    async (candidate: RecoveryCandidate) => {
+      setBusy(true);
+      const ok = await restoreRecovery(candidate.chapterId);
+      setBusy(false);
+      if (ok) showNotice('已恢复异常关闭前的草稿');
+    },
+    [restoreRecovery, showNotice],
+  );
+
+  const handleDiscardRecovery = useCallback(async () => {
+    if (!discardTarget) return;
+    setBusy(true);
+    const ok = await discardRecovery(discardTarget.chapterId);
+    setBusy(false);
+    if (ok) {
+      setDiscardTarget(null);
+      showNotice('恢复草稿已丢弃');
+    }
+  }, [discardRecovery, discardTarget, showNotice]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && focusMode && !dialog && !deleteTarget && !historyTarget) {
+        setFocusMode(false);
+        return;
+      }
+      if (event.key === 'F2' && isProjectOpen) {
+        const target = event.target;
+        const editingField =
+          target instanceof HTMLElement &&
+          Boolean(target.closest('input, textarea, select'));
+        if (!editingField) {
+          event.preventDefault();
+          setRenameOpen(true);
+          return;
+        }
+      }
+      if (!(event.ctrlKey || event.metaKey)) return;
+      const key = event.key.toLowerCase();
+      const inEditor = Boolean((event.target as HTMLElement | null)?.closest?.('.tiptap'));
+
+      if (key === 'n' && event.shiftKey) {
+        event.preventDefault();
+        void handleNewProject();
+      } else if (key === 'n') {
+        event.preventDefault();
+        if (isProjectOpen) void handleCreateChapter();
+      } else if (key === 'o') {
+        event.preventDefault();
+        void handleOpenProject();
+      } else if (key === 'w') {
+        event.preventDefault();
+        if (isProjectOpen) void handleCloseProject();
+      } else if (key === 's') {
+        event.preventDefault();
+        if (isProjectOpen) void handleSaveProject();
+      } else if (key === 'f' && event.shiftKey) {
+        event.preventDefault();
+        if (isProjectOpen) toggleFocusMode();
+      } else if (key === 'b' && !event.shiftKey) {
+        if (inEditor) return;
+        if (isTextEditingTarget(event.target)) return;
+        event.preventDefault();
+        if (isProjectOpen) toggleLeft();
+      } else if (key === 'b' && event.shiftKey) {
+        event.preventDefault();
+        if (isProjectOpen) toggleRight();
+      } else if (key === 'f') {
+        event.preventDefault();
+        if (isProjectOpen) editorRef.current?.openFind();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [
+    deleteTarget,
+    dialog,
+    focusMode,
+    handleCloseProject,
+    handleCreateChapter,
+    handleNewProject,
+    handleOpenProject,
+    handleSaveProject,
+    historyTarget,
+    isProjectOpen,
+    toggleFocusMode,
+    toggleLeft,
+    toggleRight,
+  ]);
+
+  useEffect(() => {
+    if (dialog) editorRef.current?.blur();
+  }, [dialog]);
+
+  const fullCharacterCount = chapters.reduce(
+    (total, chapter) => total + chapter.characterCount,
+    0,
+  );
+
+  const titleBar = (
+    <TitleBar
+      projectName={project?.name ?? ''}
+      leftOpen={leftOpen}
+      rightOpen={rightOpen}
+      isMaximized={isMaximized}
+      focusMode={focusMode}
+      onToggleLeft={toggleLeft}
+      onToggleRight={toggleRight}
+      onToggleFocus={toggleFocusMode}
+      onMinimize={minimize}
+      onToggleMaximize={toggleMaximize}
+      onClose={() => void close()}
+      menu={
+        <MenuBar
+          hasProject={isProjectOpen}
+          projectName={project?.name ?? ''}
+          leftOpen={leftOpen}
+          rightOpen={rightOpen}
+          theme={themeMode}
+          writingMode={appearance.mode}
+          focusMode={focusMode}
+          onNewProject={() => void handleNewProject()}
+          onOpenProject={() => void handleOpenProject()}
+          onCloseProject={() => void handleCloseProject()}
+          onNewChapter={() => void handleCreateChapter()}
+          onShowHistory={() => {
+            const activeSummary = chapters.find((chapter) => chapter.id === activeChapter?.id);
+            if (activeSummary) void openHistory(activeSummary);
+          }}
+          onRenameChapter={() => setRenameOpen(true)}
+          onMoveChapter={(direction) => {
+            if (activeChapter) void moveChapter(activeChapter.id, direction);
+          }}
+          onDeleteChapter={() => {
+            const activeSummary = chapters.find((chapter) => chapter.id === activeChapter?.id);
+            if (activeSummary) setDeleteTarget(activeSummary);
+          }}
+          onSave={() => void handleSaveProject()}
+          onExit={() => void close()}
+          onUndo={() => editorRef.current?.undo()}
+          onRedo={() => editorRef.current?.redo()}
+          onSelectAll={() => editorRef.current?.selectAll()}
+          onFind={() => editorRef.current?.openFind()}
+          onToggleLeft={toggleLeft}
+          onToggleRight={toggleRight}
+          onToggleFocus={toggleFocusMode}
+          onWritingModeChange={changeWritingMode}
+          onThemeChange={setThemeMode}
+          onShowShortcuts={() => setDialog('shortcuts')}
+          onShowAbout={() => setDialog('about')}
+        />
+      }
+    />
+  );
 
   return (
     <div
@@ -183,53 +424,18 @@ export default function App() {
       }`}
     >
       <ResizeHandles hidden={isMaximized} />
-
-      <TitleBar
-        leftOpen={leftOpen}
-        rightOpen={rightOpen}
-        isMaximized={isMaximized}
-        focusMode={focusMode}
-        onToggleLeft={toggleLeft}
-        onToggleRight={toggleRight}
-        onToggleFocus={toggleFocusMode}
-        onMinimize={minimize}
-        onToggleMaximize={toggleMaximize}
-        onClose={() => void close()}
-        menu={
-          <MenuBar
-            leftOpen={leftOpen}
-            rightOpen={rightOpen}
-            theme={themeMode}
-            writingMode={appearance.mode}
-            focusMode={focusMode}
-            onNewChapter={createChapter}
-            onSave={saveNow}
-            onExit={() => void close()}
-            onUndo={undo}
-            onRedo={redo}
-            onSelectAll={selectAll}
-            onFind={openFind}
-            onToggleLeft={toggleLeft}
-            onToggleRight={toggleRight}
-            onToggleFocus={toggleFocusMode}
-            onWritingModeChange={changeWritingMode}
-            onThemeChange={setThemeMode}
-            onShowShortcuts={() => setDialog('shortcuts')}
-            onShowAbout={() => setDialog('about')}
-          />
-        }
-      />
+      {titleBar}
 
       <div
         className={`workspace-stage${dragActive ? ' is-drag-over' : ''}`}
         onDragEnter={(event) => {
-          if (!hasImageFile(event)) return;
+          if (!isProjectOpen || !hasImageFile(event)) return;
           event.preventDefault();
           dragDepth.current += 1;
           setDragActive(true);
         }}
         onDragOver={(event) => {
-          if (!hasImageFile(event)) return;
+          if (!isProjectOpen || !hasImageFile(event)) return;
           event.preventDefault();
           event.dataTransfer.dropEffect = 'copy';
         }}
@@ -245,50 +451,117 @@ export default function App() {
           focusMode={focusMode}
         />
 
-        <div className="workspace">
-          <ChapterSidebar
-            chapters={chapters}
-            activeId={activeChapter.id}
-            open={leftOpen && !focusMode}
-            onSelect={selectChapter}
-            onAdd={createChapter}
-            onClose={toggleLeft}
-          />
+        {isProjectOpen && activeChapter ? (
+          <div className="workspace">
+            <ChapterSidebar
+              projectName={project?.name ?? ''}
+              chapters={chapters}
+              activeId={activeChapter.id}
+              open={leftOpen && !focusMode}
+              onSelect={handleSelectChapter}
+              onAdd={() => void handleCreateChapter()}
+              onRename={(id, title) => void renameChapter(id, title)}
+              onMove={(id, direction) => void moveChapter(id, direction)}
+              onDelete={setDeleteTarget}
+              onHistory={(chapter) => void openHistory(chapter)}
+              onClose={toggleLeft}
+            />
 
-          <EditorPane
-            key={activeChapter.id}
-            ref={editorRef}
-            chapter={activeChapter}
-            index={activeIndex}
-            total={chapters.length}
-            settings={settings}
-            appearance={appearance}
-            focusMode={focusMode}
-            onUpdate={updateActiveChapter}
-          />
+            <EditorPane
+              key={`${activeChapter.id}:${documentRevision}`}
+              ref={editorRef}
+              chapter={activeChapter}
+              index={activeIndex}
+              total={chapters.length}
+              settings={settings}
+              appearance={appearance}
+              focusMode={focusMode}
+              onUpdate={updateActiveChapter}
+            />
 
-          <SettingsPanel
-            open={rightOpen && !focusMode}
-            theme={themeMode}
-            settings={settings}
-            appearance={appearance}
-            savedThemes={savedThemes}
-            focusMode={focusMode}
-            onThemeChange={setThemeMode}
-            onSettingsChange={updateSettings}
-            onModeChange={changeWritingMode}
-            onBackgroundChange={updateBackground}
-            onReadingOpacityChange={setReadingOpacity}
-            onPaperChange={updatePaper}
-            onApplyPreset={applyPreset}
-            onApplySavedTheme={applySavedTheme}
-            onDeleteSavedTheme={deleteSavedTheme}
-            onSaveTheme={saveCurrentTheme}
-            onChooseImage={setBackgroundFromFile}
-            onToggleFocus={toggleFocusMode}
-            onClose={toggleRight}
+            <SettingsPanel
+              open={rightOpen && !focusMode}
+              theme={themeMode}
+              settings={settings}
+              appearance={appearance}
+              savedThemes={savedThemes}
+              focusMode={focusMode}
+              onThemeChange={setThemeMode}
+              onSettingsChange={updateSettings}
+              onModeChange={changeWritingMode}
+              onBackgroundChange={updateBackground}
+              onReadingOpacityChange={setReadingOpacity}
+              onPaperChange={updatePaper}
+              onApplyPreset={applyPreset}
+              onApplySavedTheme={applySavedTheme}
+              onDeleteSavedTheme={deleteSavedTheme}
+              onSaveTheme={saveCurrentTheme}
+              onChooseImage={handleAddBackground}
+              onToggleFocus={toggleFocusMode}
+              onClose={toggleRight}
+            />
+          </div>
+        ) : (
+          <ProjectLauncher
+            recent={recent}
+            loading={loading}
+            error={error}
+            onCreate={(parent, name) => void createProject(parent, name)}
+            onOpen={() => void handleOpenProject()}
+            onOpenRecent={(path) => void handleOpenRecent(path)}
+            onOpenPath={(path) => void handleOpenRecent(path)}
+            onImportLegacy={() => void importLegacy()}
+            onClearError={clearError}
           />
-        </div>
+        )}
+
+        {recovery.length > 0 ? (
+          <div className="recovery-banner" role="alert">
+            <Icon name="history" size={17} />
+            <div className="recovery-copy">
+              <strong>检测到上次异常退出</strong>
+              <span>
+                《{recovery[0].title}》有较新的恢复草稿（{recovery[0].characterCount} 字）。
+                恢复会先备份当前版本。
+              </span>
+            </div>
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={busy}
+              onClick={() => {
+                setDiscardTarget(recovery[0]);
+              }}
+            >
+              丢弃草稿
+            </button>
+            <button
+              type="button"
+              className="primary-button"
+              disabled={busy}
+              onClick={() => void handleRestoreRecovery(recovery[0])}
+            >
+              恢复草稿
+            </button>
+          </div>
+        ) : null}
+
+        {warnings.length > 0 ? (
+          <div className="warning-stack" aria-live="polite">
+            {warnings.map((warning, index) => (
+              <div className="project-warning" key={`${warning}-${index}`}>
+                <span>{warning}</span>
+                <button
+                  type="button"
+                  aria-label="关闭提示"
+                  onClick={() => dismissWarning(index)}
+                >
+                  <Icon name="close" size={11} />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
 
         {dragActive ? (
           <div className="drop-overlay" aria-hidden="true">
@@ -299,22 +572,77 @@ export default function App() {
             </div>
           </div>
         ) : null}
+
         {notice ? (
           <div className="app-toast" role="status">
             {notice}
           </div>
         ) : null}
+        {error && isProjectOpen ? (
+          <div className="app-toast is-error" role="alert">
+            <span>{error}</span>
+            <button type="button" aria-label="关闭错误提示" onClick={clearError}>
+              <Icon name="close" size={11} />
+            </button>
+          </div>
+        ) : null}
       </div>
 
-      <StatusBar
-        chapterIndex={activeIndex}
-        chapterCount={chapters.length}
-        characterCount={activeChapter.characterCount}
-        fullCharacterCount={fullCharacterCount}
-        savedAt={savedAt}
-        focusMode={focusMode}
-        onToggleFocus={toggleFocusMode}
-      />
+      {isProjectOpen ? (
+        <StatusBar
+          chapterIndex={activeIndex}
+          chapterCount={chapters.length}
+          characterCount={activeChapter?.characterCount ?? 0}
+          fullCharacterCount={fullCharacterCount}
+          savedAt={savedAt}
+          saving={saving}
+          dirty={dirty}
+          focusMode={focusMode}
+          onToggleFocus={toggleFocusMode}
+        />
+      ) : null}
+
+      {historyTarget ? (
+        <HistoryDialog
+          chapterTitle={historyTarget.title}
+          entries={historyEntries}
+          loading={historyLoading}
+          onRestore={(file) => void handleRestoreHistory(file)}
+          onClose={() => setHistoryTarget(null)}
+        />
+      ) : null}
+
+      {deleteTarget ? (
+        <ConfirmDialog
+          title="删除章节"
+          message={`确定删除《${deleteTarget.title}》吗？章节文件会移入项目的 trash 回收目录，不会立即永久删除；历史版本仍会保留。`}
+          confirmLabel="移入回收目录"
+          danger
+          busy={busy}
+          onConfirm={() => void handleDeleteChapter()}
+          onClose={() => setDeleteTarget(null)}
+        />
+      ) : null}
+
+      {discardTarget ? (
+        <ConfirmDialog
+          title="丢弃恢复草稿"
+          message="这会删除异常退出时留下的恢复草稿。当前已保存的章节内容不会被删除，历史版本也不受影响。"
+          confirmLabel="丢弃草稿"
+          danger
+          busy={busy}
+          onConfirm={() => void handleDiscardRecovery()}
+          onClose={() => setDiscardTarget(null)}
+        />
+      ) : null}
+
+      {renameOpen && activeChapter ? (
+        <RenameChapterDialog
+          title={activeChapter.title}
+          onSave={(title) => void renameChapter(activeChapter.id, title)}
+          onClose={() => setRenameOpen(false)}
+        />
+      ) : null}
 
       {dialog === 'shortcuts' ? <ShortcutsDialog onClose={() => setDialog(null)} /> : null}
       {dialog === 'about' ? <AboutDialog onClose={() => setDialog(null)} /> : null}

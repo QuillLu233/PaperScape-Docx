@@ -33,7 +33,12 @@ export type IconName =
   | 'ordered-list'
   | 'indent'
   | 'outdent'
-  | 'focus';
+  | 'focus'
+  | 'edit'
+  | 'trash'
+  | 'history'
+  | 'save'
+  | 'project';
 
 const ICONS: Record<IconName, ReactNode> = {
   plus: <path d="M8 3.5v9M3.5 8h9" />,
@@ -160,6 +165,36 @@ const ICONS: Record<IconName, ReactNode> = {
     <>
       <path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" />
       <circle cx="8" cy="8" r="2.2" />
+    </>
+  ),
+  edit: (
+    <>
+      <path d="m3 11.8.5-2.7L10.7 2l2.6 2.6-7.2 7.2-3.1.0Z" />
+      <path d="m8.9 3.8 2.6 2.6M3.2 12.8h3.5" />
+    </>
+  ),
+  trash: (
+    <>
+      <path d="M2.8 4.4h10.4M6 4.4V2.7h4v1.7M4.1 4.4l.6 9.1h6.6l.6-9.1" />
+      <path d="M6.6 6.8v4M9.4 6.8v4" />
+    </>
+  ),
+  history: (
+    <>
+      <path d="M2.7 8a5.3 5.3 0 1 0 1.5-3.7L2.6 5.9" />
+      <path d="M2.5 2.7v3.3h3.3M8 4.8V8l2.2 1.3" />
+    </>
+  ),
+  save: (
+    <>
+      <path d="M2.7 2.8h8.5l2 2v8.4H2.7z" />
+      <path d="M5 2.8v3.4h5V2.8M5 13.2V9h6v4.2" />
+    </>
+  ),
+  project: (
+    <>
+      <path d="M2.2 4.2h4.1l1.4 1.6h6.1v7.4H2.2z" />
+      <path d="M2.2 6.1h11.6" />
     </>
   ),
 };

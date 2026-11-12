@@ -7,7 +7,8 @@ import {
   type CSSProperties,
 } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
-import type { Chapter, ProjectAppearance, WritingSettings } from '../types';
+import type { ProjectAppearance, WritingSettings } from '../types';
+import type { ChapterFile } from '../project/types';
 import { createEditorExtensions } from '../editor/editorConfig';
 import { getPageDimensions, getPaperMargins, colorWithAlpha, paperTextColors } from '../appearance/presets';
 import { countCharacters, excerpt, formatCount } from '../lib/text';
@@ -24,14 +25,14 @@ export interface EditorPaneHandle {
 }
 
 interface EditorPaneProps {
-  chapter: Chapter;
+  chapter: ChapterFile;
   index: number;
   total: number;
   settings: WritingSettings;
   appearance: ProjectAppearance;
   focusMode: boolean;
   onUpdate: (
-    patch: Partial<Pick<Chapter, 'title' | 'content' | 'characterCount' | 'excerpt'>>,
+    patch: Partial<Pick<ChapterFile, 'title' | 'doc' | 'characterCount' | 'excerpt'>>,
   ) => void;
 }
 
@@ -45,7 +46,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
 
   const editor = useEditor({
     extensions: createEditorExtensions(),
-    content: chapter.content,
+    content: chapter.doc,
     immediatelyRender: false,
     shouldRerenderOnTransaction: false,
     editorProps: {
@@ -62,7 +63,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
     onUpdate: ({ editor: current }) => {
       const text = current.getText();
       onUpdateRef.current({
-        content: current.getHTML(),
+        doc: current.getJSON(),
         characterCount: countCharacters(text),
         excerpt: excerpt(text),
       });

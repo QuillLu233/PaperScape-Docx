@@ -1,26 +1,196 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+const fake = vi.hoisted(() => {
+  const textDoc = (text: string) => ({
+    type: 'doc',
+    content: text
+      ? [{ type: 'paragraph', content: [{ type: 'text', text }] }]
+      : [{ type: 'paragraph' }],
+  });
+  const makeChapter = (id: string, title: string, text: string, characterCount: number) => ({
+    version: 1,
+    id,
+    title,
+    doc: textDoc(text),
+    updatedAt: 1,
+    characterCount,
+    excerpt: text,
+  });
+  const chapters = [
+    makeChapter('chapter-morning', '纸上的清晨', '天还没有完全亮，窗外的树影先醒了过来。', 19),
+    makeChapter('chapter-wind', '风经过书桌', '下午的风把窗帘吹起一角。', 12),
+    makeChapter('chapter-unfinished', '未完的句子', '有些句子需要等一等。', 10),
+  ];
+  let active = chapters[0];
+  let meta: any = {
+    version: 1,
+    id: 'project-test',
+    name: '测试长篇',
+    createdAt: 1,
+    updatedAt: 1,
+    sessionClean: true,
+    activeChapterId: active.id,
+    chapters: chapters.map((chapter) => ({
+      id: chapter.id,
+      title: chapter.title,
+      file: `chapters/${chapter.id}.json`,
+      updatedAt: chapter.updatedAt,
+      characterCount: chapter.characterCount,
+      excerpt: chapter.excerpt,
+    })),
+  };
+  const opened = () => ({
+    path: 'C:\\Tests\\长篇.paperscape',
+    meta,
+    activeChapter: active,
+    recovery: [],
+    warnings: [],
+    metaRecovered: false,
+    activeRecovered: false,
+  });
+  const api = {
+    isTauriRuntime: () => true,
+    chooseFolder: vi.fn(async () => 'C:\\Tests\\长篇.paperscape'),
+    getDefaultProjectParent: vi.fn(async () => 'C:\\Tests'),
+    createProject: vi.fn(async () => opened()),
+    openProject: vi.fn(async () => opened()),
+    listRecentProjects: vi.fn(async () => []),
+    saveChapter: vi.fn(async (_path, input) => {
+      active = {
+        ...active,
+        ...input,
+        updatedAt: 2,
+        title: input.title || active.title,
+      };
+      meta = {
+        ...meta,
+        activeChapterId: active.id,
+        chapters: meta.chapters.map((chapter: any) =>
+          chapter.id === active.id
+            ? {
+                ...chapter,
+                title: active.title,
+                characterCount: active.characterCount,
+                excerpt: active.excerpt,
+                updatedAt: active.updatedAt,
+              }
+            : chapter,
+        ),
+      };
+      return { chapter: active, meta, historyFile: null, recovered: false, warning: null };
+    }),
+    loadChapter: vi.fn(async () => ({ chapter: active, recovered: false, warning: null })),
+    savePreferences: vi.fn(async (_path: string, appearance: any, settings: any, activeChapterId: string | null) => {
+      meta = { ...meta, appearance, settings, activeChapterId: activeChapterId ?? meta.activeChapterId };
+      return meta;
+    }),
+    createChapter: vi.fn(async (_path, title) => {
+      active = makeChapter(`chapter-${meta.chapters.length + 1}`, title, '', 0);
+      meta = {
+        ...meta,
+        activeChapterId: active.id,
+        chapters: [...meta.chapters, {
+          id: active.id,
+          title: active.title,
+          file: `chapters/${active.id}.json`,
+          updatedAt: active.updatedAt,
+          characterCount: 0,
+          excerpt: '',
+        }],
+      };
+      return { chapter: active, meta };
+    }),
+    renameChapter: vi.fn(async (_path, chapterId, title) => {
+      meta = {
+        ...meta,
+        chapters: meta.chapters.map((chapter: any) =>
+          chapter.id === chapterId ? { ...chapter, title } : chapter,
+        ),
+      };
+      if (active.id === chapterId) active = { ...active, title };
+      return meta;
+    }),
+    reorderChapters: vi.fn(async (_path: string, orderedIds: string[]) => {
+      meta = {
+        ...meta,
+        chapters: orderedIds.map((id) => meta.chapters.find((chapter: any) => chapter.id === id)),
+      };
+      return meta;
+    }),
+    deleteChapter: vi.fn(async (_path, chapterId) => {
+      meta = {
+        ...meta,
+        chapters: meta.chapters.filter((chapter: any) => chapter.id !== chapterId),
+      };
+      return { meta, activeChapter: active, warnings: [] };
+    }),
+    closeProject: vi.fn(async () => meta),
+    listHistory: vi.fn(async () => []),
+    restoreHistory: vi.fn(async () => ({ chapter: active, recovered: true, warning: null })),
+    restoreRecovery: vi.fn(async () => ({ chapter: active, recovered: true, warning: null })),
+    discardRecovery: vi.fn(async () => undefined),
+    __reset: () => {
+      active = chapters[0];
+      meta = {
+        version: 1,
+        id: 'project-test',
+        name: '测试长篇',
+        createdAt: 1,
+        updatedAt: 1,
+        sessionClean: true,
+        activeChapterId: active.id,
+        chapters: chapters.map((chapter) => ({
+          id: chapter.id,
+          title: chapter.title,
+          file: `chapters/${chapter.id}.json`,
+          updatedAt: chapter.updatedAt,
+          characterCount: chapter.characterCount,
+          excerpt: chapter.excerpt,
+        })),
+      };
+      api.openProject.mockClear();
+      api.chooseFolder.mockClear();
+      api.saveChapter.mockClear();
+    },
+  };
+  return { api };
+});
+
+vi.mock('./project/api', () => fake.api);
+
 import App from './App';
 
+async function openApp(user: ReturnType<typeof userEvent.setup>) {
+  render(<App />);
+  await user.click(screen.getByRole('button', { name: '打开项目' }));
+  await waitFor(() =>
+    expect(screen.getByRole('textbox', { name: '正文编辑器' })).toHaveTextContent(
+      '天还没有完全亮',
+    ),
+  );
+}
+
 describe('PaperScape shell', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    fake.api.__reset();
+  });
+
   it('renders the three working areas and the active chapter', async () => {
-    render(<App />);
+    const user = userEvent.setup();
+    await openApp(user);
 
     expect(screen.getByTestId('chapter-sidebar')).toHaveAttribute('data-open', 'true');
     expect(screen.getByTestId('settings-panel')).toHaveAttribute('data-open', 'true');
     expect(screen.getByRole('textbox', { name: '章节标题' })).toHaveValue('纸上的清晨');
-    await waitFor(() =>
-      expect(screen.getByRole('textbox', { name: '正文编辑器' })).toHaveTextContent(
-        '天还没有完全亮',
-      ),
-    );
     expect(screen.getByText('第 1 章 / 共 3 章')).toBeInTheDocument();
   });
 
   it('collapses and restores the chapter sidebar from window chrome', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    await openApp(user);
 
     await user.click(screen.getByRole('button', { name: '隐藏章节目录' }));
     expect(screen.getByTestId('chapter-sidebar')).toHaveAttribute('data-open', 'false');
@@ -31,26 +201,28 @@ describe('PaperScape shell', () => {
   });
 
   it('toggles the chapter sidebar with Ctrl+B outside the editor', async () => {
-    render(<App />);
+    const user = userEvent.setup();
+    await openApp(user);
 
-    await waitFor(() => expect(screen.getByRole('textbox', { name: '正文编辑器' })).toBeInTheDocument());
     fireEvent.keyDown(window, { key: 'b', ctrlKey: true });
     expect(screen.getByTestId('chapter-sidebar')).toHaveAttribute('data-open', 'false');
   });
 
   it('adds a new chapter and selects it', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    await openApp(user);
 
     await user.click(screen.getByRole('button', { name: '新建章节' }));
 
-    expect(screen.getByRole('textbox', { name: '章节标题' })).toHaveValue('新章节 4');
+    await waitFor(() =>
+      expect(screen.getByRole('textbox', { name: '章节标题' })).toHaveValue('第 4 章'),
+    );
     expect(screen.getByText('第 4 章 / 共 4 章')).toBeInTheDocument();
   });
 
   it('switches to the dark theme and stores the preference', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    await openApp(user);
 
     await user.click(screen.getByRole('button', { name: '深色' }));
 
@@ -60,12 +232,7 @@ describe('PaperScape shell', () => {
 
   it('switches writing modes while keeping the editor mounted', async () => {
     const user = userEvent.setup();
-    render(<App />);
-    await waitFor(() =>
-      expect(screen.getByRole('textbox', { name: '正文编辑器' })).toHaveTextContent(
-        '天还没有完全亮',
-      ),
-    );
+    await openApp(user);
 
     await user.click(screen.getByRole('button', { name: /沉浸式/ }));
     expect(screen.getByTestId('chapter-sidebar').closest('.app-shell')).toHaveClass(
@@ -84,8 +251,7 @@ describe('PaperScape shell', () => {
 
   it('enters and exits focus writing mode from the window controls', async () => {
     const user = userEvent.setup();
-    render(<App />);
-    await waitFor(() => expect(screen.getByRole('textbox', { name: '正文编辑器' })).toBeInTheDocument());
+    await openApp(user);
 
     await user.click(screen.getByRole('button', { name: '进入专注写作' }));
     expect(document.querySelector('.app-shell')).toHaveClass('is-focus-mode');
@@ -98,8 +264,7 @@ describe('PaperScape shell', () => {
 
   it('opens the find and replace bar from the edit menu', async () => {
     const user = userEvent.setup();
-    render(<App />);
-    await waitFor(() => expect(screen.getByRole('textbox', { name: '正文编辑器' })).toBeInTheDocument());
+    await openApp(user);
 
     await user.click(screen.getByRole('button', { name: '编辑' }));
     await user.click(screen.getByRole('menuitem', { name: /查找与替换/ }));

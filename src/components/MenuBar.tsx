@@ -18,12 +18,21 @@ interface MenuDefinition {
 }
 
 interface MenuBarProps {
+  hasProject: boolean;
+  projectName: string;
   leftOpen: boolean;
   rightOpen: boolean;
   theme: ThemeMode;
   writingMode: WritingMode;
   focusMode: boolean;
+  onNewProject: () => void;
+  onOpenProject: () => void;
+  onCloseProject: () => void;
   onNewChapter: () => void;
+  onShowHistory: () => void;
+  onRenameChapter: () => void;
+  onMoveChapter: (direction: 'up' | 'down') => void;
+  onDeleteChapter: () => void;
   onSave: () => void;
   onExit: () => void;
   onUndo: () => void;
@@ -40,12 +49,21 @@ interface MenuBarProps {
 }
 
 export function MenuBar({
+  hasProject,
+  projectName,
   leftOpen,
   rightOpen,
   theme,
   writingMode,
   focusMode,
+  onNewProject,
+  onOpenProject,
+  onCloseProject,
   onNewChapter,
+  onShowHistory,
+  onRenameChapter,
+  onMoveChapter,
+  onDeleteChapter,
   onSave,
   onExit,
   onUndo,
@@ -84,10 +102,62 @@ export function MenuBar({
       id: 'file',
       label: '文件',
       items: [
-        { label: '新建章节', shortcut: 'Ctrl+N', onSelect: onNewChapter },
-        { label: '保存到本地', shortcut: 'Ctrl+S', onSelect: onSave },
+        {
+          label: hasProject ? `当前项目：${projectName}` : '尚未打开项目',
+          disabled: true,
+        },
+        { separator: true },
+        { label: '新建项目', shortcut: 'Ctrl+Shift+N', onSelect: onNewProject },
+        { label: '打开项目', shortcut: 'Ctrl+O', onSelect: onOpenProject },
+        {
+          label: '关闭项目',
+          shortcut: 'Ctrl+W',
+          disabled: !hasProject,
+          onSelect: onCloseProject,
+        },
+        { separator: true },
+        { label: '保存项目', shortcut: 'Ctrl+S', disabled: !hasProject, onSelect: onSave },
         { separator: true },
         { label: '退出 PaperScape', onSelect: onExit },
+      ],
+    },
+    {
+      id: 'chapter',
+      label: '章节',
+      items: [
+        {
+          label: '新建章节',
+          shortcut: 'Ctrl+N',
+          disabled: !hasProject,
+          onSelect: onNewChapter,
+        },
+        {
+          label: '重命名当前章节',
+          shortcut: 'F2',
+          disabled: !hasProject,
+          onSelect: onRenameChapter,
+        },
+        {
+          label: '上移当前章节',
+          disabled: !hasProject,
+          onSelect: () => onMoveChapter('up'),
+        },
+        {
+          label: '下移当前章节',
+          disabled: !hasProject,
+          onSelect: () => onMoveChapter('down'),
+        },
+        { separator: true },
+        {
+          label: '历史版本',
+          disabled: !hasProject,
+          onSelect: onShowHistory,
+        },
+        {
+          label: '删除当前章节',
+          disabled: !hasProject,
+          onSelect: onDeleteChapter,
+        },
       ],
     },
     {
@@ -105,28 +175,32 @@ export function MenuBar({
       id: 'view',
       label: '视图',
       items: [
-        { label: '章节目录', shortcut: 'Ctrl+B', checked: leftOpen, onSelect: onToggleLeft },
+        { label: '章节目录', shortcut: 'Ctrl+B', checked: leftOpen, disabled: !hasProject, onSelect: onToggleLeft },
         {
           label: '设置面板',
           shortcut: 'Ctrl+Shift+B',
           checked: rightOpen,
+          disabled: !hasProject,
           onSelect: onToggleRight,
         },
         {
           label: '专注写作',
           shortcut: 'Ctrl+Shift+F',
           checked: focusMode,
+          disabled: !hasProject,
           onSelect: onToggleFocus,
         },
         { separator: true },
         {
           label: '沉浸式模式',
           checked: writingMode === 'immersive',
+          disabled: !hasProject,
           onSelect: () => onWritingModeChange('immersive'),
         },
         {
           label: '纸张式模式',
           checked: writingMode === 'paper',
+          disabled: !hasProject,
           onSelect: () => onWritingModeChange('paper'),
         },
         { separator: true },

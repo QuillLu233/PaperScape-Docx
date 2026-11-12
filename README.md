@@ -1,13 +1,17 @@
 # PaperScape 纸境
 
-一个安静、轻量的 Windows 桌面写作空间。第三阶段加入沉浸式与纸张式双模式、背景管理、专注写作和自定义主题，同时保留已经验证的 Tiptap 富文本编辑与窗口能力。
+一个安静、轻量的 Windows 桌面写作空间。第四阶段把工作区升级为可靠的本地项目：项目目录、独立章节 JSON、原子写入、历史版本和异常恢复；同时保留前几阶段验证的 Tiptap 编辑、双模式背景与窗口能力。
 
-> 当前版本：0.3.0（第三阶段）
+> 当前版本：0.4.0（第四阶段）
 > 技术栈：Tauri 2 + React 19 + Tiptap 3 + TypeScript + Tailwind CSS 4 + Vite 8
 
 ## 界面预览
 
 以下截图来自**真实 Tauri 窗口**（Windows 150% DPI）：
+
+| 项目启动与最近项目 | 本地项目编辑 |
+| --- | --- |
+| ![项目启动](docs/screenshots/p4-launcher.png) | ![项目编辑](docs/screenshots/p4-project.png) |
 
 | 纸张式 · 独立页面 | 沉浸式 · 背景与阅读区 |
 | --- | --- |
@@ -16,6 +20,22 @@
 ![专注写作](docs/screenshots/p3-focus.png)
 
 ## 已完成
+
+### 本地项目管理与数据安全
+
+- 新建、打开、保存和关闭本地 `.paperscape` 项目；支持最近项目列表与原生文件夹选择器。
+- 项目是独立目录，`project.json` 保存章节索引、项目偏好和背景设置；每章正文保存为独立 `chapters/<id>.json`。
+- 正文以 **Tiptap JSON** 为主存储结构，不再以 HTML 作为章节文件。
+- 每个章节只有当前编辑的一章加载进编辑器；目录中的标题、摘要和字数来自索引缓存。
+- 章节支持新建、重命名、上移/下移、删除；删除先移入项目 `trash` 回收目录，并要求确认。
+- 输入停止约 800ms 后自动保存；切换章节、关闭项目、关闭窗口前强制保存。
+- 保存采用临时文件 + `sync_all` + 原子 rename；写入前先保存历史版本，失败不会覆盖旧文件。
+- 每章保留最近 40 个历史版本，项目元数据保留 30 个备份；提供历史版本查看与恢复。
+- 异常退出后，下次打开时检测 `recovery/<章节>.json` 草稿并提供恢复/丢弃；正常关闭会清理草稿。
+- `project.json` 损坏时优先从 `project.json.bak`/历史备份恢复，损坏原文件移入 `trash`。
+- 项目/章节 JSON 损坏、原子替换、历史恢复、路径穿越和删除限制均有 Rust 测试覆盖。
+- 不读写、不覆盖任何原始 Word 文件；项目路径必须是不存在或空目录才能新建。
+- 文件访问通过自定义 Tauri 命令限定在项目根目录内，没有启用通用文件系统插件权限。
 
 ### 双模式、背景与专注写作
 
@@ -27,7 +47,7 @@
 - 纸张支持 A4、US Letter、自定义宽度，以及纸张颜色、透明度、阴影和常规/窄/宽/自定义页边距。
 - 专注写作：一键隐藏章节目录、设置面板与工具栏，保留正文和底部字数状态；`Ctrl+Shift+F` 或标题栏按钮进入，`Esc` 或状态栏按钮退出。
 - 内置 5 套轻量纯色/渐变主题；可保存当前背景、阅读区和纸张设置为自定义主题。
-- 自定义主题按 `projectId` 隔离；不同项目会读取各自的主题。
+- 当前项目的外观保存在 `project.json`；不同项目打开时各自读取自己的外观。
 - 背景图片经压缩后存入 IndexedDB，运行时只创建一个 object URL 和一层静态背景，不重复解码大图。
 - 只支持静态背景，不加载视频壁纸。
 
@@ -38,7 +58,7 @@
 - 三栏布局：左侧章节目录、中间正文编辑区、右侧设置面板，左右面板可折叠。
 - 中文优先的菜单、对话框、状态栏和快捷键。
 - 浅色 / 深色 / 跟随系统三套外观，配色使用低对比暖纸色。
-- 章节新建、切换、本地自动保存，主题、排版与面板状态跨重启持久化。
+- 章节新建、切换、重命名、排序、删除与本地项目自动保存；主题、排版与面板状态跨重启持久化。
 
 ### Tiptap 富文本编辑器
 
@@ -55,7 +75,7 @@
 - 沉浸式阅读区宽度可调（640–980 px）；纸张式使用独立页面宽度。
 - 中文标点与中英文混排换行使用 `line-break: strict`、`overflow-wrap` 和 `text-wrap: pretty`。
 - 编辑器实例与章节内容通过 `key` 隔离；主题、面板、工具栏状态变化不会重置正在输入的内容。
-- 长文性能：`shouldRerenderOnTransaction: false`、工具栏 `useEditorState` 选择性订阅、字数/摘要缓存、400 ms 防抖持久化。
+- 长文性能：`shouldRerenderOnTransaction: false`、工具栏 `useEditorState` 选择性订阅、字数/摘要缓存、800ms 自动保存；只加载当前章节正文。
 
 Word 导入导出、云同步和账号系统仍不在本阶段范围内。
 
@@ -120,6 +140,9 @@ pnpm check
 # 单元测试
 pnpm test
 
+# Rust 项目存储/原子写入/历史/恢复测试
+cargo test --manifest-path src-tauri/Cargo.toml --offline --lib
+
 # 生产前端构建
 pnpm build
 
@@ -133,24 +156,33 @@ pnpm tauri:build
 
 ```text
 src/
-  App.tsx                 应用状态、章节切换与快捷键
+  App.tsx                 项目壳、编辑器、对话框与快捷键
   components/
-    TitleBar.tsx          自绘标题栏、菜单入口、面板与窗口按钮
-    MenuBar.tsx           中文菜单（编辑菜单接入 Tiptap 命令）
+    TitleBar.tsx          自绘标题栏、菜单入口、项目名、面板与窗口按钮
+    MenuBar.tsx           文件/章节/编辑/视图/帮助菜单
     ResizeHandles.tsx     八方向缩放热区
-    ChapterSidebar.tsx    左侧章节目录
-    EditorPane.tsx        Tiptap 编辑器生命周期与双模式纸张/阅读区
+    ProjectLauncher.tsx   新建/打开/最近项目与旧草稿导入
+    ChapterSidebar.tsx    章节目录、重命名、排序、历史与删除
+    EditorPane.tsx        Tiptap 生命周期、JSON 正文与双模式页面
     EditorToolbar.tsx     富文本工具栏
     FindReplaceBar.tsx    查找与替换
     AppearanceSettings.tsx 写作模式、背景、纸张与自定义主题
     BackgroundLayer.tsx   静态背景、遮罩和暗角
-    SettingsPanel.tsx     设置面板
-    Dialogs.tsx           快捷键与关于对话框
-    StatusBar.tsx         本章/全文字数与专注模式出口
+    SettingsPanel.tsx     项目外观与排版设置
+    HistoryDialog.tsx     章节历史版本恢复
+    ConfirmDialog.tsx     删除/丢弃确认
+    RenameChapterDialog.tsx 章节重命名
+    Dialogs.tsx           快捷键与关于
+    StatusBar.tsx         本章/全文字数、保存状态与专注出口
+  project/
+    types.ts              ProjectMeta / ChapterSummary / ChapterFile / OpenProject
+    api.ts                Tauri 命令封装与原生文件夹选择
+    useProject.ts         项目状态、自动保存、切换、历史、恢复与窗口关闭
+    legacy.ts             第三阶段 localStorage 草稿导入
   appearance/
     presets.ts            背景预设、A4/Letter 尺寸、页边距与纸张文字对比
-    storage.ts            项目外观 map、主题序列化、IndexedDB 图片
-    useAppearance.ts      项目级外观状态、图片导入和主题保存
+    storage.ts            主题库、IndexedDB 图片与图片压缩
+    useProjectAppearance.ts 项目外观控制器
     useBackgroundImage.ts 背景 object URL 缓存
   editor/
     editorConfig.ts       StarterKit / TextStyleKit / TableKit 等扩展
@@ -158,21 +190,44 @@ src/
     extensions/
       BlockStyle.ts       段落行距与首行缩进
       SearchHighlight.ts  查找匹配、装饰高亮与替换
-  hooks/                  主题、面板、工作区、窗口状态
+  hooks/                  主题、面板、窗口状态
   lib/
-    richText.ts           HTML 文本转换、旧数据迁移与计数
-    workspace.ts          本地持久化（v1/v2 → v3 项目外观迁移）
+    richText.ts           旧 HTML 迁移、文本计数
+    workspace.ts          第三阶段 localStorage 旧草稿读取
   test/setup.ts           ProseMirror 的 jsdom 布局 API 兼容层
 src-tauri/
-  src/lib.rs              Tauri 入口与高 DPI 窗口自适应
+  src/lib.rs              Tauri 命令、最近项目、原生文件夹选择、窗口
+  src/project.rs          项目/章节 JSON、原子写、历史、恢复、回收目录
   tauri.conf.json         无边框窗口与打包配置
-  capabilities/           最小窗口权限
+  capabilities/           最小窗口权限（无通用 fs 权限）
 ```
+
+## 本地项目格式与安全
+
+```text
+我的长篇.paperscape/
+  project.json                 项目 ID、名称、章节顺序、active id、外观、排版
+  project.json.bak             最近一次成功写入的元数据副本
+  chapters/<chapter-id>.json   单章标题与 Tiptap JSON doc
+  history/<chapter-id>/        该章节最近 40 个历史版本
+  history/project/             项目元数据最近 30 个备份
+  recovery/<chapter-id>.json   异常退出时的恢复草稿；正常关闭会删除
+  trash/                       删除的章节/损坏元数据的保留副本
+  assets/                      项目资源目录（预留）
+```
+
+- 写文件时先写入同目录临时文件，`sync_all` 后原子替换；失败会保留旧文件和临时文件。
+- 每次章节保存前备份旧版本；自动保存的历史备份限频，避免长篇项目无限产生副本。
+- `sessionClean=false` 表示上次没有正常关闭。打开时若发现更新的 recovery 草稿，会提示恢复或丢弃。
+- 删除章节只移动到 `trash/`，UI 必须经过确认；不会直接永久删除。
+- 新建项目拒绝已有非空目录，因此不会覆盖其中的 Word 文件。
+- Rust 层校验章节 ID、历史文件名和项目根目录，拒绝路径穿越；没有启用通用 `fs` 权限。
+- 最近项目保存在应用配置目录的 `recent-projects.json`，只保留仍存在的项目。
 
 ## 双模式与背景实现说明
 
 - 两种模式使用同一个 `EditorPane` 和同一个 Tiptap 实例，只切换外层 CSS 类、纸张/阅读区样式与面板可见性，不重建编辑器；因此模式切换不会丢失正文、光标或撤销历史。
-- 工作区升级为 `version: 3`，包含项目 `projectId`；外观按项目 ID 存取，旧 v1/v2 工作区自动迁移。
+- 工作区旧 v1/v2 数据仍保留读取和导入路径；第四阶段项目外观保存在各自 `project.json`，不再依赖 localStorage。
 - 背景图片在导入时压缩到最大 2560px 并转为 WebP（小图直接保留），存储在 IndexedDB；运行时通过一个 object URL 交给 CSS 背景层，避免 Data URL 进入 localStorage 和重复解码。
 - 背景层为静态 DOM 图层：底图/渐变、遮罩、暗角三部分，不使用视频、轮播或每帧动画。
 - 纸张文字颜色根据纸张颜色的亮度自动选择深色或浅色，避免深色界面在浅色纸张上出现低对比文字。
@@ -181,10 +236,10 @@ src-tauri/
 ## 富文本实现说明
 
 - 正文使用真实的 Tiptap 3 / ProseMirror 编辑器，不使用 `contenteditable` 手写替代。
-- 章节内容以 Tiptap HTML 保存在 `paperscape.workspace.v1` 中，内部 `version: 2`；旧的纯文本数据会自动转换为段落，不丢失换行。
-- 每个章节以 `key={chapter.id}` 挂载独立编辑器。正文更新只写回章节数据，不把 React state 回灌给正在编辑的实例，因此持续输入、主题切换和自动保存不会重置光标。
-- 中文字符统计缓存为 `characterCount`，章节摘要缓存为 `excerpt`，长文编辑时侧栏和状态栏无需反复解析 HTML。
-- localStorage 写入采用 400 ms 防抖，并在关闭页面时强制 flush。
+- 项目章节以 Tiptap JSON 作为主存储；章节文件是独立的 `chapters/<id>.json`，项目索引只保存摘要。
+- 每个当前章节以 `key={chapter.id}:{documentRevision}` 挂载独立编辑器，只加载正在编辑的正文；外部恢复历史/草稿时通过 revision 重新挂载。
+- 中文字符统计缓存为 `characterCount`，章节摘要缓存为 `excerpt`，长文编辑时侧栏和状态栏无需反复解析章节文件。
+- 项目保存采用约 800ms 自动保存、切换章节前强制保存、关闭项目和关闭窗口前强制 flush。
 - 查找匹配支持跨加粗/斜体等行内标记的短语；替换通过 ProseMirror transaction 完成，可撤销。
 - 表格使用 TableKit（含列宽拖拽），图片嵌入为 Data URL；大图会缩放到最大 1600 px 并转为 JPEG。
 - 中文输入法依赖 ProseMirror 原生 composition 事件处理，应用没有拦截或改写 `compositionstart/update/end`。

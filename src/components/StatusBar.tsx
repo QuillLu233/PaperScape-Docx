@@ -1,4 +1,3 @@
-import { formatCount } from '../lib/text';
 import { Icon } from './Icon';
 
 interface StatusBarProps {
@@ -7,8 +6,21 @@ interface StatusBarProps {
   characterCount: number;
   fullCharacterCount: number;
   savedAt: number;
+  saving: boolean;
+  dirty: boolean;
   focusMode: boolean;
   onToggleFocus: () => void;
+}
+
+function formatCount(value: number): string {
+  return value.toLocaleString('zh-CN');
+}
+
+function formatTime(timestamp: number): string {
+  return new Date(timestamp).toLocaleTimeString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 export function StatusBar({
@@ -17,29 +29,36 @@ export function StatusBar({
   characterCount,
   fullCharacterCount,
   savedAt,
+  saving,
+  dirty,
   focusMode,
   onToggleFocus,
 }: StatusBarProps) {
-  const time = new Date(savedAt).toLocaleTimeString('zh-CN', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const saveLabel = saving
+    ? '正在保存到项目…'
+    : dirty
+      ? '等待自动保存'
+      : `已保存到项目 · ${formatTime(savedAt)}`;
 
   return (
-    <footer className="statusbar">
+    <footer className="statusbar" aria-label="状态栏">
       <div className="status-group">
         <span>
           第 {chapterIndex + 1} 章 / 共 {chapterCount} 章
         </span>
-        <span className="status-divider" aria-hidden="true" />
+        <span className="status-separator" aria-hidden="true">
+          ·
+        </span>
         <span>本章 {formatCount(characterCount)} 字</span>
-        <span className="status-divider" aria-hidden="true" />
+        <span className="status-separator" aria-hidden="true">
+          ·
+        </span>
         <span>全文 {formatCount(fullCharacterCount)} 字</span>
       </div>
 
-      <div className="status-group status-saved" aria-live="polite">
-        <Icon name="check" size={12} />
-        <span>已保存到本地 · {time}</span>
+      <div className={`status-saved${dirty ? ' is-dirty' : ''}`} aria-live="polite">
+        {dirty ? null : <Icon name="check" size={12} />}
+        <span>{saveLabel}</span>
       </div>
 
       <div className="status-group status-shortcuts" aria-label="快捷键提示">
@@ -51,11 +70,11 @@ export function StatusBar({
           <>
             <span>
               <kbd>Ctrl</kbd>
-              <kbd>F</kbd> 查找
+              <kbd>S</kbd> 保存
             </span>
             <span>
               <kbd>Ctrl</kbd>
-              <kbd>B</kbd> 加粗
+              <kbd>N</kbd> 新章
             </span>
             <span>
               <kbd>Ctrl</kbd>

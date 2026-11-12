@@ -2,6 +2,7 @@ import type { MouseEvent, ReactNode } from 'react';
 import { BrandMark, Icon } from './Icon';
 
 interface TitleBarProps {
+  projectName: string;
   leftOpen: boolean;
   rightOpen: boolean;
   isMaximized: boolean;
@@ -16,6 +17,7 @@ interface TitleBarProps {
 }
 
 export function TitleBar({
+  projectName,
   leftOpen,
   rightOpen,
   isMaximized,
@@ -47,7 +49,9 @@ export function TitleBar({
         {menu}
       </div>
 
-      <div className="titlebar-drag" data-tauri-drag-region aria-hidden="true" />
+      <div className="titlebar-drag" data-tauri-drag-region aria-hidden="true">
+        {projectName ? <span className="titlebar-project">{projectName}</span> : null}
+      </div>
 
       <div className="titlebar-tools" data-no-drag>
         <button

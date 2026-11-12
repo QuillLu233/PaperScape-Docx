@@ -53,8 +53,12 @@ function Modal({ title, eyebrow, onClose, children }: ModalProps) {
 }
 
 const SHORTCUTS = [
+  ['新建项目', ['Ctrl', 'Shift', 'N']],
+  ['打开项目', ['Ctrl', 'O']],
+  ['关闭项目', ['Ctrl', 'W']],
+  ['保存项目', ['Ctrl', 'S']],
   ['新建章节', ['Ctrl', 'N']],
-  ['保存到本地', ['Ctrl', 'S']],
+  ['重命名当前章节', ['F2']],
   ['查找与替换', ['Ctrl', 'F']],
   ['加粗', ['Ctrl', 'B']],
   ['斜体 / 下划线', ['Ctrl', 'I', '/', 'Ctrl', 'U']],
@@ -64,7 +68,6 @@ const SHORTCUTS = [
   ['设置面板', ['Ctrl', 'Shift', 'B']],
   ['专注写作', ['Ctrl', 'Shift', 'F']],
   ['退出专注 / 关闭浮层', ['Esc']],
-  ['关闭菜单或对话框', ['Esc']],
 ];
 
 export function ShortcutsDialog({ onClose }: { onClose: () => void }) {
@@ -96,7 +99,7 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
         </span>
         <div>
           <p className="about-name">PaperScape 纸境</p>
-          <p className="about-version">0.3.0 · 第三阶段</p>
+          <p className="about-version">0.4.0 · 第四阶段</p>
         </div>
       </div>
       <p className="modal-lead">
@@ -110,7 +113,7 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
         <span>Tailwind CSS</span>
       </div>
       <p className="modal-footnote">
-        本阶段新增沉浸式与纸张式双模式、背景管理、专注写作、自定义主题和页面设置。
+        本阶段把工作区升级为本地项目：正文以 Tiptap JSON 独立章节保存，支持原子写入、历史版本、异常恢复、章节排序和回收目录。
       </p>
     </Modal>
   );
