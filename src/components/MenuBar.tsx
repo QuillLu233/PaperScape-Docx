@@ -28,6 +28,8 @@ interface MenuBarProps {
   onNewProject: () => void;
   onOpenProject: () => void;
   onCloseProject: () => void;
+  onImportDocx: () => void;
+  onExportDocx: () => void;
   onNewChapter: () => void;
   onShowHistory: () => void;
   onRenameChapter: () => void;
@@ -59,6 +61,8 @@ export function MenuBar({
   onNewProject,
   onOpenProject,
   onCloseProject,
+  onImportDocx,
+  onExportDocx,
   onNewChapter,
   onShowHistory,
   onRenameChapter,
@@ -117,6 +121,17 @@ export function MenuBar({
         },
         { separator: true },
         { label: '保存项目', shortcut: 'Ctrl+S', disabled: !hasProject, onSelect: onSave },
+        { separator: true },
+        {
+          label: '导入 Word 文档…',
+          disabled: !hasProject,
+          onSelect: onImportDocx,
+        },
+        {
+          label: '导出 Word 文档…',
+          disabled: !hasProject,
+          onSelect: onExportDocx,
+        },
         { separator: true },
         { label: '退出 PaperScape', onSelect: onExit },
       ],

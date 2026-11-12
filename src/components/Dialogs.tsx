@@ -99,7 +99,7 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
         </span>
         <div>
           <p className="about-name">PaperScape 纸境</p>
-          <p className="about-version">0.4.0 · 第四阶段</p>
+          <p className="about-version">0.5.0 · 第五阶段</p>
         </div>
       </div>
       <p className="modal-lead">
@@ -113,7 +113,7 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
         <span>Tailwind CSS</span>
       </div>
       <p className="modal-footnote">
-        本阶段把工作区升级为本地项目：正文以 Tiptap JSON 独立章节保存，支持原子写入、历史版本、异常恢复、章节排序和回收目录。
+        本阶段新增 Microsoft Word DOCX 导入与导出：Mammoth 解析、HTML 清洗、Tiptap JSON 中转和真实 Office Open XML 生成。
       </p>
     </Modal>
   );

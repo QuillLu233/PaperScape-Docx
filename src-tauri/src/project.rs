@@ -229,7 +229,7 @@ fn chapter_path(root: &Path, id: &str) -> Result<PathBuf, String> {
     Ok(chapters_dir(root).join(format!("{id}.json")))
 }
 
-fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), String> {
+pub(crate) fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), String> {
     let parent = path
         .parent()
         .ok_or_else(|| "保存路径没有父目录".to_string())?;

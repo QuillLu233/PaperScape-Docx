@@ -1,225 +1,223 @@
 # PaperScape 开发状态
 
 - 更新时间：2026-11-12
-- 阶段：第四阶段（本地项目管理与数据安全）
-- 版本：0.4.0
-- 结论：**第四阶段已完成。项目目录、独立章节 JSON、原子写入、历史备份、异常恢复、删除确认、章节按需加载与最近项目均已实现，并在真实 Tauri 窗口中验证。**
+- 阶段：第五阶段（Microsoft Word DOCX 导入与导出）
+- 版本：0.5.0
+- 结论：**第五阶段已完成。DOCX 导入、HTML 清洗、Tiptap JSON 中转、当前/全部章节导出、A4/Letter、标准/小说预设、图片与表格导出均已实现；导出文件已由本机 Microsoft Word 实际打开验证。**
 
 ## 一、材料与规范检查
 
 | 材料 | 结果 |
 | --- | --- |
 | `AGENTS.md` | 工作区中仍不存在；项目按 README/任务说明和现有代码推进 |
-| `DEVELOPMENT_STATUS.md` | 已存在并读取，本文件更新为第四阶段状态 |
+| `DEVELOPMENT_STATUS.md` | 已存在并读取，本文件更新为第五阶段状态 |
 | `paperscape-dev` Skill | 当前会话仍不可用，`skill` 返回 unknown |
 
 ## 二、环境与基线
 
 - Windows 10 Home China / 25H2 / Build 26200.9711 / x64；显示缩放 150%。
 - Node.js 24.21.0、pnpm 11.28.5、Rust 1.100.0、MSVC 14.44、Windows SDK 10.0.26100 可用。
+- **Microsoft Word 16.0（Build 16.0.20527）已安装**，用于真实 DOCX 兼容性验证。
 - 系统 PATH 未安装 Node/pnpm/Rust/Git；验证使用项目内用户级工具链。
-- 当前 DSH 代理为低完整性令牌；真实 Tauri 验收通过中完整性计划任务启动。计划任务在测试命令结束后会被环境回收，应用本身正常。
-- **没有新增通用文件系统插件权限**。文件操作全部走自定义 Tauri 命令，Rust 层校验项目根目录、章节 ID 和历史文件名。
+- 真实 Tauri 验收通过中完整性计划任务启动。该测试环境的计划任务会在测试命令结束后被回收，应用本身正常。
 
-## 三、第四阶段新增实现
+## 三、第五阶段新增实现
 
-### 项目格式
+### DOCX 导入
 
-```text
-我的长篇.paperscape/
-  project.json
-  project.json.bak
-  chapters/<chapter-id>.json
-  history/<chapter-id>/<timestamp>-<reason>.json
-  history/project/<timestamp>.json
-  recovery/<chapter-id>.json
-  trash/<timestamp>-<chapter-id>.json
-  assets/
-```
+- 通过 Windows 原生文件对话框选择 `.docx`；后端只读用户选择的文件。
+- 导入使用 **Mammoth.js**：
+  - 默认语义样式映射 + 自定义 `Title`/Heading 映射。
+  - 图片通过 Mammoth image converter 读取为 base64 data URI。
+  - Mammoth 警告会进入导入提示。
+- 解析后的 HTML 先经 **DOMPurify** 清洗，再由 Tiptap 扩展生成 JSON：
+  - 禁止 script、style、iframe、object、embed、form、SVG/Math 等标签。
+  - 禁止事件处理属性。
+  - 移除外部图片，只允许白名单 base64 图片格式。
+  - 只保留安全链接协议。
+  - 内联 style 只保留有限的文本/段落属性，拒绝 `url()`、`expression`、`javascript:` 等。
+- 不支持项明确提示：页眉页脚、批注、修订记录、公式、文本框、宏、嵌入对象、Word 页面背景等。
+- 导入不会修改原 DOCX；始终创建新章节，不覆盖当前正文。
+- 导入预览显示字数、图片数、表格数和兼容性提示。
 
-- `project.json` 保存项目 ID、名称、创建/更新时间、`sessionClean`、当前章节、章节索引、外观和排版设置。
-- 章节索引只保存标题、摘要、字数和更新时间；正文不在 `project.json`。
-- 每章独立保存为 `chapters/<id>.json`，主字段 `doc` 是 Tiptap JSON。
-- 项目 `.paperscape` 是本地目录；新建时拒绝非空目录，避免覆盖里面已有的 Word 或其他文件。
+### DOCX 导出
 
-### 项目管理
+- 使用 `docx` 9.x 生成真正的 **Office Open XML**：
+  - ZIP 包包含 `[Content_Types].xml`、`word/document.xml` 和 `word/media/*`。
+  - 不是修改扩展名的 HTML。
+- 支持导出当前章节和合并全部章节。
+- 标准文档预设：A4、1 英寸页边距、1.15 行距。
+- 小说稿件预设：A4、较宽页边距、1.5 行距、首行缩进。
+- 页面规格：A4 / US Letter。
+- 基本字体、字号、标题 H1–H3、列表、加粗/斜体/下划线/删除线、文字样式、对齐、行距、首行缩进。
+- 表格导出为 Word Table；PNG/JPEG/GIF/BMP 图片导出为 InlineShape；不支持的图片类型会跳过并提示。
+- 全部章节按顺序导出，章节之间分页。
+- 软件背景、纸张颜色、暗角、遮罩和界面主题不写入 Word。
+- 导出使用 Windows 原生保存对话框，Rust 原子写入目标文件。
 
-- 启动页：新建项目、打开项目、最近项目列表、手动路径打开。
-- 原生文件夹选择器：已验证“打开项目”能调起 Windows“浏览文件夹”对话框。
-- 新建项目默认保存到 `Documents/PaperScape/<name>.paperscape`，也可输入其他父目录。
-- 打开最近项目、关闭项目、再次打开最近项目均验证。
-- 最近项目保存在应用配置目录，过滤已不存在的项目。
-- 项目关闭时执行保存、标记 sessionClean、清理 recovery 草稿。
-- 关闭窗口通过 `onCloseRequested` 拦截：先保存，再销毁窗口；保存失败不会关闭。
+### 测试样本
 
-### 章节管理
-
-- 左侧目录只渲染章节摘要，不加载所有章节正文。
-- 新建章节、切换章节、按需加载当前章节。
-- 重命名：左侧目录内联编辑、`F2` 弹窗、章节菜单；`F2` 已验证。
-- 上移/下移：章节菜单和目录按钮；真实项目验证顺序从 `[1,2,3]` 变为 `[1,3,2]`。
-- 删除：必须确认，章节文件移动到 `trash/`，不是立即永久删除。
-- 删除当前章节后自动选择相邻章节；至少保留一个章节。
-- 章节切换前保存当前章节；窗口关闭/项目关闭前保存当前章节和项目偏好。
-
-### Tiptap JSON 与按需加载
-
-- `ChapterFile.doc` 直接作为 Tiptap `content` 初始化。
-- 编辑器 `onUpdate` 使用 `editor.getJSON()`，不再写 HTML。
-- 章节字数/摘要仍缓存；目录和全文统计只累加索引，不读取所有正文。
-- 恢复历史/异常草稿时通过 `documentRevision` 重新挂载编辑器，避免同一个 `chapter.id` 下 Tiptap 保留旧内容。
-- 模式切换仍只改变包装样式，不重建编辑器实例。
-
-### 数据安全
-
-- **自动保存**：输入停止约 800ms 后保存当前章节；项目偏好 350ms 防抖保存。
-- **切换/关闭保存**：章节切换、项目关闭、窗口关闭前强制 flush。
-- **原子写入**：写同目录临时文件，`sync_all` 后再 rename；失败保留旧文件和临时文件。
-- **历史备份**：覆盖前复制旧章节到 `history/<id>/`；自动保存备份限频，最多保留 40 个章节版本；项目元数据保留 30 个备份。
-- **崩溃恢复**：保存时先写 `recovery/<id>.json`，再写章节；`sessionClean=false` 时打开项目会比较 recovery 与章节更新时间，发现更新的草稿则显示恢复条。
-- **恢复前备份**：恢复历史或草稿时先把当前章节再写入历史，避免恢复动作覆盖当前内容。
-- **元数据恢复**：`project.json` 损坏时优先使用 `project.json.bak`，再使用历史元数据；损坏原文件移动到 `trash/`。
-- **章节损坏恢复**：章节 JSON 损坏时从最近可用历史版本读取，不静默覆盖原损坏文件。
-- **删除保护**：章节移入 `trash/`；恢复草稿丢弃需要二次确认。
-- **Word 安全**：不读写 `.docx`；新建项目要求空目录，不会覆盖原始 Word 文件。
-- **路径限制**：章节 ID 只允许字母数字/`-`/`_`；历史文件名拒绝路径分隔、`..` 和隐藏文件名；项目根目录 canonicalize。
-
-### 外观与正文独立
-
-- 背景、纸张、阅读区、排版设置写入 `project.json`，正文写入独立章节文件。
-- 真实测试中更换背景后，当前章节文件的 SHA256 保持不变，项目 `appearance.background.presetId` 改变。
-- 背景图片仍使用本机 IndexedDB 和 object URL；图片不进入正文 JSON。
+- `docs/fixtures/phase5-sample.docx`：包含中文/英文、标题、粗体/斜体、对齐段落、无序/有序列表、3 列 2 行表格和内嵌 PNG 图片。
+- `docs/fixtures/phase5-export.docx`：当前章节真实导出样本。
+- `docs/fixtures/phase5-all.docx`：合并全部章节真实导出样本。
+- `docs/fixtures/phase5-sample-image.png`：样本图片源。
+- `scripts/make-docx-fixture.py`：可重复生成样本。
 
 ### 版本
 
-- package / Cargo / Tauri / About / Settings 均升级为 `0.4.0`。
-- 启动页、文件菜单、章节菜单、快捷键说明已更新为项目管理语义。
+- package / Cargo / Tauri / About / Settings 均升级为 `0.5.0`。
+- 菜单新增“导入 Word 文档…”“导出 Word 文档…”。
 
 ## 四、测试结果
 
-### 4.1 Rust 存储层测试
+### 4.1 前端测试
 
-执行：
+`pnpm test`：**6 个测试文件，39 个测试全部通过**。
 
-```text
-cargo test --offline --lib
-```
+- `src/docx/docx.test.ts`：6 个 DOCX 测试。
+- `src/App.test.tsx`：项目 UI、双模式、专注、快捷键。
+- `src/editor/editor.test.ts`：Tiptap 富文本、表格、图片、长文。
+- `src/appearance/appearance.test.ts`：背景/纸张设置。
+- `src/lib/workspace.test.ts`：旧数据迁移。
+- `src/App.window.test.tsx`：窗口控制。
 
-结果：**12 个测试全部通过**。
+DOCX 测试覆盖：
 
-覆盖：
+- 真实 `phase5-sample.docx` 导入：标题、粗体、斜体、列表、表格、图片。
+- HTML 清洗：`script`、`onclick`、外部图片、`javascript:` 链接、`style` 外部 URL。
+- 导出 ZIP/OOXML 结构。
+- A4 页面尺寸 `11906 × 16838` twips。
+- US Letter 页面尺寸 `12240 × 15840` twips。
+- 当前章节导出并再次导入的 round-trip。
+- 合并全部章节、分页、标题、正文、表格、图片。
+- 导出 XML 不包含软件背景。
+- 原 DOCX 文件 SHA256 在导入前后未变化。
+- 把 HTML 改名为 `.docx` 会被拒绝。
 
-- 创建/重新打开项目。
-- 保存章节、历史文件、拒绝覆盖损坏文件。
+### 4.2 Rust 测试
+
+`cargo test --offline --lib`：**12 个测试全部通过**。
+
+保留第四阶段的数据安全测试：
+
 - 原子替换已有 JSON。
-- 元数据损坏后从 `project.json.bak`/历史恢复，损坏文件进 `trash`。
-- recovery 草稿比章节新时被识别并恢复。
-- 历史版本恢复，同时保存 `before-restore` 历史。
-- 章节文件损坏时读取历史版本，且不覆盖损坏原文件。
-- 正常关闭清理 recovery、sessionClean=true。
-- 路径穿越和删除最后章节被拒绝。
-- 偏好修改不触碰章节文件。
-- 5 章 × 80,000 字 = **400,000 字**多章节项目保存/重新打开。
+- 项目创建/重开。
+- 40 万字数多章节项目。
+- 历史备份/恢复。
+- 项目元数据和章节损坏恢复。
+- recovery 草稿恢复。
+- 正常关闭清理 recovery。
+- 章节删除进 `trash`。
+- 路径穿越拒绝。
 
-### 4.2 前端测试
+### 4.3 真实 Tauri 导入测试
 
-执行 `pnpm test`：**5 个测试文件，33 个测试全部通过**。
+通过 Windows 原生打开对话框选择 `docs/fixtures/phase5-sample.docx`：
 
-测试文件：
+- 导入提示：153 字、1 张图片、1 个表格。
+- 生成新章节 `phase5-sample`。
+- 编辑器实际显示：
+  - `PaperScape DOCX Roundtrip`
+  - `第一章 中文标题`
+  - `English Heading H2`
+  - 中文普通段落、粗体内容、斜体内容、English mixed text
+  - 无序/有序列表
+  - 表格单元格
+  - 图片
+- 项目章节数从 1 变为 2（在原有测试项目上）。
+- 原 DOCX 未被修改（自动化测试哈希相同）。
 
-- `src/App.test.tsx`：项目打开、三栏、章节新建、主题、双模式、专注、查找、关于；项目后端在测试中内存模拟。
-- `src/App.window.test.tsx`：窗口控制与缩放热区。
-- `src/editor/editor.test.ts`：富文本、查找替换、表格、图片、长文。
-- `src/appearance/appearance.test.ts`：背景/纸张默认值、数值清洗、项目隔离、纸张对比。
-- `src/lib/workspace.test.ts`：旧 localStorage 数据迁移与摘要。
+### 4.4 真实 Tauri 导出测试
 
-### 4.3 真实 Tauri 窗口测试
+| 导出 | 文件 | 结果 |
+| --- | --- | --- |
+| 当前章节 | `phase5-export.docx` | 13,031 字节，ZIP 头 `50 4B 03 04` |
+| 合并全部 | `phase5-all.docx` | 13,064 字节，ZIP 头 `50 4B 03 04` |
 
-真实项目：`C:\Users\20884\Documents\PaperScape\我的长篇.paperscape`。
+**Microsoft Word 16.0.20527 只读打开验证：**
 
-| 验证 | 实际结果 |
-| --- | --- |
-| 新建项目 | 目录、`project.json`、`chapters/<id>.json`、`project.json.bak` 创建成功 |
-| 章节 JSON | `doc` 为 `{type:"doc",content:[...]}`，正文文本在 JSON 中 |
-| 输入保存 | 粘贴“第四阶段正文保存测试。”后自动保存；重新打开仍是该内容 |
-| 关闭/重开 | `Ctrl+W` 关闭项目，最近项目出现；再次打开正文恢复 |
-| 多章节 | 新建 3 章，分别写入“第二章正文。”“第三章正文。” |
-| 切换章节 | 切换后编辑器只加载对应章节，正文正确 |
-| 重命名 | F2 输入“河岸的清晨”/“风经过书桌”，项目索引和正文标题同步 |
-| 排序 | 上移后项目索引顺序为 `第一章 → 第 3 章 → 第 2 章` |
-| 删除 | 删除确认后章节进入 `trash/`；索引从 3 章变为 2 章 |
-| 背景独立 | 更换背景前后章节文件 SHA256 相同；`appearance.background.presetId` 从 `ink-night` 更新为 `warm-paper`/`still-sage` |
-| 异常恢复 | 手工构造较新的 recovery 草稿，打开后显示“检测到上次异常退出”，恢复后编辑器文本为草稿内容 |
-| 窗口关闭 | Alt+F4 后 `sessionClean=true`，正文包含“窗口关闭前保存测试。” |
-| 原生打开 | 点击“打开项目”弹出 Windows“浏览文件夹”，标题“打开 PaperScape 项目” |
-| 最近项目 | 启动页显示项目名、章节数、字数、实际路径 |
+当前章节导出：
 
-真实窗口截图：
+- 打开成功。
+- 段落 22、表格 1、InlineShape 1。
+- A4 页面 595.3 × 841.9 pt。
+- 中文、英文、标题、表格内容均存在。
 
-- `docs/screenshots/p4-launcher.png`
-- `docs/screenshots/p4-project.png`
-- `docs/screenshots/p3-paper.png`
-- `docs/screenshots/p3-immersive.png`
-- `docs/screenshots/p3-focus.png`
+合并全部章节：
 
-### 4.4 构建
+- 打开成功。
+- 段落 24、表格 1、InlineShape 1。
+- 第一、第二章节内容均存在。
+- A4 页面 595.3 × 841.9 pt。
+
+**真实往返：**
+
+- 将 `phase5-export.docx` 再次通过原生打开对话框导入。
+- 新章节 `phase5-export` 创建成功。
+- 编辑器文本包含中文普通段落和中文单元格。
+- 项目章节数变为 3；文本长度 200（含标题/列表/表格）。
+
+### 4.5 构建
 
 | 命令 | 结果 |
 | --- | --- |
 | `pnpm check` | 通过 |
-| `pnpm test` | 33/33 通过 |
-| `pnpm build` | 通过；118 modules；JS 798.38 kB / CSS 45.22 kB |
+| `pnpm test` | 39/39 通过 |
+| `pnpm build` | 通过；370 modules；JS 1,395.02 kB / CSS 47.85 kB |
 | `cargo test --offline --lib` | 12/12 通过 |
-| `cargo build --offline` | 通过；0.4.0 debug exe |
-| `cargo fmt` | 通过 |
+| `cargo build --offline` | 通过；0.5.0 debug exe |
+| `cargo fmt --check` | 通过 |
 
 ## 五、验收对照
 
 | 要求 | 状态 | 说明 |
 | --- | --- | --- |
-| 新建/打开/保存/关闭项目 | ✅ | 真实 Tauri + 原生文件夹选择器 |
-| 原生项目结构化 JSON | ✅ | `.paperscape` 目录 + JSON 文件 |
-| Tiptap JSON 主存储 | ✅ | 章节文件 `doc`；编辑器 `getJSON()` |
-| 每章独立保存 | ✅ | `chapters/<id>.json` |
-| 章节新建/重命名/排序/删除 | ✅ | 目录、F2、菜单、确认删除 |
-| 只加载当前章节 | ✅ | 索引摘要 + `loadChapter` |
-| 恢复最近项目 | ✅ | 启动页最近项目 |
-| 自动保存 | ✅ | 800ms |
-| 切换/关闭前保存 | ✅ | 真实窗口验证 |
-| 安全写入 | ✅ | 临时文件 + fsync + 原子 rename |
-| 历史备份 | ✅ | 每章 40 个、项目元数 30 个 |
-| 异常关闭恢复 | ✅ | recovery + sessionClean |
-| 删除确认/不永久删除 | ✅ | 二次确认 + `trash/` |
-| 不覆盖 Word | ✅ | 不读写 `.docx`；拒绝非空目录 |
-| 最小文件权限 | ✅ | 自定义命令 + 路径校验；无通用 fs 权限 |
-| 数十万字多章节 | ✅ | Rust 5×80,000=400,000 字 |
-| 背景与正文独立 | ✅ | SHA256 验证 |
-| 原子写入测试 | ✅ | Rust |
-| 损坏/中断恢复测试 | ✅ | Rust + 真实 recovery UI |
-| 历史恢复测试 | ✅ | Rust `before-restore` + 历史恢复 |
+| Windows 原生对话框选择 DOCX | ✅ | GetOpenFileNameW 实际调起 |
+| Mammoth.js 解析 | ✅ | 真实样本 |
+| 转换 Tiptap 格式 | ✅ | 生成 JSON 并显示 |
+| 段落/标题/粗体/斜体/列表 | ✅ | 导入与 Word 验证 |
+| 常规表格/图片/段落样式 | ✅/部分 | 表格、图片；复杂段落样式有提示 |
+| HTML 安全清洗 | ✅ | DOMPurify + 白名单 |
+| 不执行脚本/宏/外部程序 | ✅ | 不运行 Word，不执行宏 |
+| 不修改原文件 | ✅ | 只读；哈希测试 |
+| 复杂格式明确提示 | ✅ | 导入兼容性面板 |
+| docx 库生成 OOXML | ✅ | ZIP/OOXML |
+| 当前章节导出 | ✅ | 真实文件 |
+| 全部章节合并 | ✅ | 真实文件 + Word |
+| 标准/小说预设 | ✅ | A4、边距、行距、缩进 |
+| 字体/字号/标题/列表/段落 | ✅ | docx 属性 |
+| A4 / US Letter | ✅ | 单测 XML + Word A4 |
+| 图片/表格导出 | ✅ | Word InlineShape/Table |
+| 背景不写入 Word | ✅ | XML 无 `w:background` |
+| Word 可打开 | ✅ | Word 16.0.20527 实际打开 |
+| 往返测试 | ✅ | 单测 + 真实导出再导入 |
+| 中文/英文/标题/格式/图片/表格样本 | ✅ | `phase5-sample.docx` |
+| 不把 HTML 冒充 DOCX | ✅ | ZIP/OOXML + 拒绝测试 |
 
 ## 六、已知限制
 
-- 项目没有任何“立即永久删除项目”的入口；这符合数据安全优先，但当前也没有项目级回收站界面。
-- 项目名称在创建后没有重命名 UI；章节可重命名。
-- 背景图片仍在应用 IndexedDB，而不是项目 `assets/`，因此仅复制项目文件夹不会复制背景图片；正文和项目 JSON 完整。
-- 旧第三阶段 localStorage 草稿提供导入入口（保留原数据），但当前测试 profile 未检测到旧 key；未自动删除任何旧数据。
-- 历史版本自动保留最近 40 个，超出后旧备份会被清理；不是无限版本库。
-- 当前是连续滚动页面，不实现 Word 级分页。
-- Vite 仍提示单个 JS chunk 约 800 kB；未做编辑器动态拆分。
-- 没有实现 Word 导入/导出，也不会写入 `.docx`。
+- Mammoth 不保留页眉页脚、批注、修订、公式、文本框、分节、页眉图片、艺术字、SmartArt、嵌入对象、宏等；导入时会显示通用兼容性提示。
+- 导入对复杂字体、字号、颜色、精确段落对齐的保留有限；Mammoth 主要保留语义结构。
+- 图片导出使用固定显示尺寸（最大 520px），不是原始像素尺寸；WebP/SVG 等不受 docx 图片类型支持的图片会跳过并提示。
+- 表格合并单元格、跨页表头、复杂边框样式暂不完整支持。
+- 导入始终创建新章节，不提供“替换当前章节”。
+- 只支持 `.docx`，不支持旧 `.doc`；HTML 改扩展名会被后端/解析器拒绝。
+- 没有导入页眉页脚、批注、修订等 UI 选择。
+- 前端 bundle 因 Mammoth/docx 增至约 1.4 MB（gzip 430.65 kB）；未做按需动态加载。
+- Word 兼容性验证是只读打开和结构检查，不等于所有复杂版式在 Word 中的逐像素一致。
 
 ## 七、Git 检查点
 
-第四阶段源码、测试、截图和本记录：
+第五阶段源码、样本、真实截图、Word 验证结果和本记录：
 
 ```text
-feat: add reliable local project storage
+feat: add DOCX import and export
 ```
 
-前三阶段检查点：
+前四阶段检查点：
 
 ```text
+24f1e8e feat: add reliable local project storage
 5e4a2c7 feat: add dual writing modes and backgrounds
 92972ca feat: add Tiptap rich text editing
 d8c4c8f feat: verify PaperScape phase 1 real desktop window

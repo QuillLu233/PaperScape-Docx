@@ -1,13 +1,17 @@
 # PaperScape 纸境
 
-一个安静、轻量的 Windows 桌面写作空间。第四阶段把工作区升级为可靠的本地项目：项目目录、独立章节 JSON、原子写入、历史版本和异常恢复；同时保留前几阶段验证的 Tiptap 编辑、双模式背景与窗口能力。
+一个安静、轻量的 Windows 桌面写作空间。第五阶段实现真正的 Microsoft Word DOCX 导入与导出：Mammoth 解析与安全清洗、Tiptap JSON 中转、真实 Office Open XML 生成，并保留已验证的本地项目与双模式写作能力。
 
-> 当前版本：0.4.0（第四阶段）
-> 技术栈：Tauri 2 + React 19 + Tiptap 3 + TypeScript + Tailwind CSS 4 + Vite 8
+> 当前版本：0.5.0（第五阶段）
+> 技术栈：Tauri 2 + React 19 + Tiptap 3 + Mammoth + docx + TypeScript + Vite 8
 
 ## 界面预览
 
 以下截图来自**真实 Tauri 窗口**（Windows 150% DPI）：
+
+| Word 导入 | Word 导出 |
+| --- | --- |
+| ![Word 导入](docs/screenshots/p5-import.png) | ![Word 导出](docs/screenshots/p5-export.png) |
 
 | 项目启动与最近项目 | 本地项目编辑 |
 | --- | --- |
@@ -20,6 +24,20 @@
 ![专注写作](docs/screenshots/p3-focus.png)
 
 ## 已完成
+
+### Word DOCX 导入与导出
+
+- 通过 Windows 原生文件对话框选择 `.docx`；原文件只读，导入创建新章节，不覆盖源文件。
+- 使用 Mammoth.js 将 DOCX 转换为语义 HTML，再用 DOMPurify 清洗，最后由 Tiptap schema 生成 JSON。
+- 支持普通段落、标题 H1–H3、粗体、斜体、下划线、列表、常规表格和图片。
+- 清除脚本、事件处理属性、`javascript:` 链接、外部图片和非安全样式；不执行宏、脚本或外部程序。
+- 导入前显示字数、图片数、表格数和兼容性提示；页眉页脚、批注、修订、公式、文本框、宏、嵌入对象会明确告知不会导入。
+- 导出当前章节或合并全部章节，生成真正的 Office Open XML `.docx`（ZIP 包含 `[Content_Types].xml` 与 `word/document.xml`）。
+- 标准文档 / 小说稿件两种预设；A4 / US Letter；基本字体、字号、标题、列表、段落对齐、行距、首行缩进。
+- 图片和表格写入对应 OOXML 结构；软件背景、纸张颜色和界面主题不会写入 Word。
+- 导出使用 Windows 原生保存对话框，原子写入目标文件。
+- 自动化测试覆盖真实 DOCX 导入、HTML 清洗、当前/全部导出、A4/Letter、图片、表格与导入→导出→再导入 round-trip。
+- 使用本机 Microsoft Word 只读打开导出文件验证兼容性。
 
 ### 本地项目管理与数据安全
 
@@ -172,8 +190,14 @@ src/
     HistoryDialog.tsx     章节历史版本恢复
     ConfirmDialog.tsx     删除/丢弃确认
     RenameChapterDialog.tsx 章节重命名
+    ImportDocxDialog.tsx  Word 导入预览与兼容性提示
+    DocxExportDialog.tsx  Word 导出范围、预设、页面与字体
     Dialogs.tsx           快捷键与关于
     StatusBar.tsx         本章/全文字数、保存状态与专注出口
+  docx/
+    importDocx.ts         Mammoth 解析、DOMPurify 清洗、Tiptap JSON
+    exportDocx.ts         Tiptap JSON → docx Office Open XML
+    docx.test.ts          真实 DOCX 导入、导出和 round-trip 测试
   project/
     types.ts              ProjectMeta / ChapterSummary / ChapterFile / OpenProject
     api.ts                Tauri 命令封装与原生文件夹选择
@@ -201,6 +225,29 @@ src-tauri/
   tauri.conf.json         无边框窗口与打包配置
   capabilities/           最小窗口权限（无通用 fs 权限）
 ```
+
+## DOCX 兼容说明
+
+### 导入
+
+- 解析使用 Mammoth.js，只读取用户选择的 `.docx` 字节；不运行宏、不调用 Word、不访问外部资源。
+- Mammoth 输出 HTML 后先经 DOMPurify 白名单清洗，再由 Tiptap 扩展生成 JSON。外部图片会被移除，内嵌图片只接受白名单 base64 图片格式。
+- 支持：普通段落、标题 H1–H3（H4 映射为 H3）、粗体、斜体、下划线、删除线、有序/无序列表、常规表格、内嵌图片。
+- 不支持或可能丢失：页眉页脚、批注、修订记录、公式、文本框、艺术字、SmartArt、嵌入对象、宏、Word 页面背景、分节/分页信息，以及部分复杂段落字体和对齐。
+- 导入始终创建新章节；原 DOCX 文件不会被修改。
+
+### 导出
+
+- 使用 `docx` 库生成真正的 ZIP/OOXML，不把 HTML 改扩展名。
+- 预设：
+  - 标准文档：A4、1 英寸页边距、1.15 行距。
+  - 小说稿件：A4、较宽页边距、1.5 行距、首行缩进。
+- 页面可选 A4 或 US Letter；正文字体、字号可选；标题、列表、粗体/斜体/下划线/删除线、文字样式、对齐、行距和首行缩进会写入。
+- 表格、PNG/JPEG/GIF/BMP 图片会写入；WebP/SVG 等暂不支持的内嵌图片会跳过并在导出后提示。
+- 软件背景、纸张颜色、暗角、遮罩和界面主题不会进入 Word。
+- 合并全部章节时按章节顺序导出，并在章节之间设置分页。
+- 导出文件已在 Microsoft Word 中实际只读打开验证；没有安装 Word 的环境无法完成该类人工兼容性检查。
+- 样本与真实导出文件位于 `docs/fixtures/`；生成脚本为 `scripts/make-docx-fixture.py`。
 
 ## 本地项目格式与安全
 

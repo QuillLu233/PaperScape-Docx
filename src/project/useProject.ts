@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { JSONContent } from '@tiptap/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import type { ProjectAppearance, WritingSettings } from '../types';
 import { DEFAULT_APPEARANCE, cloneAppearance } from '../appearance/presets';
@@ -517,6 +518,74 @@ export function useProject() {
     }
   }, [saveNow]);
 
+  const addChapterWithContent = useCallback(
+    async (
+      title: string,
+      doc: JSONContent,
+      characterCount: number,
+      excerptText: string,
+    ): Promise<boolean> => {
+      const state = projectRef.current;
+      if (!state) return false;
+      if (!(await saveNow('before-import'))) return false;
+      setLoading(true);
+      try {
+        const created = await projectApi.createChapter(state.path, title);
+        const saved = await projectApi.saveChapter(
+          state.path,
+          {
+            id: created.chapter.id,
+            title,
+            doc,
+            updatedAt: Date.now(),
+            characterCount,
+            excerpt: excerptText,
+          },
+          'docx-import',
+        );
+        const meta = normalizeMeta(saved.meta);
+        const chapter = normalizeChapter(saved.chapter);
+        projectRef.current = { path: state.path, meta };
+        activeRef.current = chapter;
+        dirtyRef.current = false;
+        setProject(projectRef.current);
+        setActiveChapter(chapter);
+        setDocumentRevision((current) => current + 1);
+        setDirty(false);
+        setSavedAt(Date.now());
+        return true;
+      } catch (importError) {
+        setError(errorMessage(importError));
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [saveNow],
+  );
+
+  const loadExportChapters = useCallback(
+    async (scope: 'current' | 'all'): Promise<Array<{ title: string; doc: JSONContent }>> => {
+      const state = projectRef.current;
+      if (!state) return [];
+      if (!(await saveNow('before-export'))) return [];
+      if (scope === 'current') {
+        const chapter = activeRef.current;
+        return chapter ? [{ title: chapter.title, doc: chapter.doc }] : [];
+      }
+      const chapters: Array<{ title: string; doc: JSONContent }> = [];
+      for (const summary of state.meta.chapters) {
+        const loaded = await projectApi.loadChapter(state.path, summary.id);
+        chapters.push({
+          title: loaded.chapter.title,
+          doc: loaded.chapter.doc,
+        });
+      }
+      return chapters;
+    },
+    [saveNow],
+  );
+
   const renameChapter = useCallback(
     async (id: string, title: string): Promise<boolean> => {
       const state = projectRef.current;
@@ -759,6 +828,8 @@ export function useProject() {
     selectChapter,
     updateActiveChapter,
     addChapter: createChapter,
+    addChapterWithContent,
+    loadExportChapters,
     renameChapter,
     moveChapter,
     deleteChapter,

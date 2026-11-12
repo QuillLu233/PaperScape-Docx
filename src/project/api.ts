@@ -25,6 +25,28 @@ export async function getDefaultProjectParent(): Promise<string> {
   return invoke<string>('project_default_parent');
 }
 
+export async function chooseDocxSavePath(
+  title: string,
+  defaultName: string,
+): Promise<string | null> {
+  return invoke<string | null>('choose_docx_save_path', { title, defaultName });
+}
+
+export async function chooseDocxOpenPath(): Promise<string | null> {
+  return invoke<string | null>('choose_docx_open_path');
+}
+
+export async function readDocxFile(path: string): Promise<number[]> {
+  return invoke<number[]>('read_docx_file', { path });
+}
+
+export async function saveDocxExport(path: string, bytes: Uint8Array): Promise<string> {
+  return invoke<string>('save_docx_export', {
+    path,
+    bytes: Array.from(bytes),
+  });
+}
+
 export async function createProject(
   path: string,
   name: string,

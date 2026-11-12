@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react'
 import { BackgroundLayer } from './components/BackgroundLayer';
 import { ChapterSidebar } from './components/ChapterSidebar';
 import { ConfirmDialog } from './components/ConfirmDialog';
+import { DocxExportDialog } from './components/DocxExportDialog';
+import { ImportDocxDialog } from './components/ImportDocxDialog';
 import { AboutDialog, ShortcutsDialog } from './components/Dialogs';
 import { EditorPane, type EditorPaneHandle } from './components/EditorPane';
 import { HistoryDialog } from './components/HistoryDialog';
@@ -16,6 +18,9 @@ import { TitleBar } from './components/TitleBar';
 import { useProjectAppearance } from './appearance/useProjectAppearance';
 import { DEFAULT_APPEARANCE } from './appearance/presets';
 import { DEFAULT_SETTINGS } from './types';
+import { buildDocxBlob, type DocxExportOptions } from './docx/exportDocx';
+import { importDocx, type ImportedDocx } from './docx/importDocx';
+import { chooseDocxOpenPath, chooseDocxSavePath, readDocxFile, saveDocxExport } from './project/api';
 import { usePanels } from './hooks/usePanels';
 import { useTheme } from './hooks/useTheme';
 import { useWindowState } from './hooks/useWindowState';
@@ -61,6 +66,8 @@ export default function App() {
     selectChapter,
     updateActiveChapter,
     addChapter,
+    addChapterWithContent,
+    loadExportChapters,
     renameChapter,
     moveChapter,
     deleteChapter,
@@ -87,6 +94,10 @@ export default function App() {
   const [renameOpen, setRenameOpen] = useState(false);
   const [discardTarget, setDiscardTarget] = useState<RecoveryCandidate | null>(null);
   const [busy, setBusy] = useState(false);
+  const [importedDocx, setImportedDocx] = useState<ImportedDocx | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
   const dragDepth = useRef(0);
   const editorRef = useRef<EditorPaneHandle>(null);
 
@@ -216,6 +227,83 @@ export default function App() {
       await handleAddBackground(file);
     },
     [handleAddBackground, showNotice],
+  );
+
+  const handleDocxImport = useCallback(async () => {
+    if (!isProjectOpen) {
+      showNotice('请先打开一个项目');
+      return;
+    }
+    setImportBusy(true);
+    try {
+      const path = await chooseDocxOpenPath();
+      if (!path) {
+        setImportBusy(false);
+        return;
+      }
+      const bytes = await readDocxFile(path);
+      const fileName = path.split(/[\\/]/).pop() || 'import.docx';
+      const file = new File([new Uint8Array(bytes) as BlobPart], fileName, {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
+      const imported = await importDocx(file);
+      setImportedDocx(imported);
+    } catch (importError) {
+      showNotice(importError instanceof Error ? importError.message : 'Word 文档导入失败');
+    } finally {
+      setImportBusy(false);
+    }
+  }, [isProjectOpen, showNotice]);
+
+  const confirmDocxImport = useCallback(async () => {
+    if (!importedDocx) return;
+    setImportBusy(true);
+    const ok = await addChapterWithContent(
+      importedDocx.title,
+      importedDocx.doc,
+      importedDocx.characterCount,
+      importedDocx.excerpt,
+    );
+    setImportBusy(false);
+    if (ok) {
+      setImportedDocx(null);
+      showNotice('Word 文档已作为新章节导入');
+    }
+  }, [addChapterWithContent, importedDocx, showNotice]);
+
+  const handleDocxExport = useCallback(
+    async (options: DocxExportOptions, scope: 'current' | 'all') => {
+      if (!isProjectOpen) return;
+      setExportBusy(true);
+      try {
+        const exportChapters = await loadExportChapters(scope);
+        if (exportChapters.length === 0) throw new Error('没有可导出的章节');
+        const { blob, skippedImages } = await buildDocxBlob(exportChapters, options);
+        const baseName = (scope === 'current' ? activeChapter?.title : project?.name) || 'PaperScape 文档';
+        const safeName = baseName.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '').trim() || 'PaperScape 文档';
+        const chosen = await chooseDocxSavePath(
+          '导出 Word 文档',
+          `${safeName}${scope === 'all' ? '-全稿' : ''}.docx`,
+        );
+        if (!chosen) {
+          setExportBusy(false);
+          return;
+        }
+        const path = chosen.toLowerCase().endsWith('.docx') ? chosen : `${chosen}.docx`;
+        await saveDocxExport(path, new Uint8Array(await blob.arrayBuffer()));
+        setExportOpen(false);
+        showNotice(
+          skippedImages > 0
+            ? `已导出 DOCX；${skippedImages} 张不受支持的图片未写入`
+            : 'Word 文档已导出',
+        );
+      } catch (exportError) {
+        showNotice(exportError instanceof Error ? exportError.message : 'Word 文档导出失败');
+      } finally {
+        setExportBusy(false);
+      }
+    },
+    [activeChapter?.title, isProjectOpen, loadExportChapters, project?.name, showNotice],
   );
 
   const openHistory = useCallback(
@@ -386,6 +474,8 @@ export default function App() {
           onNewProject={() => void handleNewProject()}
           onOpenProject={() => void handleOpenProject()}
           onCloseProject={() => void handleCloseProject()}
+          onImportDocx={() => void handleDocxImport()}
+          onExportDocx={() => setExportOpen(true)}
           onNewChapter={() => void handleCreateChapter()}
           onShowHistory={() => {
             const activeSummary = chapters.find((chapter) => chapter.id === activeChapter?.id);
@@ -641,6 +731,29 @@ export default function App() {
           title={activeChapter.title}
           onSave={(title) => void renameChapter(activeChapter.id, title)}
           onClose={() => setRenameOpen(false)}
+        />
+      ) : null}
+
+      {importedDocx ? (
+        <ImportDocxDialog
+          imported={importedDocx}
+          busy={importBusy}
+          onImport={() => void confirmDocxImport()}
+          onClose={() => {
+            if (!importBusy) setImportedDocx(null);
+          }}
+        />
+      ) : null}
+
+      {exportOpen ? (
+        <DocxExportDialog
+          chapterTitle={activeChapter?.title ?? '当前章节'}
+          chapterCount={chapters.length}
+          busy={exportBusy}
+          onExport={(options, scope) => void handleDocxExport(options, scope)}
+          onClose={() => {
+            if (!exportBusy) setExportOpen(false);
+          }}
         />
       ) : null}
 

@@ -2817,3 +2817,166 @@ kbd {
   background: var(--accent-soft);
   color: var(--accent-strong);
 }
+
+/* Stage 5: DOCX import/export ---------------------------------------- */
+
+.docx-import-card,
+.docx-export-card {
+  width: min(620px, 100%);
+}
+
+.docx-import-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+
+.docx-import-stats span {
+  padding: 3px 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 9.5px;
+}
+
+.docx-warning-box {
+  margin: 12px 0;
+  padding: 9px 10px;
+  border: 1px solid rgba(176, 122, 46, 0.34);
+  border-radius: 6px;
+  background: rgba(176, 122, 46, 0.06);
+  color: var(--ink-soft);
+  font-size: 10px;
+  line-height: 1.65;
+}
+
+.docx-warning-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--warning, #b07a2e);
+  font-size: 10.5px;
+}
+
+.docx-warning-box ul {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.docx-warning-box li + li {
+  margin-top: 2px;
+}
+
+.docx-preview {
+  max-height: 145px;
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-alt);
+}
+
+.docx-preview p {
+  margin: 6px 0 0;
+  color: var(--ink-soft);
+  font-family: "Songti SC", SimSun, serif;
+  font-size: 12px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.docx-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.docx-field-label {
+  color: var(--muted);
+  font-size: 9.5px;
+}
+
+.docx-segmented {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-alt);
+}
+
+.docx-segmented button {
+  height: 27px;
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.docx-segmented button.is-active {
+  background: var(--panel);
+  box-shadow: 0 1px 4px var(--shadow);
+  color: var(--accent-strong);
+}
+
+.docx-segmented button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.docx-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.docx-preset {
+  display: flex;
+  min-height: 54px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  text-align: left;
+}
+
+.docx-preset strong {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.docx-preset small {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.docx-preset.is-active {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.docx-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.docx-check {
+  display: flex;
+  align-items: center;
+  align-self: end;
+  gap: 6px;
+  min-height: 27px;
+  color: var(--ink-soft);
+  font-size: 10.5px;
+}
+
+.docx-check input {
+  accent-color: var(--accent);
+}

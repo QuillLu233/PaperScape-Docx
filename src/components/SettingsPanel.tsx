@@ -206,8 +206,8 @@ export function SettingsPanel({
         </section>
 
         <div className="settings-version">
-          <span>PaperScape 0.4.0</span>
-          <span>第四阶段</span>
+          <span>PaperScape 0.5.0</span>
+          <span>第五阶段</span>
         </div>
       </div>
     </aside>
