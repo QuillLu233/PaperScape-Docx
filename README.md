@@ -7,15 +7,18 @@
 
 ## 界面预览
 
+以下截图来自**真实 Tauri 窗口**（Windows 150% DPI，1280×820 逻辑尺寸）：
+
 | 浅色 · 三栏 | 深色 · 三栏 |
 | --- | --- |
-| ![浅色界面](docs/screenshots/paper-light.png) | ![深色界面](docs/screenshots/paper-dark.png) |
+| ![浅色界面](docs/screenshots/tauri-light.png) | ![深色界面](docs/screenshots/tauri-dark.png) |
 
-![折叠面板](docs/screenshots/paper-collapsed.png)
+![折叠面板](docs/screenshots/tauri-collapsed.png)
 
 ## 已完成
 
 - 无原生标题栏的标准 Windows 桌面窗口，支持拖动、八方向缩放、最大化、还原、最小化和关闭。
+- 窗口按当前显示器的逻辑尺寸自适应并居中，兼容 125% / 150% 等 Windows 缩放比例。
 - 三栏布局：左侧章节目录、中间正文编辑区、右侧设置面板。
 - 中文优先的菜单、对话框、状态栏和快捷键。
 - 浅色 / 深色 / 跟随系统三套外观，配色使用低对比暖纸色。
@@ -125,6 +128,7 @@ src-tauri/
 - 标题栏通过 `data-tauri-drag-region` 拖动，双击空白区域切换最大化。
 - 无边框窗口的原生缩放边缘在 Windows 上不可靠，因此使用八个透明热区调用 `startResizeDragging`，覆盖四边与四角。
 - 最大化状态监听 `onResized`，按钮图标随状态切换；关闭、最小化、最大化均使用 Tauri 窗口 API。
+- 启动时读取当前显示器的物理尺寸与缩放比，在 960×640 到 1280×820 逻辑像素之间自适应并居中，避免高 DPI 小屏下窗口超出可用桌面。
 - 权限在 `src-tauri/capabilities/default.json` 中显式声明，不使用通配权限。
 
 ## 设计约定

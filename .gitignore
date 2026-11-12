@@ -23,3 +23,7 @@ src-tauri/target
 .idea
 *.swp
 .webview-data
+
+# Compiler artifacts
+*.obj
+*.pdb
