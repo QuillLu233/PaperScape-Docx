@@ -32,7 +32,8 @@ export type IconName =
   | 'bullet-list'
   | 'ordered-list'
   | 'indent'
-  | 'outdent';
+  | 'outdent'
+  | 'focus';
 
 const ICONS: Record<IconName, ReactNode> = {
   plus: <path d="M8 3.5v9M3.5 8h9" />,
@@ -153,6 +154,12 @@ const ICONS: Record<IconName, ReactNode> = {
     <>
       <path d="M2.5 2.8h11M2.5 12.8h11M6.8 5.5h6.7M6.8 8h6.7M6.8 10.5h6.7" />
       <path d="m4.4 6.1-2 2 2 2z" fill="currentColor" stroke="none" />
+    </>
+  ),
+  focus: (
+    <>
+      <path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" />
+      <circle cx="8" cy="8" r="2.2" />
     </>
   ),
 };

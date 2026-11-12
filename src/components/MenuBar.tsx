@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ThemeMode } from '../types';
+import type { ThemeMode, WritingMode } from '../types';
 import { Icon } from './Icon';
 
 export interface MenuEntry {
@@ -21,6 +21,8 @@ interface MenuBarProps {
   leftOpen: boolean;
   rightOpen: boolean;
   theme: ThemeMode;
+  writingMode: WritingMode;
+  focusMode: boolean;
   onNewChapter: () => void;
   onSave: () => void;
   onExit: () => void;
@@ -30,6 +32,8 @@ interface MenuBarProps {
   onFind: () => void;
   onToggleLeft: () => void;
   onToggleRight: () => void;
+  onToggleFocus: () => void;
+  onWritingModeChange: (mode: WritingMode) => void;
   onThemeChange: (mode: ThemeMode) => void;
   onShowShortcuts: () => void;
   onShowAbout: () => void;
@@ -39,6 +43,8 @@ export function MenuBar({
   leftOpen,
   rightOpen,
   theme,
+  writingMode,
+  focusMode,
   onNewChapter,
   onSave,
   onExit,
@@ -48,6 +54,8 @@ export function MenuBar({
   onFind,
   onToggleLeft,
   onToggleRight,
+  onToggleFocus,
+  onWritingModeChange,
   onThemeChange,
   onShowShortcuts,
   onShowAbout,
@@ -103,6 +111,23 @@ export function MenuBar({
           shortcut: 'Ctrl+Shift+B',
           checked: rightOpen,
           onSelect: onToggleRight,
+        },
+        {
+          label: '专注写作',
+          shortcut: 'Ctrl+Shift+F',
+          checked: focusMode,
+          onSelect: onToggleFocus,
+        },
+        { separator: true },
+        {
+          label: '沉浸式模式',
+          checked: writingMode === 'immersive',
+          onSelect: () => onWritingModeChange('immersive'),
+        },
+        {
+          label: '纸张式模式',
+          checked: writingMode === 'paper',
+          onSelect: () => onWritingModeChange('paper'),
         },
         { separator: true },
         { label: '浅色主题', checked: theme === 'light', onSelect: () => onThemeChange('light') },

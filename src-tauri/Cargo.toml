@@ -1,6 +1,6 @@
 [package]
 name = "paperscape"
-version = "0.2.0"
+version = "0.3.0"
 description = "PaperScape 纸境 —— 安静、轻量的桌面写作空间"
 authors = ["PaperScape"]
 edition = "2021"

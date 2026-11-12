@@ -8,7 +8,15 @@ import {
 } from './richText';
 
 const WORKSPACE_KEY = 'paperscape.workspace.v1';
-const STORAGE_VERSION = 2;
+const STORAGE_VERSION = 3;
+const DEFAULT_PROJECT_ID = 'project-default';
+
+function createProjectId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `project-${crypto.randomUUID()}`;
+  }
+  return `project-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 
 const SEED_TEXT: Array<{ id: string; title: string; text: string }> = [
   {
@@ -61,6 +69,7 @@ export function createId(): string {
 export function createDefaultSnapshot(): WorkspaceSnapshot {
   return {
     version: STORAGE_VERSION,
+    projectId: createProjectId(),
     chapters: SEED_CHAPTERS,
     activeId: SEED_CHAPTERS[0].id,
     settings: { ...DEFAULT_SETTINGS },
@@ -134,6 +143,10 @@ export function loadWorkspace(): WorkspaceSnapshot {
 
     return {
       version: STORAGE_VERSION,
+      projectId:
+        typeof parsed.projectId === 'string' && parsed.projectId
+          ? parsed.projectId
+          : DEFAULT_PROJECT_ID,
       chapters,
       activeId,
       settings: sanitizeSettings(parsed.settings),

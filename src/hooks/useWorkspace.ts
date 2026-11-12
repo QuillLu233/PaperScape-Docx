@@ -79,6 +79,7 @@ export function useWorkspace() {
   }, []);
 
   return {
+    projectId: snapshot.projectId,
     chapters: snapshot.chapters,
     activeChapter,
     activeIndex,

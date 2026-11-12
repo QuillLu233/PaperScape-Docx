@@ -31,19 +31,22 @@ describe('workspace rich-text migration', () => {
     );
 
     const snapshot = loadWorkspace();
-    expect(snapshot.version).toBe(2);
+    expect(snapshot.version).toBe(3);
+    expect(snapshot.projectId).toBe('project-default');
     expect(snapshot.chapters[0].content).toBe('<p>第一段</p><p>第二段</p>');
     expect(snapshot.chapters[0].characterCount).toBe(6);
     expect(snapshot.chapters[0].excerpt).toContain('第一段');
     expect(snapshot.settings.editorWidth).toBe(790);
   });
 
-  it('round-trips version 2 HTML without re-parsing', () => {
+  it('round-trips version 3 HTML and the project identity', () => {
     const snapshot = createDefaultSnapshot();
     saveWorkspace(snapshot);
     const loaded = loadWorkspace();
 
-    expect(loaded.version).toBe(2);
+    expect(loaded.version).toBe(3);
+    expect(loaded.projectId).toBe(snapshot.projectId);
+    expect(loaded.projectId).toMatch(/^project-/);
     expect(loaded.chapters[0].content).toContain('<p>天还没有完全亮');
     expect(loaded.chapters[0].characterCount).toBe(
       countCharactersFromHtml(loaded.chapters[0].content),

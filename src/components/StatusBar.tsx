@@ -7,6 +7,8 @@ interface StatusBarProps {
   characterCount: number;
   fullCharacterCount: number;
   savedAt: number;
+  focusMode: boolean;
+  onToggleFocus: () => void;
 }
 
 export function StatusBar({
@@ -15,6 +17,8 @@ export function StatusBar({
   characterCount,
   fullCharacterCount,
   savedAt,
+  focusMode,
+  onToggleFocus,
 }: StatusBarProps) {
   const time = new Date(savedAt).toLocaleTimeString('zh-CN', {
     hour: '2-digit',
@@ -39,19 +43,27 @@ export function StatusBar({
       </div>
 
       <div className="status-group status-shortcuts" aria-label="快捷键提示">
-        <span>
-          <kbd>Ctrl</kbd>
-          <kbd>F</kbd> 查找
-        </span>
-        <span>
-          <kbd>Ctrl</kbd>
-          <kbd>B</kbd> 加粗
-        </span>
-        <span>
-          <kbd>Ctrl</kbd>
-          <kbd>Shift</kbd>
-          <kbd>B</kbd> 设置
-        </span>
+        <button type="button" className="status-focus-button" onClick={onToggleFocus}>
+          <Icon name="focus" size={12} />
+          {focusMode ? '退出专注 (Esc)' : '专注写作'}
+        </button>
+        {focusMode ? null : (
+          <>
+            <span>
+              <kbd>Ctrl</kbd>
+              <kbd>F</kbd> 查找
+            </span>
+            <span>
+              <kbd>Ctrl</kbd>
+              <kbd>B</kbd> 加粗
+            </span>
+            <span>
+              <kbd>Ctrl</kbd>
+              <kbd>Shift</kbd>
+              <kbd>F</kbd> 专注
+            </span>
+          </>
+        )}
       </div>
     </footer>
   );

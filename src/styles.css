@@ -4,7 +4,7 @@
   --titlebar-height: 40px;
   --statusbar-height: 26px;
   --sidebar-width: 252px;
-  --settings-width: 288px;
+  --settings-width: 304px;
 
   --font-ui: "Microsoft YaHei UI", "Segoe UI Variable Text", "Segoe UI", "PingFang SC",
     "Noto Sans SC", sans-serif;
@@ -29,6 +29,7 @@
   --brand-paper: #f4efe3;
   --brand-fold: #d8cfba;
   --scroll-thumb: #d3ccbd;
+  --reader-rgb: 250, 248, 242;
   color-scheme: light;
 }
 
@@ -50,6 +51,7 @@
   --focus: rgba(154, 179, 151, 0.38);
   --shadow: rgba(0, 0, 0, 0.32);
   --scroll-thumb: #41473c;
+  --reader-rgb: 25, 28, 24;
   color-scheme: dark;
 }
 
@@ -1523,7 +1525,7 @@ kbd {
 @media (max-width: 1080px) {
   :root {
     --sidebar-width: 228px;
-    --settings-width: 264px;
+    --settings-width: 280px;
   }
 
   .editor-sheet {
@@ -1544,4 +1546,536 @@ kbd {
   .panel.is-collapsed {
     transition: none;
   }
+}
+
+/* Stage 3: writing modes and backgrounds ----------------------------- */
+
+.workspace-stage {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.workspace {
+  position: relative;
+  z-index: 2;
+}
+
+.scene-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: var(--bg);
+  pointer-events: none;
+}
+
+.scene-background-color,
+.scene-background-image {
+  position: absolute;
+  inset: -28px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  transform-origin: center;
+}
+
+.scene-background-overlay,
+.scene-background-vignette {
+  position: absolute;
+  inset: 0;
+}
+
+.scene-background-vignette {
+  background: radial-gradient(ellipse at center, transparent 36%, rgba(0, 0, 0, 0.62) 100%);
+}
+
+.workspace-stage.is-drag-over .scene-background {
+  filter: saturate(0.75) brightness(0.75);
+}
+
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--accent-line);
+  background: rgba(17, 22, 18, 0.28);
+  pointer-events: none;
+}
+
+.drop-overlay-card {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.24);
+}
+
+.drop-overlay-card svg {
+  color: var(--accent);
+}
+
+.drop-overlay-card strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.drop-overlay-card span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.app-toast {
+  position: absolute;
+  right: 20px;
+  bottom: 18px;
+  z-index: 70;
+  max-width: min(380px, calc(100% - 40px));
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--ink-soft);
+  box-shadow: 0 10px 30px var(--shadow);
+  font-size: 11px;
+}
+
+.editor-pane {
+  background: transparent;
+}
+
+.editor-scroll {
+  align-items: flex-start;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.editor-sheet {
+  height: auto;
+  min-height: 0;
+  margin: 0 auto;
+  padding: 0;
+  background: transparent;
+}
+
+.editor-content {
+  flex: 0 0 auto;
+  overflow: visible;
+  padding-bottom: 28px;
+}
+
+.editor-content .tiptap {
+  min-height: 240px;
+}
+
+.mode-immersive .editor-scroll {
+  padding: 24px;
+}
+
+.mode-immersive .editor-sheet {
+  width: 100%;
+  padding: 38px 54px 44px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  background-color: rgba(var(--reader-rgb), var(--reading-opacity, 0.8));
+  box-shadow: 0 18px 60px rgba(8, 12, 9, 0.16);
+}
+
+.mode-paper .editor-scroll {
+  padding: 28px 26px 64px;
+}
+
+.mode-paper .editor-sheet {
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.mode-paper .editor-content {
+  min-height: 420px;
+}
+
+.app-shell.is-focus-mode .titlebar-menu,
+.app-shell.is-focus-mode .titlebar-tools,
+.app-shell.is-focus-mode .editor-top {
+  display: none;
+}
+
+.app-shell.is-focus-mode .titlebar {
+  background: var(--panel);
+}
+
+.app-shell.is-focus-mode .editor-scroll {
+  padding-top: 18px;
+}
+
+.app-shell.is-focus-mode .status-shortcuts > span {
+  display: none;
+}
+
+.status-focus-button {
+  display: inline-flex;
+  align-items: center;
+  height: 19px;
+  gap: 4px;
+  padding: 0 5px;
+  border-radius: 4px;
+  color: var(--accent-strong);
+  font-size: 9.5px;
+}
+
+.status-focus-button:hover {
+  background: var(--accent-soft);
+}
+
+/* Appearance settings ------------------------------------------------- */
+
+.writing-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.writing-mode-option {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 7px;
+  padding: 7px 7px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--muted);
+  text-align: left;
+}
+
+.writing-mode-option:hover {
+  border-color: var(--accent-line);
+}
+
+.writing-mode-option.is-active {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.mode-swatch {
+  display: block;
+  width: 23px;
+  height: 28px;
+  flex: 0 0 23px;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  background: var(--bg);
+}
+
+.mode-swatch[data-mode='immersive'] {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.45), transparent),
+    #9eaf9e;
+  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.35);
+}
+
+.mode-swatch[data-mode='paper'] {
+  background: #fbf8ef;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.mode-option-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mode-option-copy strong {
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.mode-option-copy small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.focus-entry-button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 29px;
+  gap: 5px;
+  margin-top: 9px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink-soft);
+  font-size: 10.5px;
+  text-align: left;
+}
+
+.focus-entry-button:hover {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+
+.focus-entry-button span {
+  flex: 1;
+}
+
+.focus-entry-button kbd {
+  margin: 0;
+  font-size: 8px;
+}
+
+.appearance-hint,
+.appearance-error {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 9.5px;
+  line-height: 1.55;
+}
+
+.appearance-error {
+  color: var(--danger);
+}
+
+.theme-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.background-tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 3px 5px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.background-tile:hover {
+  background: var(--panel-alt);
+}
+
+.background-tile.is-active {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.background-preview {
+  display: grid;
+  width: 100%;
+  height: 31px;
+  place-items: center;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.9);
+  background-size: cover;
+}
+
+.saved-theme-tile {
+  position: relative;
+  min-width: 0;
+}
+
+.saved-theme-tile .background-tile {
+  width: 100%;
+}
+
+.theme-delete {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  display: grid;
+  width: 14px;
+  height: 14px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--muted);
+  opacity: 0;
+}
+
+.saved-theme-tile:hover .theme-delete,
+.theme-delete:focus-visible {
+  opacity: 1;
+}
+
+.theme-delete:hover {
+  color: var(--danger);
+}
+
+.appearance-range {
+  margin-top: 11px;
+}
+
+.paper-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 27px;
+  margin-top: 9px;
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.paper-row > label {
+  min-width: 52px;
+}
+
+.paper-dimension {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.settings-select,
+.settings-text-input {
+  height: 26px;
+  min-width: 0;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 10.5px;
+  outline: none;
+}
+
+.settings-select {
+  flex: 1;
+}
+
+.settings-select:focus,
+.settings-text-input:focus {
+  border-color: var(--accent-line);
+}
+
+.color-input {
+  width: 27px;
+  height: 25px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.margin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.margin-field {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 9.5px;
+}
+
+.margin-field input {
+  width: 43px;
+  height: 24px;
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 10px;
+}
+
+.save-theme-row {
+  display: flex;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+.settings-text-input {
+  flex: 1;
+}
+
+.save-theme-button {
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--ink-soft);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.save-theme-button:hover {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+@media (max-width: 1080px) {
+  .statusbar {
+    grid-template-columns: 1fr auto auto;
+  }
+
+  .status-shortcuts {
+    display: flex;
+  }
+
+  .status-shortcuts > span {
+    display: none;
+  }
+
+  .mode-immersive .editor-sheet {
+    padding: 30px 34px 36px;
+  }
+
+  .mode-paper .editor-scroll {
+    padding: 20px 16px 48px;
+  }
+}
+
+/* Paper surfaces need their own ink so dark UI themes do not place light text
+   on a cream page. Tiptap inline colors still take precedence. */
+.editor-sheet.is-paper .chapter-title-input,
+.editor-sheet.is-paper .editor-content,
+.editor-sheet.is-paper .editor-content .tiptap {
+  color: var(--paper-ink, var(--ink));
+}
+
+.editor-sheet.is-paper .chapter-title-input::placeholder,
+.editor-sheet.is-paper .editor-content .tiptap p.is-editor-empty:first-child::before {
+  color: var(--paper-muted, var(--muted));
+}
+
+.editor-sheet.is-paper .editor-meta,
+.editor-sheet.is-paper .editor-chapter-label,
+.editor-sheet.is-paper .editor-total,
+.editor-sheet.is-paper .editor-char-count {
+  color: var(--paper-muted, var(--muted));
+}
+
+.editor-sheet.is-paper .editor-rule {
+  background: var(--paper-line, var(--line));
 }

@@ -62,6 +62,8 @@ const SHORTCUTS = [
   ['全选正文', ['Ctrl', 'A']],
   ['章节目录（编辑区外）', ['Ctrl', 'B']],
   ['设置面板', ['Ctrl', 'Shift', 'B']],
+  ['专注写作', ['Ctrl', 'Shift', 'F']],
+  ['退出专注 / 关闭浮层', ['Esc']],
   ['关闭菜单或对话框', ['Esc']],
 ];
 
@@ -94,7 +96,7 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
         </span>
         <div>
           <p className="about-name">PaperScape 纸境</p>
-          <p className="about-version">0.2.0 · 第二阶段</p>
+          <p className="about-version">0.3.0 · 第三阶段</p>
         </div>
       </div>
       <p className="modal-lead">
@@ -108,7 +110,7 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
         <span>Tailwind CSS</span>
       </div>
       <p className="modal-footnote">
-        本阶段已升级为 Tiptap 富文本编辑器，支持标题、字体、颜色、列表、图片、表格、查找替换与长文写作。
+        本阶段新增沉浸式与纸张式双模式、背景管理、专注写作、自定义主题和页面设置。
       </p>
     </Modal>
   );

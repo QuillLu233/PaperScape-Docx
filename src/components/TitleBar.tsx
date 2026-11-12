@@ -5,9 +5,11 @@ interface TitleBarProps {
   leftOpen: boolean;
   rightOpen: boolean;
   isMaximized: boolean;
+  focusMode: boolean;
   menu: ReactNode;
   onToggleLeft: () => void;
   onToggleRight: () => void;
+  onToggleFocus: () => void;
   onMinimize: () => void;
   onToggleMaximize: () => void;
   onClose: () => void;
@@ -17,9 +19,11 @@ export function TitleBar({
   leftOpen,
   rightOpen,
   isMaximized,
+  focusMode,
   menu,
   onToggleLeft,
   onToggleRight,
+  onToggleFocus,
   onMinimize,
   onToggleMaximize,
   onClose,
@@ -46,6 +50,16 @@ export function TitleBar({
       <div className="titlebar-drag" data-tauri-drag-region aria-hidden="true" />
 
       <div className="titlebar-tools" data-no-drag>
+        <button
+          type="button"
+          className={`tool-button${focusMode ? ' is-active' : ''}`}
+          aria-label={focusMode ? '退出专注写作' : '进入专注写作'}
+          aria-pressed={focusMode}
+          title={focusMode ? '退出专注写作 (Esc)' : '进入专注写作 (Ctrl+Shift+F)'}
+          onClick={onToggleFocus}
+        >
+          <Icon name="focus" size={16} />
+        </button>
         <button
           type="button"
           className={`tool-button${leftOpen ? ' is-active' : ''}`}

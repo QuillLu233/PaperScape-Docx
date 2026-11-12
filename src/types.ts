@@ -18,8 +18,63 @@ export interface WritingSettings {
   editorWidth: number;
 }
 
+export type WritingMode = 'immersive' | 'paper';
+export type BackgroundKind = 'solid' | 'gradient' | 'image';
+export type PageSize = 'A4' | 'Letter' | 'custom';
+export type MarginPreset = 'normal' | 'narrow' | 'wide' | 'custom';
+
+export interface BackgroundStyle {
+  presetId: string;
+  name: string;
+  kind: BackgroundKind;
+  color: string;
+  gradientFrom: string;
+  gradientTo: string;
+  gradientAngle: number;
+  imageId: string | null;
+  brightness: number;
+  blur: number;
+  vignette: number;
+  overlay: number;
+  overlayColor: string;
+}
+
+export interface PaperMargins {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+export interface PaperSettings {
+  pageSize: PageSize;
+  customWidth: number;
+  color: string;
+  opacity: number;
+  shadow: number;
+  margin: MarginPreset;
+  customMargins: PaperMargins;
+}
+
+export interface ProjectAppearance {
+  mode: WritingMode;
+  background: BackgroundStyle;
+  readingOpacity: number;
+  paper: PaperSettings;
+}
+
+export interface SavedTheme {
+  id: string;
+  name: string;
+  createdAt: number;
+  background: BackgroundStyle;
+  readingOpacity: number;
+  paper: PaperSettings;
+}
+
 export interface WorkspaceSnapshot {
-  version: 2;
+  version: 3;
+  projectId: string;
   chapters: Chapter[];
   activeId: string;
   settings: WritingSettings;

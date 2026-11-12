@@ -58,6 +58,44 @@ describe('PaperScape shell', () => {
     await waitFor(() => expect(localStorage.getItem('paperscape.theme')).toBe('dark'));
   });
 
+  it('switches writing modes while keeping the editor mounted', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await waitFor(() =>
+      expect(screen.getByRole('textbox', { name: '正文编辑器' })).toHaveTextContent(
+        '天还没有完全亮',
+      ),
+    );
+
+    await user.click(screen.getByRole('button', { name: /沉浸式/ }));
+    expect(screen.getByTestId('chapter-sidebar').closest('.app-shell')).toHaveClass(
+      'mode-immersive',
+    );
+    expect(screen.getByRole('textbox', { name: '正文编辑器' })).toHaveTextContent(
+      '天还没有完全亮',
+    );
+
+    await user.click(screen.getByRole('button', { name: /纸张式/ }));
+    expect(screen.getByTestId('chapter-sidebar').closest('.app-shell')).toHaveClass('mode-paper');
+    expect(screen.getByRole('textbox', { name: '正文编辑器' })).toHaveTextContent(
+      '天还没有完全亮',
+    );
+  });
+
+  it('enters and exits focus writing mode from the window controls', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await waitFor(() => expect(screen.getByRole('textbox', { name: '正文编辑器' })).toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: '进入专注写作' }));
+    expect(document.querySelector('.app-shell')).toHaveClass('is-focus-mode');
+    expect(screen.getByTestId('chapter-sidebar')).toHaveAttribute('data-open', 'false');
+
+    await user.click(screen.getByRole('button', { name: '退出专注 (Esc)' }));
+    expect(document.querySelector('.app-shell')).not.toHaveClass('is-focus-mode');
+    expect(screen.getByTestId('chapter-sidebar')).toHaveAttribute('data-open', 'true');
+  });
+
   it('opens the find and replace bar from the edit menu', async () => {
     const user = userEvent.setup();
     render(<App />);

@@ -1,7 +1,15 @@
-import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
-import type { Chapter, WritingSettings } from '../types';
+import type { Chapter, ProjectAppearance, WritingSettings } from '../types';
 import { createEditorExtensions } from '../editor/editorConfig';
+import { getPageDimensions, getPaperMargins, colorWithAlpha, paperTextColors } from '../appearance/presets';
 import { countCharacters, excerpt, formatCount } from '../lib/text';
 import { EditorToolbar } from './EditorToolbar';
 import { FindReplaceBar } from './FindReplaceBar';
@@ -20,13 +28,15 @@ interface EditorPaneProps {
   index: number;
   total: number;
   settings: WritingSettings;
+  appearance: ProjectAppearance;
+  focusMode: boolean;
   onUpdate: (
     patch: Partial<Pick<Chapter, 'title' | 'content' | 'characterCount' | 'excerpt'>>,
   ) => void;
 }
 
 export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function EditorPane(
-  { chapter, index, total, settings, onUpdate },
+  { chapter, index, total, settings, appearance, focusMode, onUpdate },
   ref,
 ) {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -59,7 +69,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
     },
   });
 
-  const focus = useCallback(() => editor?.commands.focus('end'), [editor]);
+  const focus = useCallback(() => editor?.commands.focus(), [editor]);
   const blur = useCallback(() => editor?.commands.blur(), [editor]);
 
   useImperativeHandle(
@@ -75,8 +85,38 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
     [blur, editor, focus],
   );
 
+  const paperDimensions = getPageDimensions(appearance.paper);
+  const margins = getPaperMargins(appearance.paper);
+  const paperInk = paperTextColors(appearance.paper.color);
+  const isPaper = appearance.mode === 'paper';
+  const sheetStyle: CSSProperties & Record<`--${string}`, string | number> = isPaper
+    ? {
+        width: `${paperDimensions.width}px`,
+        maxWidth: '100%',
+        minHeight: `${paperDimensions.height}px`,
+        padding: `${margins.top}px ${margins.right}px ${margins.bottom}px ${margins.left}px`,
+        backgroundColor: colorWithAlpha(appearance.paper.color, appearance.paper.opacity),
+        boxShadow:
+          appearance.paper.shadow > 0
+            ? `0 20px 70px rgba(20, 24, 19, ${(appearance.paper.shadow / 100) * 0.36})`
+            : 'none',
+        '--paper-ink': paperInk.ink,
+        '--paper-muted': paperInk.muted,
+        '--paper-line': paperInk.line,
+        '--reading-opacity': appearance.readingOpacity,
+      }
+    : {
+        maxWidth: `${settings.editorWidth}px`,
+        minHeight: 'calc(100% - 48px)',
+        '--reading-opacity': appearance.readingOpacity,
+      };
+
   return (
-    <main className="editor-pane" aria-label="编辑区">
+    <main
+      className={`editor-pane mode-${appearance.mode}${focusMode ? ' is-focus-writing' : ''}`}
+      aria-label="编辑区"
+      data-writing-mode={appearance.mode}
+    >
       <div className="editor-top">
         <EditorToolbar editor={editor} onFind={() => setSearchOpen(true)} />
         {searchOpen && editor ? (
@@ -85,11 +125,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
       </div>
 
       <div className="editor-scroll">
-        <article
-          className="editor-sheet"
-          style={{ maxWidth: settings.editorWidth }}
-          data-editor-width={settings.editorWidth}
-        >
+        <article className={`editor-sheet is-${appearance.mode}`} style={sheetStyle}>
           <div className="editor-meta">
             <span className="editor-chapter-label">
               第 {String(index + 1).padStart(2, '0')} 章

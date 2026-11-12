@@ -1,18 +1,34 @@
-import type { ThemeMode, WritingSettings } from '../types';
-import {
-  DEFAULT_SETTINGS,
-  EDITOR_WIDTH_MAX,
-  EDITOR_WIDTH_MIN,
-  THEME_LABELS,
+import type {
+  BackgroundStyle,
+  ProjectAppearance,
+  SavedTheme,
+  ThemeMode,
+  WritingMode,
+  WritingSettings,
 } from '../types';
+import { DEFAULT_SETTINGS, EDITOR_WIDTH_MAX, EDITOR_WIDTH_MIN, THEME_LABELS } from '../types';
+import { AppearanceSettings } from './AppearanceSettings';
 import { Icon, type IconName } from './Icon';
 
 interface SettingsPanelProps {
   open: boolean;
   theme: ThemeMode;
   settings: WritingSettings;
+  appearance: ProjectAppearance;
+  savedThemes: SavedTheme[];
+  focusMode: boolean;
   onThemeChange: (mode: ThemeMode) => void;
   onSettingsChange: (patch: Partial<WritingSettings>) => void;
+  onModeChange: (mode: WritingMode) => void;
+  onBackgroundChange: (patch: Partial<BackgroundStyle>) => void;
+  onReadingOpacityChange: (value: number) => void;
+  onPaperChange: (patch: Partial<ProjectAppearance['paper']>) => void;
+  onApplyPreset: (presetId: string) => void;
+  onApplySavedTheme: (theme: SavedTheme) => void;
+  onDeleteSavedTheme: (id: string) => void;
+  onSaveTheme: (name: string) => void;
+  onChooseImage: (file: File) => Promise<void>;
+  onToggleFocus: () => void;
   onClose: () => void;
 }
 
@@ -26,8 +42,21 @@ export function SettingsPanel({
   open,
   theme,
   settings,
+  appearance,
+  savedThemes,
+  focusMode,
   onThemeChange,
   onSettingsChange,
+  onModeChange,
+  onBackgroundChange,
+  onReadingOpacityChange,
+  onPaperChange,
+  onApplyPreset,
+  onApplySavedTheme,
+  onDeleteSavedTheme,
+  onSaveTheme,
+  onChooseImage,
+  onToggleFocus,
   onClose,
 }: SettingsPanelProps) {
   return (
@@ -55,6 +84,22 @@ export function SettingsPanel({
       </div>
 
       <div className="settings-scroll">
+        <AppearanceSettings
+          appearance={appearance}
+          savedThemes={savedThemes}
+          focusMode={focusMode}
+          onModeChange={onModeChange}
+          onBackgroundChange={onBackgroundChange}
+          onReadingOpacityChange={onReadingOpacityChange}
+          onPaperChange={onPaperChange}
+          onApplyPreset={onApplyPreset}
+          onApplySavedTheme={onApplySavedTheme}
+          onDeleteSavedTheme={onDeleteSavedTheme}
+          onSaveTheme={onSaveTheme}
+          onChooseImage={onChooseImage}
+          onToggleFocus={onToggleFocus}
+        />
+
         <section className="settings-section" aria-labelledby="theme-heading">
           <h3 id="theme-heading" className="settings-label">
             外观主题
@@ -125,7 +170,7 @@ export function SettingsPanel({
 
           <div className="range-field">
             <div className="range-meta">
-              <label htmlFor="editor-width">编辑宽度</label>
+              <label htmlFor="editor-width">沉浸式阅读宽度</label>
               <output htmlFor="editor-width">{settings.editorWidth} px</output>
             </div>
             <input
@@ -139,7 +184,10 @@ export function SettingsPanel({
             />
           </div>
 
-          <div className="type-preview" style={{ fontSize: settings.fontSize, lineHeight: settings.lineHeight }}>
+          <div
+            className="type-preview"
+            style={{ fontSize: settings.fontSize, lineHeight: settings.lineHeight }}
+          >
             让文字慢下来。
           </div>
         </section>
@@ -151,15 +199,15 @@ export function SettingsPanel({
           <div className="storage-card">
             <span className="status-dot" aria-hidden="true" />
             <div>
-              <p>章节与偏好保存在本机</p>
-              <p className="storage-detail">暂不上传云端，关闭窗口后仍会保留。</p>
+              <p>章节、主题与偏好保存在本机</p>
+              <p className="storage-detail">背景图片使用本机 IndexedDB 缓存，不上传云端。</p>
             </div>
           </div>
         </section>
 
         <div className="settings-version">
-          <span>PaperScape 0.2.0</span>
-          <span>第二阶段</span>
+          <span>PaperScape 0.3.0</span>
+          <span>第三阶段</span>
         </div>
       </div>
     </aside>
