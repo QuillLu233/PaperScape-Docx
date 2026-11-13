@@ -16,7 +16,6 @@ interface DocumentBarProps {
   onRestoreRecovery: () => void;
   onDiscardRecovery: () => void;
   onClearError: () => void;
-  onCloseDocument: () => void;
   onCloseWorkspace: () => void;
 }
 
@@ -35,7 +34,6 @@ export function DocumentBar({
   onRestoreRecovery,
   onDiscardRecovery,
   onClearError,
-  onCloseDocument,
   onCloseWorkspace,
 }: DocumentBarProps) {
   if (!document) {
@@ -90,9 +88,6 @@ export function DocumentBar({
           <button type="button" className="primary-button" onClick={onSave} disabled={saving}>
             <Icon name="save" size={13} />
             {saving ? '保存中…' : '保存'}
-          </button>
-          <button type="button" className="icon-button" aria-label="关闭文稿" title="关闭文稿" onClick={onCloseDocument}>
-            <Icon name="close" size={13} />
           </button>
         </div>
       </div>

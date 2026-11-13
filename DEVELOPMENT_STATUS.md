@@ -17,9 +17,9 @@
 - React 正式构建：通过，约 3.6 s。
 - Tauri Windows Release：`pnpm tauri build --no-bundle` 通过，约 24.2 s，保留 Cargo target 缓存。
 - EXE：`src-tauri/target/release/paperscape.exe`，**9,927,168 字节**。
-- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,210,958 字节**。
-- ZIP SHA256：`E4D8DE029E735E7A1F6A1EBF4CCFDA0BE74958DF790E74CD81676B1FCBAA8D99`。
-- EXE SHA256：`7438DF25078641C6D115AB5469BD69259FBFB4F6B5FE3B10FAFF72D15E59552B`。
+- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,210,911 字节**。
+- ZIP SHA256：`CBE727E8B81CE650577B5465765B03B36B326E9FCF48A0E9949381675F1B0CE8`。
+- EXE SHA256：`3FA2207D53E13862673B7537E596563B4140BF01C0B88AA84DA13006F1869B4F`。
 - ZIP 内只有 `PaperScape-v1.1-Portable/PaperScape.exe` 和 `README.txt`。
 - **未生成 NSIS/MSI**；未引入 Electron、额外大型运行时或后台服务。
 
@@ -27,7 +27,7 @@
 
 | 指标 | 实测 | 目标/结论 |
 | --- | --- | --- |
-| ZIP 体积 | 3,210,958 B（约 3.06 MiB） | ≤30 MB，达到 |
+| ZIP 体积 | 3,210,911 B（约 3.06 MiB） | ≤30 MB，达到 |
 | EXE 体积 | 9,927,168 B | 轻量 |
 | 启动到窗口（热缓存，任务计划口径） | 255 / 84 / 54 ms | ≤2 s 目标达到；**不是严格冷启动** |
 | V1 项目空闲 Working Set（含 7 个进程） | **379.2 MB** | 150 MB 挑战目标**未达到** |
@@ -101,6 +101,12 @@
 - **自动化**：新增 `SettingsPanel.test.tsx`，锁定文件模式不显示项目专属排版控件；前端测试更新为 **16 个文件、66 个测试通过**。
 - **V1.0 自定义背景恢复**：文件模式现在显示完整 `AppearanceSettings`（写作模式、背景预设/图片、亮度、模糊、暗角、遮罩、纸张、保存主题）。文件模式外观保存在本机 `__document__` 外观记录，不写入 DOCX；V1 项目仍使用项目自身的 `project.json` 外观，原有 V1 项目背景继续保留。
 - 修复后的 Portable ZIP 已重新构建并校验。
+
+### 文稿关闭按钮（2026-11-13）
+
+- 文稿信息栏最右侧的 `×` 原本调用“关闭文稿”，是有意功能，但与“保存/另存为”相邻，容易误触。
+- 已从文稿信息栏移除该 `×`；关闭文稿仍可通过“文件 → 关闭当前文稿”完成，窗口关闭按钮仍只关闭整个应用。
+- 未改变保存、另存为、自动保存或关闭窗口逻辑。
 
 ### 全屏任务栏修复（2026-11-13）
 

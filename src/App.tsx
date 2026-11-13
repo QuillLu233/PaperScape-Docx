@@ -1054,7 +1054,6 @@ export default function App() {
                     onRestoreRecovery={restoreDocumentRecovery}
                     onDiscardRecovery={discardDocumentRecovery}
                     onClearError={clearDocumentError}
-                    onCloseDocument={() => void handleCloseDocument()}
                     onCloseWorkspace={() => void closeWorkspace()}
                   />
                 }
