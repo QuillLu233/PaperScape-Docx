@@ -54,7 +54,7 @@ function errorMessage(error: unknown): string {
   return '项目操作失败';
 }
 
-export function useProject() {
+export function useProject(autoSave = true) {
   const [recent, setRecent] = useState<RecentProject[]>([]);
   const [project, setProject] = useState<ProjectState | null>(null);
   const [activeChapter, setActiveChapter] = useState<ChapterFile | null>(null);
@@ -206,10 +206,11 @@ export function useProject() {
 
   const scheduleAutosave = useCallback(() => {
     clearSaveTimer();
+    if (!autoSave) return;
     saveTimerRef.current = window.setTimeout(() => {
       void saveChapterNow('autosave');
     }, AUTOSAVE_MS);
-  }, [clearSaveTimer, saveChapterNow]);
+  }, [autoSave, clearSaveTimer, saveChapterNow]);
 
   const scheduleMetaSave = useCallback(() => {
     clearMetaTimer();

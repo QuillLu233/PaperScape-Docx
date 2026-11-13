@@ -8,6 +8,7 @@ interface DocumentBarProps {
   error: string;
   recovery: { savedAt: number; title: string } | null;
   recoveryError: string;
+  autoSave: boolean;
   onSave: () => void;
   onSaveAs: () => void;
   onReveal: () => void;
@@ -26,6 +27,7 @@ export function DocumentBar({
   error,
   recovery,
   recoveryError,
+  autoSave,
   onSave,
   onSaveAs,
   onReveal,
@@ -85,10 +87,12 @@ export function DocumentBar({
           <button type="button" className="secondary-button" onClick={onSaveAs} disabled={saving}>
             另存为
           </button>
-          <button type="button" className="primary-button" onClick={onSave} disabled={saving}>
-            <Icon name="save" size={13} />
-            {saving ? '保存中…' : '保存'}
-          </button>
+          {!autoSave || document.dirty || saving || Boolean(error) ? (
+            <button type="button" className="primary-button" onClick={onSave} disabled={saving}>
+              <Icon name="save" size={13} />
+              {saving ? '保存中…' : '保存'}
+            </button>
+          ) : null}
         </div>
       </div>
 

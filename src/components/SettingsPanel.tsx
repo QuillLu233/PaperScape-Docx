@@ -6,6 +6,7 @@ import type {
   ThemeMode,
   WritingMode,
   WritingSettings,
+  SaveMode,
 } from '../types';
 import { DEFAULT_SETTINGS, EDITOR_WIDTH_MAX, EDITOR_WIDTH_MIN, THEME_LABELS } from '../types';
 import { AppearanceSettings } from './AppearanceSettings';
@@ -45,6 +46,10 @@ interface SettingsPanelProps {
   onToggleFocus: () => void;
   onClose: () => void;
   documentMode?: boolean;
+  saveMode: SaveMode;
+  onSaveModeChange: (mode: SaveMode) => void;
+  documentBarAutoCollapse: boolean;
+  onDocumentBarAutoCollapseChange: (value: boolean) => void;
 }
 
 const THEME_OPTIONS: Array<{ mode: ThemeMode; icon: IconName }> = [
@@ -87,6 +92,10 @@ export const SettingsPanel = memo(function SettingsPanel({
   onToggleFocus,
   onClose,
   documentMode = false,
+  saveMode,
+  onSaveModeChange,
+  documentBarAutoCollapse,
+  onDocumentBarAutoCollapseChange,
 }: SettingsPanelProps) {
   return (
     <aside
@@ -123,6 +132,51 @@ export const SettingsPanel = memo(function SettingsPanel({
             </p>
           </section>
         ) : null}
+
+        <section className="settings-section" aria-labelledby="save-mode-heading">
+          <h3 id="save-mode-heading" className="settings-label">
+            保存方式
+          </h3>
+          <div className="save-mode-grid" role="group" aria-label="保存方式">
+            <button
+              type="button"
+              className={`theme-option${saveMode === 'auto' ? ' is-active' : ''}`}
+              aria-pressed={saveMode === 'auto'}
+              onClick={() => onSaveModeChange('auto')}
+            >
+              <Icon name="save" size={17} />
+              <span>自动保存</span>
+            </button>
+            <button
+              type="button"
+              className={`theme-option${saveMode === 'manual' ? ' is-active' : ''}`}
+              aria-pressed={saveMode === 'manual'}
+              onClick={() => onSaveModeChange('manual')}
+            >
+              <Icon name="edit" size={17} />
+              <span>手动保存</span>
+            </button>
+          </div>
+          <p className="settings-note">
+            {saveMode === 'auto'
+              ? documentMode
+                ? '停止编辑约 1.5 秒后自动写回 DOCX；只读、格式风险或外部修改时不会自动覆盖。'
+                : '停止编辑后自动保存当前项目章节。'
+              : documentMode
+                ? '使用 Ctrl+S、文件菜单或保存按钮保存 DOCX；不会自动写回原文件。'
+                : '使用 Ctrl+S 或文件菜单保存当前项目。'}
+          </p>
+          {documentMode ? (
+            <label className="settings-check-row">
+              <input
+                type="checkbox"
+                checked={documentBarAutoCollapse}
+                onChange={(event) => onDocumentBarAutoCollapseChange(event.target.checked)}
+              />
+              <span>文稿信息栏空闲后自动收起</span>
+            </label>
+          ) : null}
+        </section>
 
         <AppearanceSettings
           appearance={appearance}

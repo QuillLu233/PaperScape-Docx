@@ -38,6 +38,10 @@ const baseProps = {
   onClearProofreadingIgnored: vi.fn(),
   onToggleFocus: vi.fn(),
   onClose: vi.fn(),
+  saveMode: 'auto' as const,
+  onSaveModeChange: vi.fn(),
+  documentBarAutoCollapse: true,
+  onDocumentBarAutoCollapseChange: vi.fn(),
 };
 
 describe('SettingsPanel document mode', () => {
@@ -49,6 +53,10 @@ describe('SettingsPanel document mode', () => {
     expect(screen.getByText('外观主题')).toBeInTheDocument();
     expect(screen.getByText('界面')).toBeInTheDocument();
     expect(screen.getByText('中文校对')).toBeInTheDocument();
+    expect(screen.getByText('保存方式')).toBeInTheDocument();
+    expect(screen.getByText('自动保存')).toBeInTheDocument();
+    expect(screen.getByText('手动保存')).toBeInTheDocument();
+    expect(screen.getByText('文稿信息栏空闲后自动收起')).toBeInTheDocument();
     expect(screen.queryByText('正文排版')).not.toBeInTheDocument();
   });
 });

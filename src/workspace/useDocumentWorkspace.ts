@@ -103,7 +103,7 @@ function emptyDocument(): OpenDocxState {
   };
 }
 
-export function useDocumentWorkspace(): DocumentWorkspace {
+export function useDocumentWorkspace(autoSave = true): DocumentWorkspace {
   const [root, setRoot] = useState<string | null>(null);
   const [tree, setTree] = useState<WorkspaceNode[]>([]);
   const [document, setDocument] = useState<OpenDocxState | null>(null);
@@ -471,6 +471,7 @@ export function useDocumentWorkspace(): DocumentWorkspace {
 
   useEffect(() => {
     if (
+      !autoSave ||
       !document?.dirty ||
       !document.path ||
       document.readOnly ||
@@ -488,6 +489,7 @@ export function useDocumentWorkspace(): DocumentWorkspace {
     }, 1500);
     return () => window.clearTimeout(timer);
   }, [
+    autoSave,
     document?.characterCount,
     document?.dirty,
     document?.overwriteAuthorized,

@@ -18,6 +18,8 @@ export interface WritingSettings {
   editorWidth: number;
 }
 
+export type SaveMode = 'auto' | 'manual';
+
 export type WritingMode = 'immersive' | 'paper';
 export type BackgroundKind = 'solid' | 'gradient' | 'image';
 export type PageSize = 'A4' | 'Letter' | 'custom';

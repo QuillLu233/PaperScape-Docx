@@ -26,6 +26,7 @@ import { DEFAULT_SETTINGS } from './types';
 import type { ProjectAppearance } from './types';
 import type { DocxExportOptions } from './docx/exportDocx';
 import type { ImportedDocx } from './docx/importDocx';
+import type { SaveMode } from './types';
 import { chooseDocxOpenPath, chooseDocxSavePath, chooseFolder, isTauriRuntime, readDocxFile, saveDocxExport } from './project/api';
 import { revealWorkspacePath } from './workspace/api';
 import { baseName, useDocumentWorkspace } from './workspace/useDocumentWorkspace';
@@ -58,8 +59,14 @@ function hasImageFile(event: DragEvent<HTMLElement>): boolean {
 }
 
 export default function App() {
-  const projectController = useProject();
-  const documentController = useDocumentWorkspace();
+  const [saveMode, setSaveMode] = useState<SaveMode>(() =>
+    window.localStorage.getItem('paperscape.saveMode') === 'manual' ? 'manual' : 'auto',
+  );
+  const [documentBarAutoCollapse, setDocumentBarAutoCollapse] = useState(
+    () => window.localStorage.getItem('paperscape.documentBarAutoCollapse') !== 'false',
+  );
+  const projectController = useProject(saveMode === 'auto');
+  const documentController = useDocumentWorkspace(saveMode === 'auto');
   const {
     recentItems,
     document: activeDocument,
@@ -318,6 +325,20 @@ export default function App() {
     }
   }, [focusMode, isDesktop, isFullscreen, toggleFullscreen]);
 
+  const changeSaveMode = useCallback((mode: SaveMode) => {
+    setSaveMode(mode);
+    window.localStorage.setItem('paperscape.saveMode', mode);
+    if (mode === 'manual') {
+      setDocumentBarCollapsed(false);
+      window.localStorage.setItem('paperscape.documentBarCollapsed', 'false');
+    }
+  }, []);
+
+  const changeDocumentBarAutoCollapse = useCallback((value: boolean) => {
+    setDocumentBarAutoCollapse(value);
+    window.localStorage.setItem('paperscape.documentBarAutoCollapse', String(value));
+  }, []);
+
   const toggleDocumentBar = useCallback(() => {
     setDocumentBarCollapsed((current) => {
       const next = !current;
@@ -325,6 +346,36 @@ export default function App() {
       return next;
     });
   }, []);
+
+  useEffect(() => {
+    if (
+      saveMode !== 'auto' ||
+      !isDocumentMode ||
+      !activeDocument ||
+      !documentBarAutoCollapse ||
+      documentBarCollapsed ||
+      focusMode ||
+      activeDocument.dirty ||
+      documentSaving ||
+      documentError ||
+      documentRecovery ||
+      activeDocument.risk.warnings.length > 0
+    ) {
+      return;
+    }
+    const timer = window.setTimeout(() => setDocumentBarCollapsed(true), 6000);
+    return () => window.clearTimeout(timer);
+  }, [
+    activeDocument,
+    documentBarAutoCollapse,
+    documentBarCollapsed,
+    documentError,
+    documentRecovery,
+    documentSaving,
+    focusMode,
+    isDocumentMode,
+    saveMode,
+  ]);
 
   const toggleFocusFromShortcut = useCallback(() => {
     const now = Date.now();
@@ -915,6 +966,10 @@ export default function App() {
       onClearProofreadingIgnored={proofreading.clearIgnored}
       onToggleFocus={toggleFocusMode}
       onClose={toggleRight}
+      saveMode={saveMode}
+      onSaveModeChange={changeSaveMode}
+      documentBarAutoCollapse={documentBarAutoCollapse}
+      onDocumentBarAutoCollapseChange={changeDocumentBarAutoCollapse}
     />
   );
 
@@ -1090,6 +1145,7 @@ export default function App() {
                         error={documentError}
                         recovery={documentRecovery}
                         recoveryError={documentRecoveryError}
+                        autoSave={saveMode === 'auto'}
                         onSave={() => void handleSaveDocumentNow()}
                         onSaveAs={() => void handleSaveDocumentAsNow()}
                         onReveal={() => void handleRevealDocument()}
