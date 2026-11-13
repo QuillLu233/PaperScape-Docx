@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type {
   BackgroundStyle,
   ProjectAppearance,
@@ -38,7 +39,7 @@ const THEME_OPTIONS: Array<{ mode: ThemeMode; icon: IconName }> = [
   { mode: 'system', icon: 'monitor' },
 ];
 
-export function SettingsPanel({
+export const SettingsPanel = memo(function SettingsPanel({
   open,
   theme,
   settings,
@@ -206,10 +207,10 @@ export function SettingsPanel({
         </section>
 
         <div className="settings-version">
-          <span>PaperScape 0.5.0</span>
-          <span>第五阶段</span>
+          <span>PaperScape 1.0.0</span>
+          <span>正式版</span>
         </div>
       </div>
     </aside>
   );
-}
+});

@@ -268,10 +268,11 @@ export async function prepareBackgroundImage(file: File): Promise<Blob> {
     throw new Error('仅支持 JPG、PNG、WebP 背景图片');
   }
   if (file.size > MAX_IMAGE_BYTES) throw new Error('背景图片不能超过 15 MB');
-  if (file.size <= PASS_THROUGH_BYTES) return file;
 
   const image = await loadImageElement(file);
   const largestEdge = Math.max(image.naturalWidth, image.naturalHeight, 1);
+  if (file.size <= PASS_THROUGH_BYTES && largestEdge <= MAX_IMAGE_EDGE) return file;
+
   const scale = Math.min(1, MAX_IMAGE_EDGE / largestEdge);
   const width = Math.max(1, Math.round(image.naturalWidth * scale));
   const height = Math.max(1, Math.round(image.naturalHeight * scale));

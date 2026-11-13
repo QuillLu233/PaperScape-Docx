@@ -1,222 +1,148 @@
 # PaperScape 开发状态
 
 - 更新时间：2026-11-12
-- 阶段：第五阶段（Microsoft Word DOCX 导入与导出）
-- 版本：0.5.0
-- 结论：**第五阶段已完成。DOCX 导入、HTML 清洗、Tiptap JSON 中转、当前/全部章节导出、A4/Letter、标准/小说预设、图片与表格导出均已实现；导出文件已由本机 Microsoft Word 实际打开验证。**
+- 版本：1.0.0（正式版）
+- 阶段：最终优化、发布构建与安装包
+- 结论：**源代码、NSIS 安装包、测试记录、性能报告和已知问题已完成。默认安装路径的安装验证在当前测试环境被系统策略阻止，已如实记录，未伪称通过。**
 
-## 一、材料与规范检查
+## 一、交付物
 
-| 材料 | 结果 |
+| 交付物 | 路径 |
 | --- | --- |
-| `AGENTS.md` | 工作区中仍不存在；项目按 README/任务说明和现有代码推进 |
-| `DEVELOPMENT_STATUS.md` | 已存在并读取，本文件更新为第五阶段状态 |
-| `paperscape-dev` Skill | 当前会话仍不可用，`skill` 返回 unknown |
+| 完整源代码 | 本仓库 |
+| 简体中文 README | `README.md` |
+| NSIS 安装包 | `release/PaperScape_1.0.0_x64-setup.exe` |
+| 安装包大小 | 2,379,050 bytes（2.269 MiB） |
+| SHA256 | `87442301992CA40A0EBCABD132CF0FC2CBF25A08D62B13AADAB9F61BFDE125F9` |
+| 性能报告 | `PERFORMANCE.md` |
+| 已知问题 | `KNOWN_ISSUES.md` |
+| 开发记录 | 本文件 |
+| Word 测试样本 | `docs/fixtures/` |
+| 界面截图 | `docs/screenshots/` |
 
-## 二、环境与基线
+安装包**未签名（NotSigned）**，没有伪造签名。未生成 MSI：本机没有 WiX，NSIS 已优先完成。
 
-- Windows 10 Home China / 25H2 / Build 26200.9711 / x64；显示缩放 150%。
-- Node.js 24.21.0、pnpm 11.28.5、Rust 1.100.0、MSVC 14.44、Windows SDK 10.0.26100 可用。
-- **Microsoft Word 16.0（Build 16.0.20527）已安装**，用于真实 DOCX 兼容性验证。
-- 系统 PATH 未安装 Node/pnpm/Rust/Git；验证使用项目内用户级工具链。
-- 真实 Tauri 验收通过中完整性计划任务启动。该测试环境的计划任务会在测试命令结束后被回收，应用本身正常。
+## 二、最终版本新增工作
 
-## 三、第五阶段新增实现
+### 性能
 
-### DOCX 导入
+- Word 导入/导出模块改为动态 `import()`：
+  - 初始 JS：1,395 kB → **810.00 kB**。
+  - 导入 chunk：339.50 kB；导出 chunk：246.17 kB。
+  - 初始 gzip：430.65 kB → **250.48 kB**。
+- `BackgroundLayer`、`SettingsPanel` 使用 `React.memo`，减少正文输入时无关设置/背景重绘。
+- 背景图片现在先读取实际尺寸；最长边超过 2560 px 时缩放，避免超大图直接解码。
+- Word 转换不再进入启动主包。
+- JSZip 从运行时依赖移到 devDependency（测试使用）。
+- 自动保存仍是变更触发的防抖，不做持续轮询。
 
-- 通过 Windows 原生文件对话框选择 `.docx`；后端只读用户选择的文件。
-- 导入使用 **Mammoth.js**：
-  - 默认语义样式映射 + 自定义 `Title`/Heading 映射。
-  - 图片通过 Mammoth image converter 读取为 base64 data URI。
-  - Mammoth 警告会进入导入提示。
-- 解析后的 HTML 先经 **DOMPurify** 清洗，再由 Tiptap 扩展生成 JSON：
-  - 禁止 script、style、iframe、object、embed、form、SVG/Math 等标签。
-  - 禁止事件处理属性。
-  - 移除外部图片，只允许白名单 base64 图片格式。
-  - 只保留安全链接协议。
-  - 内联 style 只保留有限的文本/段落属性，拒绝 `url()`、`expression`、`javascript:` 等。
-- 不支持项明确提示：页眉页脚、批注、修订记录、公式、文本框、宏、嵌入对象、Word 页面背景等。
-- 导入不会修改原 DOCX；始终创建新章节，不覆盖当前正文。
-- 导入预览显示字数、图片数、表格数和兼容性提示。
+### 打包
 
-### DOCX 导出
+- `bundle.windows.webviewInstallMode` 设置为 `skip`，安装包不包含/不下载 WebView2，只依赖系统已有运行时。
+- NSIS 改为简体中文单语言，无语言选择页。
+- 通过中完整性计划任务完成 Tauri release + NSIS 打包；NSIS 工具正常下载并生成 setup。
+- release 主程序：9,582,592 bytes，FileVersion 1.0.0。
 
-- 使用 `docx` 9.x 生成真正的 **Office Open XML**：
-  - ZIP 包包含 `[Content_Types].xml`、`word/document.xml` 和 `word/media/*`。
-  - 不是修改扩展名的 HTML。
-- 支持导出当前章节和合并全部章节。
-- 标准文档预设：A4、1 英寸页边距、1.15 行距。
-- 小说稿件预设：A4、较宽页边距、1.5 行距、首行缩进。
-- 页面规格：A4 / US Letter。
-- 基本字体、字号、标题 H1–H3、列表、加粗/斜体/下划线/删除线、文字样式、对齐、行距、首行缩进。
-- 表格导出为 Word Table；PNG/JPEG/GIF/BMP 图片导出为 InlineShape；不支持的图片类型会跳过并提示。
-- 全部章节按顺序导出，章节之间分页。
-- 软件背景、纸张颜色、暗角、遮罩和界面主题不写入 Word。
-- 导出使用 Windows 原生保存对话框，Rust 原子写入目标文件。
+### 文档
 
-### 测试样本
+- `README.md` 重写为安装、使用、源码构建和限制说明。
+- 新增 `PERFORMANCE.md`：真实启动、内存、CPU、体积、按需加载数据。
+- 新增 `KNOWN_ISSUES.md`：安装、签名、内存、输入法、DOCX 和测试边界。
 
-- `docs/fixtures/phase5-sample.docx`：包含中文/英文、标题、粗体/斜体、对齐段落、无序/有序列表、3 列 2 行表格和内嵌 PNG 图片。
-- `docs/fixtures/phase5-export.docx`：当前章节真实导出样本。
-- `docs/fixtures/phase5-all.docx`：合并全部章节真实导出样本。
-- `docs/fixtures/phase5-sample-image.png`：样本图片源。
-- `scripts/make-docx-fixture.py`：可重复生成样本。
+## 三、测试结果
 
-### 版本
+### 前端
 
-- package / Cargo / Tauri / About / Settings 均升级为 `0.5.0`。
-- 菜单新增“导入 Word 文档…”“导出 Word 文档…”。
+`pnpm test`：**6 个测试文件，39 个测试通过**。
 
-## 四、测试结果
+- `src/docx/docx.test.ts`：6 个 DOCX 导入/导出/round-trip/安全测试。
+- `src/App.test.tsx`：9 个。
+- `src/editor/editor.test.ts`：13 个。
+- `src/appearance/appearance.test.ts`：5 个。
+- `src/lib/workspace.test.ts`：4 个。
+- `src/App.window.test.tsx`：2 个。
 
-### 4.1 前端测试
+其他：
 
-`pnpm test`：**6 个测试文件，39 个测试全部通过**。
+- `pnpm check`：通过。
+- `pnpm build`：通过，371 modules。
+- `cargo fmt --check`：通过。
+- `cargo test --offline --lib`：**12 个测试通过**。
+- `cargo build --offline --release`：通过。
 
-- `src/docx/docx.test.ts`：6 个 DOCX 测试。
-- `src/App.test.tsx`：项目 UI、双模式、专注、快捷键。
-- `src/editor/editor.test.ts`：Tiptap 富文本、表格、图片、长文。
-- `src/appearance/appearance.test.ts`：背景/纸张设置。
-- `src/lib/workspace.test.ts`：旧数据迁移。
-- `src/App.window.test.tsx`：窗口控制。
+### 真实 Word 验证
 
-DOCX 测试覆盖：
-
-- 真实 `phase5-sample.docx` 导入：标题、粗体、斜体、列表、表格、图片。
-- HTML 清洗：`script`、`onclick`、外部图片、`javascript:` 链接、`style` 外部 URL。
-- 导出 ZIP/OOXML 结构。
-- A4 页面尺寸 `11906 × 16838` twips。
-- US Letter 页面尺寸 `12240 × 15840` twips。
-- 当前章节导出并再次导入的 round-trip。
-- 合并全部章节、分页、标题、正文、表格、图片。
-- 导出 XML 不包含软件背景。
-- 原 DOCX 文件 SHA256 在导入前后未变化。
-- 把 HTML 改名为 `.docx` 会被拒绝。
-
-### 4.2 Rust 测试
-
-`cargo test --offline --lib`：**12 个测试全部通过**。
-
-保留第四阶段的数据安全测试：
-
-- 原子替换已有 JSON。
-- 项目创建/重开。
-- 40 万字数多章节项目。
-- 历史备份/恢复。
-- 项目元数据和章节损坏恢复。
-- recovery 草稿恢复。
-- 正常关闭清理 recovery。
-- 章节删除进 `trash`。
-- 路径穿越拒绝。
-
-### 4.3 真实 Tauri 导入测试
-
-通过 Windows 原生打开对话框选择 `docs/fixtures/phase5-sample.docx`：
-
-- 导入提示：153 字、1 张图片、1 个表格。
-- 生成新章节 `phase5-sample`。
-- 编辑器实际显示：
-  - `PaperScape DOCX Roundtrip`
-  - `第一章 中文标题`
-  - `English Heading H2`
-  - 中文普通段落、粗体内容、斜体内容、English mixed text
-  - 无序/有序列表
-  - 表格单元格
-  - 图片
-- 项目章节数从 1 变为 2（在原有测试项目上）。
-- 原 DOCX 未被修改（自动化测试哈希相同）。
-
-### 4.4 真实 Tauri 导出测试
-
-| 导出 | 文件 | 结果 |
-| --- | --- | --- |
-| 当前章节 | `phase5-export.docx` | 13,031 字节，ZIP 头 `50 4B 03 04` |
-| 合并全部 | `phase5-all.docx` | 13,064 字节，ZIP 头 `50 4B 03 04` |
-
-**Microsoft Word 16.0.20527 只读打开验证：**
-
-当前章节导出：
+使用 Microsoft Word 16.0.20527 只读打开 1.0.0 发布版导出的 `phase5-release-export.docx`：
 
 - 打开成功。
 - 段落 22、表格 1、InlineShape 1。
-- A4 页面 595.3 × 841.9 pt。
-- 中文、英文、标题、表格内容均存在。
+- A4：595.3 × 841.9 pt。
+- 中文普通段落、中文单元格存在。
+- 导出文件 13,033 bytes，ZIP 头 `50 4B 03 04`。
 
-合并全部章节：
+发布版动态加载后的真实 Tauri 导入/导出均已执行：
 
-- 打开成功。
-- 段落 24、表格 1、InlineShape 1。
-- 第一、第二章节内容均存在。
-- A4 页面 595.3 × 841.9 pt。
+- 导入样本后编辑器文本长度 186，包含中文段落和表格。
+- 导出当前章节成功，Word 实际打开通过。
 
-**真实往返：**
+### 安装/卸载
 
-- 将 `phase5-export.docx` 再次通过原生打开对话框导入。
-- 新章节 `phase5-export` 创建成功。
-- 编辑器文本包含中文普通段落和中文单元格。
-- 项目章节数变为 3；文本长度 200（含标题/列表/表格）。
+- 安装到自定义工作区目录成功，生成 `paperscape.exe` 和 `uninstall.exe`。
+- `uninstall.exe /S` 成功删除安装目录。
+- 以安装器生成的 `paperscape.exe`（1.0.0）在用户本地程序目录启动，显示“PaperScape 纸境”。
+- 默认 `%LOCALAPPDATA%\PaperScape` 安装失败：测试环境的系统/安全/沙箱策略拒绝写入，安装器报“无法打开要写入的文件”。**未将该路径标记为通过。**
+- 自定义目录静默安装未在“应用和功能”注册表/快捷方式中完整验证；见 `KNOWN_ISSUES.md`。
 
-### 4.5 构建
+## 四、真实性能数据
 
-| 命令 | 结果 |
+| 指标 | 实测 | 目标 | 判定 |
+| --- | ---: | ---: | --- |
+| NSIS setup | 2,379,050 bytes / 2.269 MiB | ≤ 30 MB | 达到 |
+| 初始 JS | 810.00 kB（gzip 250.47 kB） | 优化 | 已完成按需拆分 |
+| 启动到启动器可交互 | 0.469 / 0.511 / 0.746 s | ≤ 2 s（冷启动） | 本次缓存已热场景达到；严格冷启动未验证 |
+| 空闲内存（启动器） | 362.5 MB Working Set / 203 MB private | ≤ 150 MB | **未达到** |
+| 空闲内存（项目） | 437.7 MB Working Set / 283 MB private | ≤ 150 MB | **未达到** |
+| 空闲 CPU | 0.013%（启动器）/ 0.000%（项目） | 接近 0% | 达到 |
+| Word 模块初始加载 | 不在主包，按需 339.50/246.17 kB | 按需 | 达到 |
+
+完整方法、限制和结论见 `PERFORMANCE.md`。
+
+## 五、功能检查记录
+
+| 检查项 | 结果 |
 | --- | --- |
-| `pnpm check` | 通过 |
-| `pnpm test` | 39/39 通过 |
-| `pnpm build` | 通过；370 modules；JS 1,395.02 kB / CSS 47.85 kB |
-| `cargo test --offline --lib` | 12/12 通过 |
-| `cargo build --offline` | 通过；0.5.0 debug exe |
-| `cargo fmt --check` | 通过 |
+| 菜单/按钮 | 真实窗口测试了新建项目、最近项目、文件菜单、Word 导入/导出、设置面板；前序菜单项由测试和既有验收覆盖 |
+| 中文输入法 | 前序阶段有 composition 测试；本次未在 1.0.0 安装版上重新自动化微软拼音候选窗，明确记录为待人工复测 |
+| 背景模式切换 | 前序阶段真实测试通过；本次未改动模式逻辑，只加了 memo |
+| 章节保存与崩溃恢复 | Rust 原子保存/历史/恢复测试通过；本次未改动存储逻辑 |
+| Word 导入导出 | 1.0.0 release 真实导入/导出，Word 打开通过 |
+| 窗口调整/高 DPI | 前序阶段 150% 缩放截图和窗口测试通过；本次 release 在 150% 环境启动 |
+| TypeScript/Rust | `pnpm check`、`cargo fmt --check`、39 前端 + 12 Rust 测试通过 |
+| 运行时错误 | release 启动、项目创建、DOCX 导入/导出、Word 打开均完成；未观察到崩溃 |
 
-## 五、验收对照
+## 六、已知限制摘要
 
-| 要求 | 状态 | 说明 |
-| --- | --- | --- |
-| Windows 原生对话框选择 DOCX | ✅ | GetOpenFileNameW 实际调起 |
-| Mammoth.js 解析 | ✅ | 真实样本 |
-| 转换 Tiptap 格式 | ✅ | 生成 JSON 并显示 |
-| 段落/标题/粗体/斜体/列表 | ✅ | 导入与 Word 验证 |
-| 常规表格/图片/段落样式 | ✅/部分 | 表格、图片；复杂段落样式有提示 |
-| HTML 安全清洗 | ✅ | DOMPurify + 白名单 |
-| 不执行脚本/宏/外部程序 | ✅ | 不运行 Word，不执行宏 |
-| 不修改原文件 | ✅ | 只读；哈希测试 |
-| 复杂格式明确提示 | ✅ | 导入兼容性面板 |
-| docx 库生成 OOXML | ✅ | ZIP/OOXML |
-| 当前章节导出 | ✅ | 真实文件 |
-| 全部章节合并 | ✅ | 真实文件 + Word |
-| 标准/小说预设 | ✅ | A4、边距、行距、缩进 |
-| 字体/字号/标题/列表/段落 | ✅ | docx 属性 |
-| A4 / US Letter | ✅ | 单测 XML + Word A4 |
-| 图片/表格导出 | ✅ | Word InlineShape/Table |
-| 背景不写入 Word | ✅ | XML 无 `w:background` |
-| Word 可打开 | ✅ | Word 16.0.20527 实际打开 |
-| 往返测试 | ✅ | 单测 + 真实导出再导入 |
-| 中文/英文/标题/格式/图片/表格样本 | ✅ | `phase5-sample.docx` |
-| 不把 HTML 冒充 DOCX | ✅ | ZIP/OOXML + 拒绝测试 |
+- 安装包未签名，SmartScreen 会提示。
+- 默认安装路径在测试环境被策略阻止；自定义目录安装通过。
+- 空闲内存未达到 150 MB，主要来自 WebView2 多进程。
+- 严格冷启动未验证；测得的是系统缓存已热场景。
+- 输入法候选窗未在最终安装版上重新做真实自动化。
+- 复杂 DOCX 格式、WebP/SVG 图片、部分表格特性支持有限。
+- 未生成 MSI；未实现自动更新。
+- 完整列表见 `KNOWN_ISSUES.md`。
 
-## 六、已知限制
+## 七、Git
 
-- Mammoth 不保留页眉页脚、批注、修订、公式、文本框、分节、页眉图片、艺术字、SmartArt、嵌入对象、宏等；导入时会显示通用兼容性提示。
-- 导入对复杂字体、字号、颜色、精确段落对齐的保留有限；Mammoth 主要保留语义结构。
-- 图片导出使用固定显示尺寸（最大 520px），不是原始像素尺寸；WebP/SVG 等不受 docx 图片类型支持的图片会跳过并提示。
-- 表格合并单元格、跨页表头、复杂边框样式暂不完整支持。
-- 导入始终创建新章节，不提供“替换当前章节”。
-- 只支持 `.docx`，不支持旧 `.doc`；HTML 改扩展名会被后端/解析器拒绝。
-- 没有导入页眉页脚、批注、修订等 UI 选择。
-- 前端 bundle 因 Mammoth/docx 增至约 1.4 MB（gzip 430.65 kB）；未做按需动态加载。
-- Word 兼容性验证是只读打开和结构检查，不等于所有复杂版式在 Word 中的逐像素一致。
-
-## 七、Git 检查点
-
-第五阶段源码、样本、真实截图、Word 验证结果和本记录：
+最终检查点：
 
 ```text
-feat: add DOCX import and export
+chore: prepare PaperScape 1.0.0 release
 ```
 
-前四阶段检查点：
+前序检查点：
 
 ```text
+69ef786 feat: add DOCX import and export
 24f1e8e feat: add reliable local project storage
 5e4a2c7 feat: add dual writing modes and backgrounds
 92972ca feat: add Tiptap rich text editing

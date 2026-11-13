@@ -44,9 +44,6 @@ importers:
       dompurify:
         specifier: ^3.4.17
         version: 3.4.17
-      jszip:
-        specifier: ^3.10.2
-        version: 3.10.2
       mammoth:
         specifier: ^1.13.0
         version: 1.13.0
@@ -87,6 +84,9 @@ importers:
       jsdom:
         specifier: ^31.0.0
         version: 31.0.0
+      jszip:
+        specifier: ^3.10.2
+        version: 3.10.2
       tailwindcss:
         specifier: ^4.3.5
         version: 4.3.5

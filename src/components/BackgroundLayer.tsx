@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import type { BackgroundStyle } from '../types';
 
 interface BackgroundLayerProps {
@@ -7,7 +7,11 @@ interface BackgroundLayerProps {
   focusMode: boolean;
 }
 
-export function BackgroundLayer({ background, imageUrl, focusMode }: BackgroundLayerProps) {
+export const BackgroundLayer = memo(function BackgroundLayer({
+  background,
+  imageUrl,
+  focusMode,
+}: BackgroundLayerProps) {
   const filter = useMemo(
     () => `brightness(${background.brightness}%) blur(${background.blur}px)`,
     [background.brightness, background.blur],
@@ -57,4 +61,4 @@ export function BackgroundLayer({ background, imageUrl, focusMode }: BackgroundL
       />
     </div>
   );
-}
+});

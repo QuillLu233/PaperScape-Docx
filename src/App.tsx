@@ -18,8 +18,8 @@ import { TitleBar } from './components/TitleBar';
 import { useProjectAppearance } from './appearance/useProjectAppearance';
 import { DEFAULT_APPEARANCE } from './appearance/presets';
 import { DEFAULT_SETTINGS } from './types';
-import { buildDocxBlob, type DocxExportOptions } from './docx/exportDocx';
-import { importDocx, type ImportedDocx } from './docx/importDocx';
+import type { DocxExportOptions } from './docx/exportDocx';
+import type { ImportedDocx } from './docx/importDocx';
 import { chooseDocxOpenPath, chooseDocxSavePath, readDocxFile, saveDocxExport } from './project/api';
 import { usePanels } from './hooks/usePanels';
 import { useTheme } from './hooks/useTheme';
@@ -246,6 +246,7 @@ export default function App() {
       const file = new File([new Uint8Array(bytes) as BlobPart], fileName, {
         type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       });
+      const { importDocx } = await import('./docx/importDocx');
       const imported = await importDocx(file);
       setImportedDocx(imported);
     } catch (importError) {
@@ -278,6 +279,7 @@ export default function App() {
       try {
         const exportChapters = await loadExportChapters(scope);
         if (exportChapters.length === 0) throw new Error('没有可导出的章节');
+        const { buildDocxBlob } = await import('./docx/exportDocx');
         const { blob, skippedImages } = await buildDocxBlob(exportChapters, options);
         const baseName = (scope === 'current' ? activeChapter?.title : project?.name) || 'PaperScape 文档';
         const safeName = baseName.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '').trim() || 'PaperScape 文档';
