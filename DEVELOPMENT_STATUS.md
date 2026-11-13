@@ -16,10 +16,10 @@
 - Rust：`cargo check --offline` 通过；`cargo test --offline --lib` **17 个测试通过**，0.51 s。
 - React 正式构建：通过，约 3.6 s。
 - Tauri Windows Release：`pnpm tauri build --no-bundle` 通过，约 24.2 s，保留 Cargo target 缓存。
-- EXE：`src-tauri/target/release/paperscape.exe`，**9,923,584 字节**。
-- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,208,070 字节**。
-- ZIP SHA256：`3BCA4041326542E25832BFBFA5D4B3485A500575714851B2DDCC0F08EE3CA9D9`。
-- EXE SHA256：`0ED73F60013A2A5302CC2BE1F12D9787F2666A5B71F77EF100C5877F3EA4F497`。
+- EXE：`src-tauri/target/release/paperscape.exe`，**9,924,096 字节**。
+- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,210,371 字节**。
+- ZIP SHA256：`C7EF40564EBAD829A360413B9F0D83C2B25B73BFCB300B0C91302AA95DEE3441`。
+- EXE SHA256：`E3BE264D2AD95973810F3CAA066FB870A09FABE25741BF8BA69A42E3B8929EE7`。
 - ZIP 内只有 `PaperScape-v1.1-Portable/PaperScape.exe` 和 `README.txt`。
 - **未生成 NSIS/MSI**；未引入 Electron、额外大型运行时或后台服务。
 
@@ -27,8 +27,8 @@
 
 | 指标 | 实测 | 目标/结论 |
 | --- | --- | --- |
-| ZIP 体积 | 3,208,070 B（约 3.06 MiB） | ≤30 MB，达到 |
-| EXE 体积 | 9,923,584 B | 轻量 |
+| ZIP 体积 | 3,210,371 B（约 3.06 MiB） | ≤30 MB，达到 |
+| EXE 体积 | 9,924,096 B | 轻量 |
 | 启动到窗口（热缓存，任务计划口径） | 255 / 84 / 54 ms | ≤2 s 目标达到；**不是严格冷启动** |
 | V1 项目空闲 Working Set（含 7 个进程） | **379.2 MB** | 150 MB 挑战目标**未达到** |
 | V1 项目 Private Memory | **209.3 MB** | 未达到 150 MB |
@@ -99,6 +99,7 @@
   - 文件模式下标题栏按钮文案改为“显示/隐藏文件树”。
 - **真实数据验证**：在脱敏的真实 DOCX 文件夹中打开后，`FILES` 文件树和“设置”面板同时可见；关闭再启动后仍可见，未修改用户 DOCX 内容。
 - **自动化**：新增 `SettingsPanel.test.tsx`，锁定文件模式不显示项目专属排版控件；前端测试更新为 **15 个文件、65 个测试通过**。
+- **V1.0 自定义背景恢复**：文件模式现在显示完整 `AppearanceSettings`（写作模式、背景预设/图片、亮度、模糊、暗角、遮罩、纸张、保存主题）。文件模式外观保存在本机 `__document__` 外观记录，不写入 DOCX；V1 项目仍使用项目自身的 `project.json` 外观，原有 V1 项目背景继续保留。
 - 修复后的 Portable ZIP 已重新构建并校验。
 
 ## V1.1 第四阶段

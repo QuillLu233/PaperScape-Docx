@@ -21,7 +21,9 @@ import { StatusBar } from './components/StatusBar';
 import { TitleBar } from './components/TitleBar';
 import { useProjectAppearance } from './appearance/useProjectAppearance';
 import { DEFAULT_APPEARANCE } from './appearance/presets';
+import { loadProjectAppearance, saveProjectAppearance } from './appearance/storage';
 import { DEFAULT_SETTINGS } from './types';
+import type { ProjectAppearance } from './types';
 import type { DocxExportOptions } from './docx/exportDocx';
 import type { ImportedDocx } from './docx/importDocx';
 import { chooseDocxOpenPath, chooseDocxSavePath, chooseFolder, isTauriRuntime, readDocxFile, saveDocxExport } from './project/api';
@@ -117,6 +119,7 @@ export default function App() {
     deleteChapter,
     saveNow,
     updateSettings,
+    updateAppearance,
     history,
     restoreHistory,
     restoreRecovery,
@@ -135,6 +138,9 @@ export default function App() {
     useWindowState();
   const [dialog, setDialog] = useState<DialogName>(null);
   const [fontManagerOpen, setFontManagerOpen] = useState(false);
+  const [documentAppearance, setDocumentAppearance] = useState<ProjectAppearance>(() =>
+    loadProjectAppearance('__document__'),
+  );
   const [focusMode, setFocusMode] = useState(false);
   const [focusPaperOpacity, setFocusPaperOpacity] = useState(85);
   const [focusBrightness, setFocusBrightness] = useState(100);
@@ -163,7 +169,9 @@ export default function App() {
   const sessionActiveRef = useRef(false);
   sessionActiveRef.current = Boolean(project || documentRoot || activeDocument);
 
-  const appearance = isDocumentMode ? DEFAULT_APPEARANCE : project?.appearance ?? DEFAULT_APPEARANCE;
+  const appearance = isDocumentMode
+    ? documentAppearance
+    : project?.appearance ?? DEFAULT_APPEARANCE;
   const settings = isDocumentMode ? DEFAULT_SETTINGS : project?.settings ?? DEFAULT_SETTINGS;
   const effectiveBackground = focusMode
     ? {
@@ -180,7 +188,18 @@ export default function App() {
         paper: { ...appearance.paper, opacity: focusPaperOpacity / 100 },
       }
     : appearance;
-  const appearanceController = useProjectAppearance(appearance, projectController.updateAppearance);
+  const updateAppearanceInMode = useCallback(
+    (next: ProjectAppearance) => {
+      if (isDocumentMode) {
+        setDocumentAppearance(next);
+        saveProjectAppearance('__document__', next);
+        return;
+      }
+      projectController.updateAppearance(next);
+    },
+    [isDocumentMode, updateAppearance],
+  );
+  const appearanceController = useProjectAppearance(appearance, updateAppearanceInMode);
   const {
     backgroundUrl,
     savedThemes,
@@ -519,8 +538,8 @@ export default function App() {
 
   const handleAddBackground = useCallback(
     async (file: File) => {
-      if (!isProjectOpen) {
-        showNotice('请先打开一个项目');
+      if (!isProjectOpen && !isDocumentMode) {
+        showNotice('请先打开一个项目或文稿文件夹');
         return;
       }
       try {
@@ -530,7 +549,7 @@ export default function App() {
         showNotice(backgroundError instanceof Error ? backgroundError.message : '背景图片读取失败');
       }
     },
-    [isProjectOpen, setBackgroundFromFile, showNotice],
+    [isDocumentMode, isProjectOpen, setBackgroundFromFile, showNotice],
   );
 
   const onBackgroundDrop = useCallback(
@@ -961,13 +980,13 @@ export default function App() {
       <div
         className={`workspace-stage${dragActive ? ' is-drag-over' : ''}`}
         onDragEnter={(event) => {
-          if (!isProjectOpen || !hasImageFile(event)) return;
+          if ((!isProjectOpen && !isDocumentMode) || !hasImageFile(event)) return;
           event.preventDefault();
           dragDepth.current += 1;
           setDragActive(true);
         }}
         onDragOver={(event) => {
-          if (!isProjectOpen || !hasImageFile(event)) return;
+          if ((!isProjectOpen && !isDocumentMode) || !hasImageFile(event)) return;
           event.preventDefault();
           event.dataTransfer.dropEffect = 'copy';
         }}

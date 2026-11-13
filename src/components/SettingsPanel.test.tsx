@@ -41,13 +41,14 @@ const baseProps = {
 };
 
 describe('SettingsPanel document mode', () => {
-  it('shows app-wide settings without project-only appearance controls', () => {
+  it('shows app-wide settings and background controls without project typography', () => {
     render(<SettingsPanel {...baseProps} />);
     expect(screen.getByText('文件模式')).toBeInTheDocument();
+    expect(screen.getByText('写作模式')).toBeInTheDocument();
+    expect(screen.getAllByText('背景').length).toBeGreaterThan(0);
     expect(screen.getByText('外观主题')).toBeInTheDocument();
     expect(screen.getByText('界面')).toBeInTheDocument();
     expect(screen.getByText('中文校对')).toBeInTheDocument();
     expect(screen.queryByText('正文排版')).not.toBeInTheDocument();
-    expect(screen.queryByText('写作模式')).not.toBeInTheDocument();
   });
 });

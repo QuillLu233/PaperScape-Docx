@@ -113,32 +113,32 @@ export const SettingsPanel = memo(function SettingsPanel({
       </div>
 
       <div className="settings-scroll">
-        {!documentMode ? (
-          <AppearanceSettings
-            appearance={appearance}
-            savedThemes={savedThemes}
-            focusMode={focusMode}
-            onModeChange={onModeChange}
-            onBackgroundChange={onBackgroundChange}
-            onReadingOpacityChange={onReadingOpacityChange}
-            onPaperChange={onPaperChange}
-            onApplyPreset={onApplyPreset}
-            onApplySavedTheme={onApplySavedTheme}
-            onDeleteSavedTheme={onDeleteSavedTheme}
-            onSaveTheme={onSaveTheme}
-            onChooseImage={onChooseImage}
-            onToggleFocus={onToggleFocus}
-          />
-        ) : (
+        {documentMode ? (
           <section className="settings-section" aria-labelledby="document-settings-heading">
             <h3 id="document-settings-heading" className="settings-label">
               文件模式
             </h3>
             <p className="settings-note">
-              当前直接编辑磁盘上的 DOCX。背景、纸张和正文排版使用应用默认值，不写入 DOCX；界面缩放、字体和校对设置仍可调整。
+              当前直接编辑磁盘上的 DOCX。背景、纸张和写作模式可单独设置并保存在本机，不写入 DOCX；详情见下方“背景”和“纸张”。
             </p>
           </section>
-        )}
+        ) : null}
+
+        <AppearanceSettings
+          appearance={appearance}
+          savedThemes={savedThemes}
+          focusMode={focusMode}
+          onModeChange={onModeChange}
+          onBackgroundChange={onBackgroundChange}
+          onReadingOpacityChange={onReadingOpacityChange}
+          onPaperChange={onPaperChange}
+          onApplyPreset={onApplyPreset}
+          onApplySavedTheme={onApplySavedTheme}
+          onDeleteSavedTheme={onDeleteSavedTheme}
+          onSaveTheme={onSaveTheme}
+          onChooseImage={onChooseImage}
+          onToggleFocus={onToggleFocus}
+        />
 
         <section className="settings-section" aria-labelledby="theme-heading">
           <h3 id="theme-heading" className="settings-label">
