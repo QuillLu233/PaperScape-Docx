@@ -1,8 +1,9 @@
-import type { MouseEvent, ReactNode } from 'react';
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { BrandMark, Icon } from './Icon';
 
 interface TitleBarProps {
   projectName: string;
+  projectPath: string;
   leftOpen: boolean;
   rightOpen: boolean;
   isMaximized: boolean;
@@ -18,6 +19,7 @@ interface TitleBarProps {
 
 export function TitleBar({
   projectName,
+  projectPath,
   leftOpen,
   rightOpen,
   isMaximized,
@@ -30,10 +32,28 @@ export function TitleBar({
   onToggleMaximize,
   onClose,
 }: TitleBarProps) {
+  const [infoOpen, setInfoOpen] = useState(false);
+  const infoRef = useRef<HTMLDivElement>(null);
   const handleDoubleClick = (event: MouseEvent<HTMLElement>) => {
     if ((event.target as HTMLElement).closest('button, input, a, [role="menu"]')) return;
     onToggleMaximize();
   };
+
+  useEffect(() => {
+    if (!infoOpen) return;
+    const close = (event: PointerEvent) => {
+      if (!infoRef.current?.contains(event.target as Node)) setInfoOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setInfoOpen(false);
+    };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [infoOpen]);
 
   return (
     <header className="titlebar" data-tauri-drag-region onDoubleClick={handleDoubleClick}>
@@ -49,8 +69,37 @@ export function TitleBar({
         {menu}
       </div>
 
-      <div className="titlebar-drag" data-tauri-drag-region aria-hidden="true">
-        {projectName ? <span className="titlebar-project">{projectName}</span> : null}
+      <div className="titlebar-drag" data-tauri-drag-region aria-hidden="true" />
+
+      <div className="titlebar-project-wrap" data-no-drag ref={infoRef}>
+        {projectName ? (
+          <button
+            type="button"
+            className="titlebar-project"
+            title={`${projectName}${projectPath ? `\n${projectPath}` : ''}`}
+            aria-expanded={infoOpen}
+            onClick={() => setInfoOpen((current) => !current)}
+          >
+            {projectName}
+          </button>
+        ) : null}
+        {infoOpen ? (
+          <div className="titlebar-project-info" role="dialog" aria-label="当前文稿信息">
+            <strong>{projectName}</strong>
+            <span className="titlebar-project-path">{projectPath || '尚未保存到磁盘'}</span>
+            {projectPath ? (
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => {
+                  void navigator.clipboard?.writeText(projectPath);
+                }}
+              >
+                复制路径
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <div className="titlebar-tools" data-no-drag>

@@ -3,8 +3,8 @@
 ## V1.1 第一阶段补充（2026-11-13）
 
 - 构建：`pnpm tauri build --no-bundle`，V1.1.0 release，**未生成 NSIS**。
-- 前端生产构建：377 modules。
-- 初始 JS：930.68 kB（gzip 287.08 kB）；CSS 52.35 kB（gzip 10.78 kB）。
+- 前端生产构建：379 modules。
+- 初始 JS：936.15 kB（gzip 288.75 kB）；CSS 57.20 kB（gzip 11.60 kB）。
 - DOCX 导入 chunk：243.61 kB（gzip 79.75 kB）；导出 chunk：246.17 kB（gzip 72.76 kB）。
 - 新增文件树、DocumentBar、文件管理状态，初始包比 V1.0 增加约 120 kB。
 - 本阶段没有重新测启动/内存/CPU；V1.0 的性能数据保留在下方，不能直接代表 V1.1 文件模式。

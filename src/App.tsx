@@ -22,13 +22,15 @@ import { DEFAULT_APPEARANCE } from './appearance/presets';
 import { DEFAULT_SETTINGS } from './types';
 import type { DocxExportOptions } from './docx/exportDocx';
 import type { ImportedDocx } from './docx/importDocx';
-import { chooseDocxOpenPath, chooseDocxSavePath, chooseFolder, readDocxFile, saveDocxExport } from './project/api';
+import { chooseDocxOpenPath, chooseDocxSavePath, chooseFolder, isTauriRuntime, readDocxFile, saveDocxExport } from './project/api';
 import { revealWorkspacePath } from './workspace/api';
 import { baseName, useDocumentWorkspace } from './workspace/useDocumentWorkspace';
 import { useWorkspaceDrop } from './workspace/useWorkspaceDrop';
 import type { RecentItem, WorkspaceNode } from './workspace/types';
 import { usePanels } from './hooks/usePanels';
 import { useTheme } from './hooks/useTheme';
+import { useUiZoom } from './hooks/useUiZoom';
+import { useDocumentZoom } from './hooks/useDocumentZoom';
 import { useWindowState } from './hooks/useWindowState';
 import { useProject } from './project/useProject';
 import type { ChapterSummary, HistoryEntry, RecoveryCandidate } from './project/types';
@@ -116,12 +118,18 @@ export default function App() {
     discardRecovery,
     dismissWarning,
     clearError,
+    projectPath,
   } = projectController;
   const { mode: themeMode, setMode: setThemeMode } = useTheme();
+  const { uiZoom, setUiZoom } = useUiZoom();
+  const { docZoom, setDocZoom, resetDocZoom } = useDocumentZoom();
   const { leftOpen, rightOpen, toggleLeft, toggleRight } = usePanels();
   const { isMaximized, minimize, toggleMaximize, close } = useWindowState();
   const [dialog, setDialog] = useState<DialogName>(null);
   const [focusMode, setFocusMode] = useState(false);
+  const [openLastSession, setOpenLastSessionState] = useState(
+    () => window.localStorage.getItem('paperscape.openLastSession') !== 'false',
+  );
   const [dragActive, setDragActive] = useState(false);
   const [notice, setNotice] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<ChapterSummary | null>(null);
@@ -137,6 +145,7 @@ export default function App() {
   const [exportBusy, setExportBusy] = useState(false);
   const dragDepth = useRef(0);
   const editorRef = useRef<EditorPaneHandle>(null);
+  const startupAttempted = useRef(false);
 
   const appearance = isDocumentMode ? DEFAULT_APPEARANCE : project?.appearance ?? DEFAULT_APPEARANCE;
   const settings = isDocumentMode ? DEFAULT_SETTINGS : project?.settings ?? DEFAULT_SETTINGS;
@@ -157,7 +166,49 @@ export default function App() {
 
   const isProjectOpen = Boolean(project && activeChapter);
 
+  useEffect(() => {
+    if (startupAttempted.current || !openLastSession || !isTauriRuntime()) return;
+    const timer = window.setTimeout(() => {
+      startupAttempted.current = true;
+      let last: { kind?: string; path?: string } | null = null;
+      try {
+        last = JSON.parse(window.localStorage.getItem('paperscape.lastSession') || 'null');
+      } catch {
+        last = null;
+      }
+      if (!last?.path || (last.kind !== 'project' && last.kind !== 'folder')) return;
+      const restore =
+        last.kind === 'project'
+          ? openRecent(last.path)
+          : openFolder(last.path);
+      void restore.then((ok) => {
+        if (!ok) window.localStorage.removeItem('paperscape.lastSession');
+      });
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [openFolder, openLastSession, openRecent]);
+
   const showNotice = useCallback((message: string) => setNotice(message), []);
+
+  const rememberSession = useCallback((kind: 'project' | 'folder', path: string) => {
+    window.localStorage.setItem(
+      'paperscape.lastSession',
+      JSON.stringify({ kind, path, at: Date.now() }),
+    );
+  }, []);
+
+  const setOpenLastSession = useCallback((value: boolean) => {
+    setOpenLastSessionState(value);
+    window.localStorage.setItem('paperscape.openLastSession', value ? 'true' : 'false');
+  }, []);
+
+  useEffect(() => {
+    if (projectPath) rememberSession('project', projectPath);
+  }, [projectPath, rememberSession]);
+
+  useEffect(() => {
+    if (documentRoot) rememberSession('folder', documentRoot);
+  }, [documentRoot, rememberSession]);
 
   useEffect(() => {
     if (!notice) return;
@@ -572,12 +623,27 @@ export default function App() {
       } else if (key === 'n') {
         event.preventDefault();
         void handleNewDocument();
+      } else if (event.altKey && ['1', '2', '3', '4'].includes(key)) {
+        event.preventDefault();
+        setUiZoom({ '1': 100, '2': 110, '3': 125, '4': 150 }[key] ?? 110);
       } else if (key === 'o' && event.shiftKey) {
         event.preventDefault();
         void handleOpenFolder();
       } else if (key === 'o') {
         event.preventDefault();
         void handleOpenDocx();
+      } else if (key === '=' || key === '+') {
+        if (!isProjectOpen && !isDocumentMode) return;
+        event.preventDefault();
+        setDocZoom(docZoom + 10);
+      } else if (key === '-') {
+        if (!isProjectOpen && !isDocumentMode) return;
+        event.preventDefault();
+        setDocZoom(docZoom - 10);
+      } else if (key === '0') {
+        if (!isProjectOpen && !isDocumentMode) return;
+        event.preventDefault();
+        resetDocZoom();
       } else if (key === 'w') {
         event.preventDefault();
         if (isDocumentMode) void handleCloseDocument();
@@ -612,6 +678,7 @@ export default function App() {
     activeDocument,
     deleteTarget,
     dialog,
+    docZoom,
     focusMode,
     handleCloseDocument,
     handleCloseProject,
@@ -625,6 +692,9 @@ export default function App() {
     historyTarget,
     isDocumentMode,
     isProjectOpen,
+    resetDocZoom,
+    setDocZoom,
+    setUiZoom,
     toggleFocusMode,
     toggleLeft,
     toggleRight,
@@ -642,6 +712,7 @@ export default function App() {
   const titleBar = (
     <TitleBar
       projectName={activeDocument?.name ?? project?.name ?? (documentRoot ? baseName(documentRoot) : '')}
+      projectPath={activeDocument?.path ?? projectPath ?? documentRoot ?? ''}
       leftOpen={leftOpen}
       rightOpen={rightOpen}
       isMaximized={isMaximized}
@@ -700,6 +771,11 @@ export default function App() {
           onToggleFocus={toggleFocusMode}
           onWritingModeChange={changeWritingMode}
           onThemeChange={setThemeMode}
+          uiZoom={uiZoom}
+          onUiZoomChange={setUiZoom}
+          openLastSession={openLastSession}
+          onOpenLastSessionChange={setOpenLastSession}
+          onChooseDefaultDocumentsDir={() => void handleChooseDefaultDocumentsDir()}
           onShowShortcuts={() => setDialog('shortcuts')}
           onShowAbout={() => setDialog('about')}
         />
@@ -770,6 +846,8 @@ export default function App() {
                 focusMode={focusMode}
                 readOnly={activeDocument.readOnly}
                 standalone
+                docZoom={docZoom}
+                onDocZoomChange={setDocZoom}
                 header={
                   <DocumentBar
                     document={activeDocument}
@@ -820,7 +898,6 @@ export default function App() {
         ) : isProjectOpen && activeChapter ? (
           <div className="workspace">
             <ChapterSidebar
-              projectName={project?.name ?? ''}
               chapters={chapters}
               activeId={activeChapter.id}
               open={leftOpen && !focusMode}
@@ -842,6 +919,8 @@ export default function App() {
               settings={settings}
               appearance={appearance}
               focusMode={focusMode}
+              docZoom={docZoom}
+              onDocZoomChange={setDocZoom}
               onUpdate={updateActiveChapter}
             />
 
@@ -865,6 +944,10 @@ export default function App() {
               onChooseImage={handleAddBackground}
               defaultDocumentsDir={defaultDocumentsDir}
               onChooseDefaultDocumentsDir={() => void handleChooseDefaultDocumentsDir()}
+              uiZoom={uiZoom}
+              onUiZoomChange={setUiZoom}
+              openLastSession={openLastSession}
+              onOpenLastSessionChange={setOpenLastSession}
               onToggleFocus={toggleFocusMode}
               onClose={toggleRight}
             />
@@ -874,7 +957,7 @@ export default function App() {
             recent={recent}
             recentItems={recentItems}
             loading={loading}
-            error={error}
+            error={error || documentError}
             onCreate={(parent, name) => void createProject(parent, name)}
             onOpen={() => void handleOpenProject()}
             onOpenRecent={(path) => void handleOpenRecent(path)}
@@ -886,7 +969,10 @@ export default function App() {
             defaultDocumentsDir={defaultDocumentsDir}
             onChooseDefaultDocumentsDir={() => void handleChooseDefaultDocumentsDir()}
             onImportLegacy={() => void importLegacy()}
-            onClearError={clearError}
+            onClearError={() => {
+              clearError();
+              clearDocumentError();
+            }}
           />
         )}
 
@@ -974,6 +1060,28 @@ export default function App() {
           dirty={dirty}
           focusMode={focusMode}
           onToggleFocus={toggleFocusMode}
+          zoom={docZoom}
+          onZoomChange={setDocZoom}
+          saveError={error && /保存|写入/.test(error) ? error : ''}
+        />
+      ) : null}
+
+      {isDocumentMode && activeDocument ? (
+        <StatusBar
+          chapterIndex={0}
+          chapterCount={1}
+          characterCount={activeDocument.characterCount}
+          fullCharacterCount={activeDocument.characterCount}
+          savedAt={activeDocument.savedAt}
+          saving={documentSaving}
+          dirty={activeDocument.dirty}
+          focusMode={false}
+          onToggleFocus={() => undefined}
+          standalone
+          documentName={activeDocument.name}
+          zoom={docZoom}
+          onZoomChange={setDocZoom}
+          saveError={documentError && /保存|写入/.test(documentError) ? documentError : ''}
         />
       ) : null}
 

@@ -164,6 +164,7 @@ import App from './App';
 
 async function openApp(user: ReturnType<typeof userEvent.setup>) {
   render(<App />);
+  await user.click(screen.getByText('旧版项目与设置'));
   await user.click(screen.getByRole('button', { name: '打开项目' }));
   await waitFor(() =>
     expect(screen.getByRole('textbox', { name: '正文编辑器' })).toHaveTextContent(
@@ -178,6 +179,23 @@ describe('PaperScape shell', () => {
     fake.api.__reset();
   });
 
+  it('opens the last project on startup when the setting is enabled', async () => {
+    localStorage.setItem(
+      'paperscape.lastSession',
+      JSON.stringify({ kind: 'project', path: 'C:\\Tests\\长篇.paperscape' }),
+    );
+    localStorage.setItem('paperscape.openLastSession', 'true');
+    render(<App />);
+    await waitFor(
+      () =>
+        expect(screen.getByRole('textbox', { name: '正文编辑器' })).toHaveTextContent(
+          '天还没有完全亮',
+        ),
+      { timeout: 1500 },
+    );
+    expect(fake.api.openProject).toHaveBeenCalledWith('C:\\Tests\\长篇.paperscape');
+  });
+
   it('renders the three working areas and the active chapter', async () => {
     const user = userEvent.setup();
     await openApp(user);
@@ -186,6 +204,27 @@ describe('PaperScape shell', () => {
     expect(screen.getByTestId('settings-panel')).toHaveAttribute('data-open', 'true');
     expect(screen.getByRole('textbox', { name: '章节标题' })).toHaveValue('纸上的清晨');
     expect(screen.getByText('第 1 章 / 共 3 章')).toBeInTheDocument();
+  });
+
+  it('zooms the document without changing UI zoom', async () => {
+    const user = userEvent.setup();
+    await openApp(user);
+    const zoom = screen.getByRole('combobox', { name: '文稿缩放' });
+    expect(zoom).toHaveValue('100');
+    fireEvent.keyDown(window, { key: '=', ctrlKey: true });
+    expect(zoom).toHaveValue('110');
+    fireEvent.keyDown(window, { key: '0', ctrlKey: true });
+    expect(zoom).toHaveValue('100');
+    expect(localStorage.getItem('paperscape.uiZoom')).toBe('110');
+  });
+
+  it('changes UI zoom independently from document zoom', async () => {
+    const user = userEvent.setup();
+    await openApp(user);
+    fireEvent.keyDown(window, { key: '4', ctrlKey: true, altKey: true });
+    await waitFor(() => expect(localStorage.getItem('paperscape.uiZoom')).toBe('150'));
+    expect(screen.getByRole('combobox', { name: '文稿缩放' })).toHaveValue('100');
+    expect(document.documentElement.style.getPropertyValue('--ui-scale')).toBe('1.5');
   });
 
   it('collapses and restores the chapter sidebar from window chrome', async () => {

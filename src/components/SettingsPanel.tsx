@@ -31,6 +31,10 @@ interface SettingsPanelProps {
   onChooseImage: (file: File) => Promise<void>;
   defaultDocumentsDir: string;
   onChooseDefaultDocumentsDir: () => void;
+  uiZoom: number;
+  onUiZoomChange: (value: number) => void;
+  openLastSession: boolean;
+  onOpenLastSessionChange: (value: boolean) => void;
   onToggleFocus: () => void;
   onClose: () => void;
 }
@@ -61,6 +65,10 @@ export const SettingsPanel = memo(function SettingsPanel({
   onChooseImage,
   defaultDocumentsDir,
   onChooseDefaultDocumentsDir,
+  uiZoom,
+  onUiZoomChange,
+  openLastSession,
+  onOpenLastSessionChange,
   onToggleFocus,
   onClose,
 }: SettingsPanelProps) {
@@ -195,6 +203,34 @@ export const SettingsPanel = memo(function SettingsPanel({
           >
             让文字慢下来。
           </div>
+        </section>
+
+        <section className="settings-section" aria-labelledby="interface-heading">
+          <h3 id="interface-heading" className="settings-label">
+            界面
+          </h3>
+          <label className="settings-select-row">
+            <span>界面缩放</span>
+            <select
+              aria-label="界面缩放"
+              value={uiZoom}
+              onChange={(event) => onUiZoomChange(Number(event.target.value))}
+            >
+              {[100, 110, 125, 150].map((value) => (
+                <option key={value} value={value}>
+                  {value}%
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="settings-check-row">
+            <input
+              type="checkbox"
+              checked={openLastSession}
+              onChange={(event) => onOpenLastSessionChange(event.target.checked)}
+            />
+            <span>启动时打开上次项目或文件夹</span>
+          </label>
         </section>
 
         <section className="settings-section" aria-labelledby="data-heading">

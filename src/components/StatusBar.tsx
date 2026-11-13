@@ -10,7 +10,14 @@ interface StatusBarProps {
   dirty: boolean;
   focusMode: boolean;
   onToggleFocus: () => void;
+  standalone?: boolean;
+  documentName?: string;
+  saveError?: string;
+  zoom: number;
+  onZoomChange: (value: number) => void;
 }
+
+const ZOOM_OPTIONS = Array.from({ length: 16 }, (_, index) => 50 + index * 10);
 
 function formatCount(value: number): string {
   return value.toLocaleString('zh-CN');
@@ -33,54 +40,114 @@ export function StatusBar({
   dirty,
   focusMode,
   onToggleFocus,
+  standalone = false,
+  documentName = '',
+  saveError = '',
+  zoom,
+  onZoomChange,
 }: StatusBarProps) {
-  const saveLabel = saving
-    ? '正在保存到项目…'
-    : dirty
-      ? '等待自动保存'
-      : `已保存到项目 · ${formatTime(savedAt)}`;
+  const saveLabel = saveError
+    ? '保存失败'
+    : saving
+      ? '正在保存…'
+      : dirty
+        ? '尚未保存'
+        : savedAt > 0
+          ? `已保存 · ${formatTime(savedAt)}`
+          : '已保存';
 
   return (
     <footer className="statusbar" aria-label="状态栏">
       <div className="status-group">
-        <span>
-          第 {chapterIndex + 1} 章 / 共 {chapterCount} 章
-        </span>
-        <span className="status-separator" aria-hidden="true">
-          ·
-        </span>
-        <span>本章 {formatCount(characterCount)} 字</span>
-        <span className="status-separator" aria-hidden="true">
-          ·
-        </span>
-        <span>全文 {formatCount(fullCharacterCount)} 字</span>
+        {standalone ? (
+          <>
+            <span className="status-document-name" title={documentName}>
+              {documentName || '未命名文稿'}
+            </span>
+            <span className="status-separator" aria-hidden="true">
+              ·
+            </span>
+            <span>{formatCount(characterCount)} 字</span>
+          </>
+        ) : (
+          <>
+            <span>
+              第 {chapterIndex + 1} 章 / 共 {chapterCount} 章
+            </span>
+            <span className="status-separator" aria-hidden="true">
+              ·
+            </span>
+            <span>本章 {formatCount(characterCount)} 字</span>
+            <span className="status-separator" aria-hidden="true">
+              ·
+            </span>
+            <span>全文 {formatCount(fullCharacterCount)} 字</span>
+          </>
+        )}
       </div>
 
-      <div className={`status-saved${dirty ? ' is-dirty' : ''}`} aria-live="polite">
-        {dirty ? null : <Icon name="check" size={12} />}
+      <div
+        className={`status-saved${dirty || saveError ? ' is-dirty' : ''}`}
+        aria-live="polite"
+        title={saveError || (savedAt > 0 ? `最近保存 ${formatTime(savedAt)}` : undefined)}
+      >
+        {dirty || saveError ? null : <Icon name="check" size={12} />}
         <span>{saveLabel}</span>
       </div>
 
-      <div className="status-group status-shortcuts" aria-label="快捷键提示">
-        <button type="button" className="status-focus-button" onClick={onToggleFocus}>
-          <Icon name="focus" size={12} />
-          {focusMode ? '退出专注 (Esc)' : '专注写作'}
-        </button>
-        {focusMode ? null : (
+      <div className="status-group status-shortcuts" aria-label="缩放和快捷键">
+        <div className="status-zoom" aria-label="文稿缩放">
+          <button
+            type="button"
+            aria-label="缩小文稿"
+            title="缩小文稿 (Ctrl+-)"
+            onClick={() => onZoomChange(zoom - 10)}
+          >
+            −
+          </button>
+          <select
+            aria-label="文稿缩放"
+            value={zoom}
+            onChange={(event) => onZoomChange(Number(event.target.value))}
+          >
+            {ZOOM_OPTIONS.map((value) => (
+              <option key={value} value={value}>
+                {value}%
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            aria-label="放大文稿"
+            title="放大文稿 (Ctrl+=)"
+            onClick={() => onZoomChange(zoom + 10)}
+          >
+            +
+          </button>
+        </div>
+        {standalone ? null : (
           <>
-            <span>
-              <kbd>Ctrl</kbd>
-              <kbd>S</kbd> 保存
-            </span>
-            <span>
-              <kbd>Ctrl</kbd>
-              <kbd>N</kbd> 新章
-            </span>
-            <span>
-              <kbd>Ctrl</kbd>
-              <kbd>Shift</kbd>
-              <kbd>F</kbd> 专注
-            </span>
+            <button type="button" className="status-focus-button" onClick={onToggleFocus}>
+              <Icon name="focus" size={12} />
+              {focusMode ? '退出专注 (Esc)' : '专注写作'}
+            </button>
+            {focusMode ? null : (
+              <>
+                <span>
+                  <kbd>Ctrl</kbd>
+                  <kbd>S</kbd> 保存
+                </span>
+                <span>
+                  <kbd>Ctrl</kbd>
+                  <kbd>N</kbd> 新章
+                </span>
+                <span>
+                  <kbd>Ctrl</kbd>
+                  <kbd>Shift</kbd>
+                  <kbd>F</kbd> 专注
+                </span>
+              </>
+            )}
           </>
         )}
       </div>

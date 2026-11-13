@@ -98,6 +98,7 @@ function emptyDocument(): OpenDocxState {
     overwriteAuthorized: false,
     backupPath: '',
     dirty: false,
+    savedAt: 0,
     root: null,
   };
 }
@@ -216,6 +217,7 @@ export function useDocumentWorkspace(): DocumentWorkspace {
           overwriteAuthorized: false,
           backupPath: '',
           dirty: false,
+          savedAt: Date.now(),
           root: parentPath(payload.path),
         });
         await addRecentItem('docx', payload.path);
@@ -323,6 +325,7 @@ export function useDocumentWorkspace(): DocumentWorkspace {
               backupPath: result.backupPath ?? '',
               overwriteAuthorized: false,
               dirty: false,
+              savedAt: Date.now(),
               root: parent,
             }
           : current,
@@ -377,6 +380,7 @@ export function useDocumentWorkspace(): DocumentWorkspace {
               size: result.size,
               backupPath: result.backupPath ?? current.backupPath,
               dirty: false,
+              savedAt: Date.now(),
             }
           : current,
       );

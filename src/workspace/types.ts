@@ -53,5 +53,6 @@ export interface OpenDocxState {
   overwriteAuthorized: boolean;
   backupPath: string;
   dirty: boolean;
+  savedAt: number;
   root: string | null;
 }

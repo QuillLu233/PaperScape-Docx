@@ -35,20 +35,36 @@ interface EditorPaneProps {
   focusMode: boolean;
   readOnly?: boolean;
   standalone?: boolean;
+  docZoom?: number;
   header?: ReactNode;
+  onDocZoomChange?: (value: number) => void;
   onUpdate: (
     patch: Partial<Pick<ChapterFile, 'title' | 'doc' | 'characterCount' | 'excerpt'>>,
   ) => void;
 }
 
 export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function EditorPane(
-  { chapter, index, total, settings, appearance, focusMode, readOnly = false, standalone = false, header, onUpdate },
+  {
+    chapter,
+    index,
+    total,
+    settings,
+    appearance,
+    focusMode,
+    readOnly = false,
+    standalone = false,
+    docZoom = 100,
+    header,
+    onDocZoomChange,
+    onUpdate,
+  },
   ref,
 ) {
   const [searchOpen, setSearchOpen] = useState(false);
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
   const initializedRef = useRef(false);
+  const paneRef = useRef<HTMLElement>(null);
 
   const editor = useEditor({
     extensions: createEditorExtensions(),
@@ -86,6 +102,19 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
   useEffect(() => {
     editor?.setEditable(!readOnly);
   }, [editor, readOnly]);
+
+  useEffect(() => {
+    const node = paneRef.current;
+    if (!node || !onDocZoomChange) return;
+    const onWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey) return;
+      event.preventDefault();
+      const direction = event.deltaY < 0 ? 10 : -10;
+      onDocZoomChange(docZoom + direction);
+    };
+    node.addEventListener('wheel', onWheel, { passive: false });
+    return () => node.removeEventListener('wheel', onWheel);
+  }, [docZoom, onDocZoomChange]);
 
   useImperativeHandle(
     ref,
@@ -128,6 +157,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
 
   return (
     <main
+      ref={paneRef}
       className={`editor-pane mode-${appearance.mode}${focusMode ? ' is-focus-writing' : ''}`}
       aria-label="编辑区"
       data-writing-mode={appearance.mode}
@@ -142,7 +172,10 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
       {header}
 
       <div className="editor-scroll">
-        <article className={`editor-sheet is-${appearance.mode}`} style={sheetStyle}>
+        <article
+          className={`editor-sheet is-${appearance.mode}`}
+          style={{ ...sheetStyle, zoom: docZoom / 100 }}
+        >
           {!standalone ? (
             <>
               <div className="editor-meta">

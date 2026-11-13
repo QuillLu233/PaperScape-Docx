@@ -27,5 +27,6 @@ export default defineConfig({
     globals: true,
     restoreMocks: true,
     pool: 'threads',
+    exclude: ['**/node_modules/**', '**/.downloads/**', '**/dist/**'],
   },
 });

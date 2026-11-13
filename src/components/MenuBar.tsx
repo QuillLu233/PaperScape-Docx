@@ -56,6 +56,11 @@ interface MenuBarProps {
   onToggleFocus: () => void;
   onWritingModeChange: (mode: WritingMode) => void;
   onThemeChange: (mode: ThemeMode) => void;
+  uiZoom: number;
+  onUiZoomChange: (value: number) => void;
+  openLastSession: boolean;
+  onOpenLastSessionChange: (value: boolean) => void;
+  onChooseDefaultDocumentsDir: () => void;
   onShowShortcuts: () => void;
   onShowAbout: () => void;
 }
@@ -99,6 +104,11 @@ export function MenuBar({
   onToggleFocus,
   onWritingModeChange,
   onThemeChange,
+  uiZoom,
+  onUiZoomChange,
+  openLastSession,
+  onOpenLastSessionChange,
+  onChooseDefaultDocumentsDir,
   onShowShortcuts,
   onShowAbout,
 }: MenuBarProps) {
@@ -156,6 +166,7 @@ export function MenuBar({
           disabled: !hasDocument || !documentPath,
           onSelect: onRevealDocument,
         },
+        { label: '设置默认文稿目录…', onSelect: onChooseDefaultDocumentsDir },
         {
           label: '关闭当前文稿',
           disabled: !hasDocument,
@@ -274,6 +285,18 @@ export function MenuBar({
           label: '跟随系统',
           checked: theme === 'system',
           onSelect: () => onThemeChange('system'),
+        },
+        { separator: true },
+        ...[100, 110, 125, 150].map((value) => ({
+          label: `界面缩放 ${value}%`,
+          checked: uiZoom === value,
+          onSelect: () => onUiZoomChange(value),
+        })),
+        { separator: true },
+        {
+          label: '启动时打开上次项目',
+          checked: openLastSession,
+          onSelect: () => onOpenLastSessionChange(!openLastSession),
         },
       ],
     },

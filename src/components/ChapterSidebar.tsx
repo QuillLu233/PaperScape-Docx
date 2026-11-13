@@ -3,7 +3,6 @@ import type { ChapterSummary } from '../project/types';
 import { Icon } from './Icon';
 
 interface ChapterSidebarProps {
-  projectName: string;
   chapters: ChapterSummary[];
   activeId: string;
   open: boolean;
@@ -17,7 +16,6 @@ interface ChapterSidebarProps {
 }
 
 export function ChapterSidebar({
-  projectName,
   chapters,
   activeId,
   open,
@@ -73,10 +71,8 @@ export function ChapterSidebar({
       <div className="panel-heading">
         <div className="project-heading-copy">
           <p className="panel-kicker">PROJECT</p>
-          <h2 className="panel-title" title={projectName}>
-            {projectName || '未命名项目'}
-          </h2>
-          <p className="panel-subtitle">章节目录</p>
+          <h2 className="panel-title">章节目录</h2>
+          <p className="panel-subtitle">共 {chapters.length} 章</p>
         </div>
         <button
           type="button"

@@ -65,7 +65,6 @@ export function DocumentBar({
           <div>
             <strong title={document.path || document.name}>
               {document.name}
-              {document.dirty ? <span className="document-dirty">未保存</span> : null}
               {document.readOnly ? <span className="document-readonly">只读</span> : null}
             </strong>
             <small title={document.path || undefined}>
