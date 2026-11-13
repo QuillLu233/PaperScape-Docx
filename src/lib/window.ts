@@ -41,7 +41,24 @@ export async function toggleFullscreenWindow(): Promise<void> {
   if (!isTauriEnvironment()) return;
   const windowApi = getCurrentWindow();
   const fullscreen = await windowApi.isFullscreen();
-  await windowApi.setFullscreen(!fullscreen);
+  if (!fullscreen) {
+    await windowApi.setFullscreen(true);
+    // Windows 11 can leave the shell taskbar above a borderless fullscreen
+    // window. Keep this window topmost only for the fullscreen session, then
+    // remove it when leaving fullscreen. It is never used for IME layering.
+    try {
+      await windowApi.setAlwaysOnTop(true);
+    } catch {
+      // Older WebView2/Tauri builds may not expose this permission; fullscreen
+      // still works without it.
+    }
+  } else {
+    try {
+      await windowApi.setAlwaysOnTop(false);
+    } finally {
+      await windowApi.setFullscreen(false);
+    }
+  }
 }
 
 export async function isWindowFullscreen(): Promise<boolean> {

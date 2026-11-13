@@ -47,6 +47,9 @@ export function useWindowState() {
         void isWindowFullscreen()
           .then((value) => {
             if (!cancelled) setIsFullscreen(value);
+            if (!cancelled && !value) {
+              void windowApi.setAlwaysOnTop(false).catch(() => undefined);
+            }
           })
           .catch(() => undefined);
       })

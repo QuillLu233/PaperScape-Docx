@@ -16,10 +16,10 @@
 - Rust：`cargo check --offline` 通过；`cargo test --offline --lib` **17 个测试通过**，0.51 s。
 - React 正式构建：通过，约 3.6 s。
 - Tauri Windows Release：`pnpm tauri build --no-bundle` 通过，约 24.2 s，保留 Cargo target 缓存。
-- EXE：`src-tauri/target/release/paperscape.exe`，**9,924,096 字节**。
-- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,210,550 字节**。
-- ZIP SHA256：`11AE40146D4663EF93EDF3CBA6B00164D52751BABA352E4FEB116965E5D274DE`。
-- EXE SHA256：`D672908B3334010C578BC2F5C279988C6269F15D1E5535E1D517F5F1E5337267`。
+- EXE：`src-tauri/target/release/paperscape.exe`，**9,927,168 字节**。
+- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,210,958 字节**。
+- ZIP SHA256：`E4D8DE029E735E7A1F6A1EBF4CCFDA0BE74958DF790E74CD81676B1FCBAA8D99`。
+- EXE SHA256：`7438DF25078641C6D115AB5469BD69259FBFB4F6B5FE3B10FAFF72D15E59552B`。
 - ZIP 内只有 `PaperScape-v1.1-Portable/PaperScape.exe` 和 `README.txt`。
 - **未生成 NSIS/MSI**；未引入 Electron、额外大型运行时或后台服务。
 
@@ -27,8 +27,8 @@
 
 | 指标 | 实测 | 目标/结论 |
 | --- | --- | --- |
-| ZIP 体积 | 3,210,550 B（约 3.06 MiB） | ≤30 MB，达到 |
-| EXE 体积 | 9,924,096 B | 轻量 |
+| ZIP 体积 | 3,210,958 B（约 3.06 MiB） | ≤30 MB，达到 |
+| EXE 体积 | 9,927,168 B | 轻量 |
 | 启动到窗口（热缓存，任务计划口径） | 255 / 84 / 54 ms | ≤2 s 目标达到；**不是严格冷启动** |
 | V1 项目空闲 Working Set（含 7 个进程） | **379.2 MB** | 150 MB 挑战目标**未达到** |
 | V1 项目 Private Memory | **209.3 MB** | 未达到 150 MB |
@@ -101,6 +101,14 @@
 - **自动化**：新增 `SettingsPanel.test.tsx`，锁定文件模式不显示项目专属排版控件；前端测试更新为 **16 个文件、66 个测试通过**。
 - **V1.0 自定义背景恢复**：文件模式现在显示完整 `AppearanceSettings`（写作模式、背景预设/图片、亮度、模糊、暗角、遮罩、纸张、保存主题）。文件模式外观保存在本机 `__document__` 外观记录，不写入 DOCX；V1 项目仍使用项目自身的 `project.json` 外观，原有 V1 项目背景继续保留。
 - 修复后的 Portable ZIP 已重新构建并校验。
+
+### 全屏任务栏修复（2026-11-13）
+
+- 现象：Windows 11 下按 F11 后任务栏仍覆盖在全屏窗口之上。
+- 修复：进入全屏后临时设置窗口置顶，使窗口覆盖任务栏；退出全屏时立即取消置顶，避免影响其他窗口。
+- 该置顶只服务全屏显示，不用于中文输入法候选框层级；普通窗口和专注模式的置顶行为不变。
+- 实测窗口扩展样式：全屏时含 `WS_EX_TOPMOST`，退出后已清除；截图确认 2560×1600 全屏无任务栏。
+- 前端测试保持 **16 个文件、66 个测试通过**；重新生成 Portable ZIP。
 
 ### 状态栏与文件顺序（2026-11-13）
 

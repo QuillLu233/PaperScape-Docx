@@ -9,6 +9,7 @@ const windowApi = vi.hoisted(() => ({
   isMaximized: vi.fn(async () => false),
   isFullscreen: vi.fn(async () => false),
   setFullscreen: vi.fn(async () => undefined),
+  setAlwaysOnTop: vi.fn(async () => undefined),
   close: vi.fn(async () => undefined),
   startResizeDragging: vi.fn(async () => undefined),
   onResized: vi.fn(async () => () => undefined),
@@ -63,6 +64,7 @@ describe('desktop window controls', () => {
     render(<App />);
     fireEvent.keyDown(window, { key: 'F11' });
     await waitFor(() => expect(windowApi.setFullscreen).toHaveBeenCalledWith(true));
+    await waitFor(() => expect(windowApi.setAlwaysOnTop).toHaveBeenCalledWith(true));
   });
 
   it('starts native resize dragging from the eight transparent handles', async () => {
