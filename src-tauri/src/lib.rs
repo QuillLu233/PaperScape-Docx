@@ -1,4 +1,5 @@
 mod project;
+mod workspace;
 
 use project::{
     ChapterRead, CreateChapterResult, DeleteChapterResult, HistoryEntry, OpenedProject,
@@ -195,7 +196,7 @@ fn project_discard_recovery(project_path: String, chapter_id: String) -> Result<
 }
 
 #[cfg(target_os = "windows")]
-mod folder_picker {
+pub(crate) mod folder_picker {
     use std::ffi::{c_void, OsString};
     use std::os::windows::ffi::OsStringExt;
     use std::ptr;
@@ -306,7 +307,7 @@ fn project_default_parent() -> Result<String, String> {
 }
 
 #[cfg(target_os = "windows")]
-mod save_dialog {
+pub(crate) mod save_dialog {
     use std::ffi::{c_void, OsString};
     use std::os::windows::ffi::OsStringExt;
     use std::ptr;
@@ -402,6 +403,15 @@ mod save_dialog {
     }
 
     pub fn choose_save_path(owner: isize, title: &str, default_name: &str) -> Option<String> {
+        choose_save_path_in(owner, title, default_name, None)
+    }
+
+    pub fn choose_save_path_in(
+        owner: isize,
+        title: &str,
+        default_name: &str,
+        initial_dir: Option<&std::path::Path>,
+    ) -> Option<String> {
         const OFN_OVERWRITEPROMPT: u32 = 0x0000_0002;
         const OFN_NOCHANGEDIR: u32 = 0x0000_0008;
         const OFN_PATHMUSTEXIST: u32 = 0x0000_0800;
@@ -409,6 +419,12 @@ mod save_dialog {
         const OFN_ENABLESIZING: u32 = 0x0080_0000;
 
         let title_wide: Vec<u16> = title.encode_utf16().chain(std::iter::once(0)).collect();
+        let initial_dir_wide: Option<Vec<u16>> = initial_dir.map(|path| {
+            path.to_string_lossy()
+                .encode_utf16()
+                .chain(std::iter::once(0))
+                .collect()
+        });
         let filter: Vec<u16> = "Word 文档 (*.docx)\0*.docx\0所有文件 (*.*)\0*.*\0\0"
             .encode_utf16()
             .collect();
@@ -429,7 +445,10 @@ mod save_dialog {
             max_file: file.len() as u32,
             file_title: ptr::null_mut(),
             max_file_title: 0,
-            initial_dir: ptr::null(),
+            initial_dir: initial_dir_wide
+                .as_ref()
+                .map(|value| value.as_ptr())
+                .unwrap_or(ptr::null()),
             title: title_wide.as_ptr(),
             flags: OFN_OVERWRITEPROMPT
                 | OFN_NOCHANGEDIR
@@ -551,6 +570,7 @@ fn quit_app(app: AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(workspace::WorkspaceAccess::default())
         .invoke_handler(tauri::generate_handler![
             project_create,
             project_open,
@@ -573,7 +593,24 @@ pub fn run() {
             read_docx_file,
             choose_docx_save_path,
             save_docx_export,
-            quit_app
+            quit_app,
+            workspace::choose_workspace_folder,
+            workspace::choose_workspace_docx,
+            workspace::authorize_workspace_path,
+            workspace::list_workspace_tree,
+            workspace::read_workspace_docx,
+            workspace::stat_workspace_docx,
+            workspace::write_workspace_docx,
+            workspace::write_workspace_docx_as,
+            workspace::choose_workspace_save_path,
+            workspace::reveal_workspace_path,
+            workspace::default_documents_dir,
+            workspace::recent_items_list,
+            workspace::recent_item_add,
+            workspace::recent_item_remove,
+            workspace::save_docx_recovery,
+            workspace::load_docx_recovery,
+            workspace::clear_docx_recovery
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {

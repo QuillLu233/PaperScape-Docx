@@ -19,12 +19,22 @@ interface MenuDefinition {
 
 interface MenuBarProps {
   hasProject: boolean;
+  hasDocument: boolean;
   projectName: string;
+  documentName: string;
+  documentPath: string;
   leftOpen: boolean;
   rightOpen: boolean;
   theme: ThemeMode;
   writingMode: WritingMode;
   focusMode: boolean;
+  onNewDocument: () => void;
+  onOpenDocx: () => void;
+  onOpenFolder: () => void;
+  onSaveDocument: () => void;
+  onSaveDocumentAs: () => void;
+  onRevealDocument: () => void;
+  onCloseDocument: () => void;
   onNewProject: () => void;
   onOpenProject: () => void;
   onCloseProject: () => void;
@@ -52,12 +62,22 @@ interface MenuBarProps {
 
 export function MenuBar({
   hasProject,
+  hasDocument,
   projectName,
+  documentName,
+  documentPath,
   leftOpen,
   rightOpen,
   theme,
   writingMode,
   focusMode,
+  onNewDocument,
+  onOpenDocx,
+  onOpenFolder,
+  onSaveDocument,
+  onSaveDocumentAs,
+  onRevealDocument,
+  onCloseDocument,
   onNewProject,
   onOpenProject,
   onCloseProject,
@@ -107,12 +127,43 @@ export function MenuBar({
       label: '文件',
       items: [
         {
-          label: hasProject ? `当前项目：${projectName}` : '尚未打开项目',
+          label: hasDocument
+            ? `当前文稿：${documentName}`
+            : hasProject
+              ? `当前项目：${projectName}`
+              : '尚未打开文稿',
           disabled: true,
         },
         { separator: true },
+        { label: '新建文档', shortcut: 'Ctrl+N', onSelect: onNewDocument },
+        { label: '打开文档…', shortcut: 'Ctrl+O', onSelect: onOpenDocx },
+        { label: '打开文件夹…', shortcut: 'Ctrl+Shift+O', onSelect: onOpenFolder },
+        { separator: true },
+        {
+          label: '保存',
+          shortcut: 'Ctrl+S',
+          disabled: !hasProject && !hasDocument,
+          onSelect: hasDocument ? onSaveDocument : onSave,
+        },
+        {
+          label: '另存为…',
+          shortcut: 'Ctrl+Shift+S',
+          disabled: !hasDocument,
+          onSelect: onSaveDocumentAs,
+        },
+        {
+          label: '在资源管理器中显示',
+          disabled: !hasDocument || !documentPath,
+          onSelect: onRevealDocument,
+        },
+        {
+          label: '关闭当前文稿',
+          disabled: !hasDocument,
+          onSelect: onCloseDocument,
+        },
+        { separator: true },
         { label: '新建项目', shortcut: 'Ctrl+Shift+N', onSelect: onNewProject },
-        { label: '打开项目', shortcut: 'Ctrl+O', onSelect: onOpenProject },
+        { label: '打开 V1 项目…', onSelect: onOpenProject },
         {
           label: '关闭项目',
           shortcut: 'Ctrl+W',
@@ -120,15 +171,13 @@ export function MenuBar({
           onSelect: onCloseProject,
         },
         { separator: true },
-        { label: '保存项目', shortcut: 'Ctrl+S', disabled: !hasProject, onSelect: onSave },
-        { separator: true },
         {
-          label: '导入 Word 文档…',
+          label: '导入 Word 到项目…',
           disabled: !hasProject,
           onSelect: onImportDocx,
         },
         {
-          label: '导出 Word 文档…',
+          label: '导出项目 Word…',
           disabled: !hasProject,
           onSelect: onExportDocx,
         },
@@ -190,7 +239,7 @@ export function MenuBar({
       id: 'view',
       label: '视图',
       items: [
-        { label: '章节目录', shortcut: 'Ctrl+B', checked: leftOpen, disabled: !hasProject, onSelect: onToggleLeft },
+        { label: '文件树', shortcut: 'Ctrl+B', checked: leftOpen, disabled: !hasProject && !hasDocument, onSelect: onToggleLeft },
         {
           label: '设置面板',
           shortcut: 'Ctrl+Shift+B',

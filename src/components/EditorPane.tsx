@@ -1,10 +1,12 @@
 import {
   forwardRef,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState,
   type CSSProperties,
+  type ReactNode,
 } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import type { ProjectAppearance, WritingSettings } from '../types';
@@ -31,24 +33,31 @@ interface EditorPaneProps {
   settings: WritingSettings;
   appearance: ProjectAppearance;
   focusMode: boolean;
+  readOnly?: boolean;
+  standalone?: boolean;
+  header?: ReactNode;
   onUpdate: (
     patch: Partial<Pick<ChapterFile, 'title' | 'doc' | 'characterCount' | 'excerpt'>>,
   ) => void;
 }
 
 export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function EditorPane(
-  { chapter, index, total, settings, appearance, focusMode, onUpdate },
+  { chapter, index, total, settings, appearance, focusMode, readOnly = false, standalone = false, header, onUpdate },
   ref,
 ) {
   const [searchOpen, setSearchOpen] = useState(false);
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
+  const initializedRef = useRef(false);
 
   const editor = useEditor({
     extensions: createEditorExtensions(),
     content: chapter.doc,
     immediatelyRender: false,
     shouldRerenderOnTransaction: false,
+    onCreate: () => {
+      initializedRef.current = true;
+    },
     editorProps: {
       attributes: {
         class: 'tiptap',
@@ -61,6 +70,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
       },
     },
     onUpdate: ({ editor: current }) => {
+      if (!initializedRef.current) return;
       const text = current.getText();
       onUpdateRef.current({
         doc: current.getJSON(),
@@ -72,6 +82,10 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
 
   const focus = useCallback(() => editor?.commands.focus(), [editor]);
   const blur = useCallback(() => editor?.commands.blur(), [editor]);
+
+  useEffect(() => {
+    editor?.setEditable(!readOnly);
+  }, [editor, readOnly]);
 
   useImperativeHandle(
     ref,
@@ -119,32 +133,38 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
       data-writing-mode={appearance.mode}
     >
       <div className="editor-top">
-        <EditorToolbar editor={editor} onFind={() => setSearchOpen(true)} />
+        {!readOnly ? <EditorToolbar editor={editor} onFind={() => setSearchOpen(true)} /> : null}
         {searchOpen && editor ? (
           <FindReplaceBar editor={editor} onClose={() => setSearchOpen(false)} />
         ) : null}
       </div>
 
+      {header}
+
       <div className="editor-scroll">
         <article className={`editor-sheet is-${appearance.mode}`} style={sheetStyle}>
-          <div className="editor-meta">
-            <span className="editor-chapter-label">
-              第 {String(index + 1).padStart(2, '0')} 章
-              <span className="editor-total"> / {String(total).padStart(2, '0')}</span>
-            </span>
-            <span className="editor-char-count">{formatCount(chapter.characterCount)} 字</span>
-          </div>
+          {!standalone ? (
+            <>
+              <div className="editor-meta">
+                <span className="editor-chapter-label">
+                  第 {String(index + 1).padStart(2, '0')} 章
+                  <span className="editor-total"> / {String(total).padStart(2, '0')}</span>
+                </span>
+                <span className="editor-char-count">{formatCount(chapter.characterCount)} 字</span>
+              </div>
 
-          <input
-            className="chapter-title-input"
-            aria-label="章节标题"
-            value={chapter.title}
-            placeholder="未命名章节"
-            maxLength={80}
-            onChange={(event) => onUpdate({ title: event.target.value })}
-          />
+              <input
+                className="chapter-title-input"
+                aria-label="章节标题"
+                value={chapter.title}
+                placeholder="未命名章节"
+                maxLength={80}
+                onChange={(event) => onUpdate({ title: event.target.value })}
+              />
 
-          <div className="editor-rule" aria-hidden="true" />
+              <div className="editor-rule" aria-hidden="true" />
+            </>
+          ) : null}
 
           <div
             className="editor-content"

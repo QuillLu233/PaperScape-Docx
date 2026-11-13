@@ -1,9 +1,106 @@
 # PaperScape 开发状态
 
-- 更新时间：2026-11-12
-- 版本：1.0.0（正式版）
-- 阶段：最终优化、发布构建与安装包
-- 结论：**源代码、NSIS 安装包、测试记录、性能报告和已知问题已完成。默认安装路径的安装验证在当前测试环境被系统策略阻止，已如实记录，未伪称通过。**
+- 更新时间：2026-11-13
+- 版本：**1.1.0（V1.1 第一阶段）**
+- 阶段：文件管理及保存系统升级
+- 结论：**V1.1 第一阶段的文件树、DOCX 直接编辑/保存、备份、风险保护、外部修改检测、新文档另存为、最近项目和 V1 项目兼容已实现并通过自动化测试及部分真实窗口验收。按要求未生成 NSIS。**
+- 注意：用户指定的 `V1.1_UPGRADE_PLAN.md` 在工作区中不存在；本次按任务消息中的完整需求实现。
+
+## V1.1 第一阶段
+
+### V1 备份
+
+```text
+git tag v1.0.0-baseline
+git branch v1-baseline
+commit 38d5d8e fix: make window close reliable and save before exit
+```
+
+V1 项目格式保留读取；没有自动迁移、移动或删除 V1 文稿。
+
+### 实现
+
+#### 后端（Rust）
+
+- 新增 `src-tauri/src/workspace.rs`：
+  - 记忆已授权文件夹/文件根，拒绝未授权路径。
+  - `canonicalize` 路径，拒绝路径穿越；跳过符号链接和 Windows reparse point。
+  - 真实文件夹树读取，支持嵌套目录、隐藏/构建目录过滤和节点上限。
+  - DOCX 读取、状态读取、覆盖写入、另存为。
+  - 覆盖前备份到应用数据目录 `docx-backups`。
+  - 修改时间 + 文件大小外部修改检测。
+  - 临时文件 + 原子替换。
+  - 资源管理器显示。
+  - 最近文件/文件夹持久化。
+  - DOCX 恢复草稿保存/读取/清除。
+  - 默认文稿目录 `Documents\PaperScape`。
+- 新增 Tauri commands：`choose_workspace_folder`、`choose_workspace_docx`、`authorize_workspace_path`、`list_workspace_tree`、`read_workspace_docx`、`stat_workspace_docx`、`write_workspace_docx`、`write_workspace_docx_as`、`choose_workspace_save_path`、`reveal_workspace_path`、`default_documents_dir`、`recent_items_list/add/remove`、`save/load/clear_docx_recovery`。
+- 窗口关闭事件仍显式退出，避免 V1.0 的关闭失效回归。
+
+#### 前端
+
+- `useDocumentWorkspace`：文件夹、文件树、DOCX 状态、最近项、恢复草稿、保存/另存为、外部修改冲突、只读与风险授权。
+- `FileTree`：真实文件树、子文件夹展开、刷新、文件切换、V1 项目入口。
+- `DocumentBar`：文件名、真实路径、未保存/只读、保存/另存为/资源管理器、备份路径、风险提示。
+- 菜单和快捷键改为 Windows 常规：
+  - `Ctrl+N` 新建文档；`Ctrl+O` 打开文档；`Ctrl+Shift+O` 打开文件夹；`Ctrl+S` 保存；`Ctrl+Shift+S` 另存为。
+- 启动页增加新建文档、打开 Word、打开文件夹、最近文件/文件夹和默认文稿目录。
+- 设置面板增加默认文稿目录。
+- `inspectDocxRisk` 使用 JSZip 预检页眉页脚、批注、修订、公式、文本框、宏、嵌入对象、浮动图片、多分节、真实脚注/尾注。
+- 打开 DOCX 后不再因为编辑器初始化而错误标记为“未保存”。
+- 拖放入口使用 Tauri `onDragDropEvent`。
+
+### 测试结果
+
+前端：**7 个测试文件，42 个测试通过**。
+
+- 原有 39 个测试保持通过。
+- 新增 DOCX 风险预检 2 个测试。
+- 新增文件树展开/文件切换 1 个测试。
+
+Rust：**15 个测试通过**。
+
+- 原有 12 个 storage/history/recovery/path 测试。
+- 新增 3 个 workspace 测试：文件树、未授权路径拒绝、目标路径穿越。
+- `cargo fmt --check` 通过。
+
+构建：
+
+- `pnpm check`：通过。
+- `pnpm test`：42/42。
+- `pnpm build`：通过，377 modules；初始 JS 930.68 kB（gzip 287.08 kB），CSS 52.35 kB。
+- `pnpm tauri build --no-bundle`：通过，V1.1.0 release。
+- **未生成 NSIS**，符合本阶段要求。
+
+### 真实窗口验收
+
+- 启动页可打开真实文件夹，左侧显示 `文稿A.docx`、`子文件夹`、`note.txt`。
+- 从真实文件树打开 `文稿A.docx`，文档栏显示真实路径。
+- 编辑器可输入并保存回原 DOCX。
+- 保存前自动生成原件备份：原 39,612 bytes → 新 12,994 bytes；备份保留原文件。
+- 保存后的 DOCX 用 Microsoft Word 16.0 打开：21 段落、1 表格、1 InlineShape，中文内容存在。
+- 外部程序替换文件后点击保存：被阻止并提示“文件已被外部程序修改”。
+- 新建文档首次保存为 `新建文稿.docx` 成功（9,674 bytes）。
+- V1 项目 `V11兼容项目` 创建、关闭/重启后在最近项目中重新打开成功。
+- 打开文档不再出现误标“未保存”。
+- 风险预检不再把 docx 库生成的空脚注/尾注误判为不支持内容。
+
+### 未完成/待复测
+
+- 用户给定的 `V1.1_UPGRADE_PLAN.md` 不存在。
+- 原生“打开文件夹”对话框未做完整 UIA 自动化（使用最近文件夹真实打开验证了文件树）；代码复用已工作的 Windows 文件夹选择器。
+- 文件树子文件夹展开的 UIA 自动化没有成功（该行未暴露 InvokePattern）；人工鼠标点击路径正常，需真实人工复测。
+- 拖入 DOCX/文件夹使用 Tauri 窗口拖放事件，尚未完成真实拖拽自动化。
+- 文件被 Word 独占占用时的写入失败，尚未做真实 Word 占用测试；后端写入失败会保留恢复草稿并返回错误。
+- 自动恢复草稿的跨重启恢复尚未做真实窗口演练；Rust 命令和前端定时保存已实现。
+- 格式风险检测为启发式规则，不是完整 OOXML 兼容性分析。
+- 外部修改检测使用 mtime + size，极少数改写不改变这两者的场景无法识别。
+- 本阶段没有 NSIS、安装包、MSI 或自动更新。
+
+## V1.0 历史记录
+
+以下为 V1.0 最终发布阶段的记录，保留用于追溯。
+
 
 ## 一、交付物
 

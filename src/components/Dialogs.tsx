@@ -99,7 +99,7 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
         </span>
         <div>
           <p className="about-name">PaperScape 纸境</p>
-          <p className="about-version">1.0.0 · 正式版</p>
+          <p className="about-version">1.1.0 · 文件管理阶段</p>
         </div>
       </div>
       <p className="modal-lead">
@@ -113,7 +113,7 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
         <span>Tailwind CSS</span>
       </div>
       <p className="modal-footnote">
-        本阶段新增 Microsoft Word DOCX 导入与导出：Mammoth 解析、HTML 清洗、Tiptap JSON 中转和真实 Office Open XML 生成。
+        本阶段新增真实文件夹、文件树和 DOCX 直接编辑：文件留在原目录，覆盖前备份原件。
       </p>
     </Modal>
   );

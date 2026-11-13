@@ -4,6 +4,7 @@ import JSZip from 'jszip';
 import { describe, expect, it } from 'vitest';
 import { importDocx, sanitizeDocxHtml } from './importDocx';
 import { buildDocxBuffer } from './exportDocx';
+import { inspectDocxRisk } from './inspectDocx';
 
 const fixturePath = path.resolve('docs/fixtures/phase5-sample.docx');
 
@@ -140,6 +141,30 @@ describe('DOCX import and export', () => {
     await expect(
       importDocx(new File(['<html><body>not a docx</body></html>'], 'fake.docx')),
     ).rejects.toBeTruthy();
+  });
+
+  it('marks supported DOCX files as safe for direct overwrite', async () => {
+    const report = await inspectDocxRisk(fs.readFileSync(fixturePath));
+    expect(report.safeToOverwrite).toBe(true);
+    expect(report.warnings).toEqual([]);
+  });
+
+  it('detects unsupported DOCX structures before overwriting', async () => {
+    const zip = new JSZip();
+    zip.file(
+      'word/document.xml',
+      '<w:document><w:body><w:ins/><w:txbxContent/><m:oMath/></w:body></w:document>',
+    );
+    zip.file('word/header1.xml', '<w:hdr/>');
+    zip.file('word/vbaProject.bin', 'macro');
+    const bytes = await zip.generateAsync({ type: 'uint8array' });
+    const report = await inspectDocxRisk(bytes);
+    expect(report.safeToOverwrite).toBe(false);
+    expect(report.warnings.some((warning) => warning.includes('修订'))).toBe(true);
+    expect(report.warnings.some((warning) => warning.includes('文本框'))).toBe(true);
+    expect(report.warnings.some((warning) => warning.includes('公式'))).toBe(true);
+    expect(report.warnings.some((warning) => warning.includes('页眉'))).toBe(true);
+    expect(report.warnings.some((warning) => warning.includes('宏'))).toBe(true);
   });
 
   it('exports all chapters with page breaks and no software background', async () => {

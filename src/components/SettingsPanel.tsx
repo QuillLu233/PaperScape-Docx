@@ -29,6 +29,8 @@ interface SettingsPanelProps {
   onDeleteSavedTheme: (id: string) => void;
   onSaveTheme: (name: string) => void;
   onChooseImage: (file: File) => Promise<void>;
+  defaultDocumentsDir: string;
+  onChooseDefaultDocumentsDir: () => void;
   onToggleFocus: () => void;
   onClose: () => void;
 }
@@ -57,6 +59,8 @@ export const SettingsPanel = memo(function SettingsPanel({
   onDeleteSavedTheme,
   onSaveTheme,
   onChooseImage,
+  defaultDocumentsDir,
+  onChooseDefaultDocumentsDir,
   onToggleFocus,
   onClose,
 }: SettingsPanelProps) {
@@ -204,11 +208,22 @@ export const SettingsPanel = memo(function SettingsPanel({
               <p className="storage-detail">正文是独立的 Tiptap JSON 章节文件；背景图片使用本机 IndexedDB 缓存。</p>
             </div>
           </div>
+          <div className="default-docs-field">
+            <div>
+              <p>默认文稿目录</p>
+              <p className="storage-detail" title={defaultDocumentsDir}>
+                {defaultDocumentsDir || '正在读取…'}
+              </p>
+            </div>
+            <button type="button" className="secondary-button" onClick={onChooseDefaultDocumentsDir}>
+              更改…
+            </button>
+          </div>
         </section>
 
         <div className="settings-version">
-          <span>PaperScape 1.0.0</span>
-          <span>正式版</span>
+          <span>PaperScape 1.1.0</span>
+          <span>文件管理阶段</span>
         </div>
       </div>
     </aside>

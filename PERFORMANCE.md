@@ -1,4 +1,18 @@
-# PaperScape 1.0.0 性能与打包报告
+# PaperScape 性能与打包报告
+
+## V1.1 第一阶段补充（2026-11-13）
+
+- 构建：`pnpm tauri build --no-bundle`，V1.1.0 release，**未生成 NSIS**。
+- 前端生产构建：377 modules。
+- 初始 JS：930.68 kB（gzip 287.08 kB）；CSS 52.35 kB（gzip 10.78 kB）。
+- DOCX 导入 chunk：243.61 kB（gzip 79.75 kB）；导出 chunk：246.17 kB（gzip 72.76 kB）。
+- 新增文件树、DocumentBar、文件管理状态，初始包比 V1.0 增加约 120 kB。
+- 本阶段没有重新测启动/内存/CPU；V1.0 的性能数据保留在下方，不能直接代表 V1.1 文件模式。
+- 未生成新的安装包，因此没有新的安装包体积数据。
+
+---
+
+# V1.0 性能与打包报告（历史）
 
 - 测量日期：2026-11-12
 - 构建：Tauri 2 release，PaperScape 1.0.0

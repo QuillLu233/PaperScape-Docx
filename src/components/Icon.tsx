@@ -38,7 +38,11 @@ export type IconName =
   | 'trash'
   | 'history'
   | 'save'
-  | 'project';
+  | 'project'
+  | 'folder'
+  | 'file'
+  | 'refresh'
+  | 'external';
 
 const ICONS: Record<IconName, ReactNode> = {
   plus: <path d="M8 3.5v9M3.5 8h9" />,
@@ -195,6 +199,31 @@ const ICONS: Record<IconName, ReactNode> = {
     <>
       <path d="M2.2 4.2h4.1l1.4 1.6h6.1v7.4H2.2z" />
       <path d="M2.2 6.1h11.6" />
+    </>
+  ),
+  folder: (
+    <>
+      <path d="M2.2 4.2h4.1l1.4 1.6h6.1v7.4H2.2z" />
+      <path d="M2.2 6.1h11.6" />
+    </>
+  ),
+  file: (
+    <>
+      <path d="M4 2.3h5l3 3v8.4H4Z" />
+      <path d="M9 2.3v3.2h3" />
+    </>
+  ),
+  refresh: (
+    <>
+      <path d="M12.7 6.3A5 5 0 1 0 13 9.8" />
+      <path d="M12.7 3.7v2.6H10" />
+    </>
+  ),
+  external: (
+    <>
+      <path d="M9.2 3.1h3.7v3.7" />
+      <path d="M12.9 3.1 7.7 8.3" />
+      <path d="M11.2 9.4v3.2H3.4V4.8h3.2" />
     </>
   ),
 };

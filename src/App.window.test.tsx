@@ -10,6 +10,7 @@ const windowApi = vi.hoisted(() => ({
   close: vi.fn(async () => undefined),
   startResizeDragging: vi.fn(async () => undefined),
   onResized: vi.fn(async () => () => undefined),
+  onDragDropEvent: vi.fn(async () => () => undefined),
 }));
 
 vi.mock('@tauri-apps/api/window', () => ({

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { RecentProject } from '../project/types';
+import type { RecentItem } from '../workspace/types';
 import { chooseFolder, getDefaultProjectParent, isTauriRuntime } from '../project/api';
 import { hasLegacyWorkspace } from '../project/legacy';
 import { joinProjectPath } from '../project/types';
@@ -7,12 +8,19 @@ import { Icon, BrandMark } from './Icon';
 
 interface ProjectLauncherProps {
   recent: RecentProject[];
+  recentItems: RecentItem[];
   loading: boolean;
   error: string;
   onCreate: (parent: string, name: string) => void;
   onOpen: () => void;
   onOpenRecent: (path: string) => void;
   onOpenPath: (path: string) => void;
+  onNewDocument: () => void;
+  onOpenDocx: () => void;
+  onOpenFolder: () => void;
+  onOpenRecentItem: (item: RecentItem) => void;
+  defaultDocumentsDir: string;
+  onChooseDefaultDocumentsDir: () => void;
   onImportLegacy: () => void;
   onClearError: () => void;
 }
@@ -23,12 +31,19 @@ function formatCount(value: number): string {
 
 export function ProjectLauncher({
   recent,
+  recentItems,
   loading,
   error,
   onCreate,
   onOpen,
   onOpenRecent,
   onOpenPath,
+  onNewDocument,
+  onOpenDocx,
+  onOpenFolder,
+  onOpenRecentItem,
+  defaultDocumentsDir,
+  onChooseDefaultDocumentsDir,
   onImportLegacy,
   onClearError,
 }: ProjectLauncherProps) {
@@ -70,14 +85,45 @@ export function ProjectLauncher({
           </div>
         </div>
         <p className="launcher-lead">
-          一个安静、可靠的长篇写作空间。项目、章节和背景都保存在本机，正文以 Tiptap JSON 独立保存。
+          像 Word 一样直接编辑 DOCX，像 VS Code 一样打开真实文件夹。
+          文件留在你自己的目录里，项目与恢复草稿仍保存在本机。
         </p>
 
         {!desktop ? (
           <div className="launcher-notice" role="status">
-            项目管理需要在 PaperScape 桌面应用中使用；浏览器预览不提供本地文件访问。
+            文件管理需要在 PaperScape 桌面应用中使用；浏览器预览不提供本地文件访问。
           </div>
         ) : null}
+
+        <div className="launcher-actions launcher-doc-actions">
+          <button
+            type="button"
+            className="launcher-primary"
+            disabled={!desktop || loading}
+            onClick={onNewDocument}
+          >
+            <Icon name="file" size={17} />
+            <span>新建文档</span>
+          </button>
+          <button
+            type="button"
+            className="launcher-secondary"
+            disabled={!desktop || loading}
+            onClick={onOpenDocx}
+          >
+            <Icon name="file" size={17} />
+            <span>打开 Word 文档</span>
+          </button>
+          <button
+            type="button"
+            className="launcher-secondary"
+            disabled={!desktop || loading}
+            onClick={onOpenFolder}
+          >
+            <Icon name="folder" size={17} />
+            <span>打开文件夹</span>
+          </button>
+        </div>
 
         {error ? (
           <div className="launcher-error" role="alert">
@@ -228,8 +274,48 @@ export function ProjectLauncher({
           )}
         </section>
 
+        {recentItems.length > 0 ? (
+          <section className="launcher-recent" aria-labelledby="recent-files-heading">
+            <div className="launcher-section-heading">
+              <h2 id="recent-files-heading">最近文件与文件夹</h2>
+              <span>{recentItems.length} 个</span>
+            </div>
+            <div className="recent-list">
+              {recentItems.map((item) => (
+                <button
+                  key={`${item.kind}:${item.path}`}
+                  type="button"
+                  className="recent-item"
+                  title={item.path}
+                  disabled={loading}
+                  onClick={() => onOpenRecentItem(item)}
+                >
+                  <span className="recent-icon" aria-hidden="true">
+                    <Icon name={item.kind === 'folder' ? 'folder' : 'file'} size={16} />
+                  </span>
+                  <span className="recent-copy">
+                    <strong>{item.name}</strong>
+                    <small>{item.kind === 'folder' ? '文件夹' : 'Word 文档'}</small>
+                    <small className="recent-path">{item.path}</small>
+                  </span>
+                  <Icon name="chevron-right" size={14} />
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        <div className="launcher-default-dir">
+          <span>
+            默认文稿目录：<strong title={defaultDocumentsDir}>{defaultDocumentsDir || '未设置'}</strong>
+          </span>
+          <button type="button" className="secondary-button" onClick={onChooseDefaultDocumentsDir}>
+            更改…
+          </button>
+        </div>
+
         <p className="launcher-footnote">
-          项目是本地文件夹，包含 project.json、独立章节 JSON、历史版本和回收目录。不会覆盖原始 Word 文件。
+          DOCX 直接保存在你选择的真实文件夹；首次覆盖会建立原件备份。V1 项目仍可继续打开。
         </p>
       </div>
     </div>
