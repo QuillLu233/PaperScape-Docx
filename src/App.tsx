@@ -130,7 +130,7 @@ export default function App() {
   const proofreading = useProofreading();
   const { uiZoom, setUiZoom } = useUiZoom();
   const { docZoom, setDocZoom, resetDocZoom } = useDocumentZoom();
-  const { leftOpen, rightOpen, toggleLeft, toggleRight } = usePanels();
+  const { leftOpen, rightOpen, toggleLeft, toggleRight, setLeftOpen } = usePanels();
   const { isMaximized, isFullscreen, minimize, toggleMaximize, toggleFullscreen, close } =
     useWindowState();
   const [dialog, setDialog] = useState<DialogName>(null);
@@ -160,6 +160,8 @@ export default function App() {
   const dragDepth = useRef(0);
   const editorRef = useRef<EditorPaneHandle>(null);
   const startupAttempted = useRef(false);
+  const sessionActiveRef = useRef(false);
+  sessionActiveRef.current = Boolean(project || documentRoot || activeDocument);
 
   const appearance = isDocumentMode ? DEFAULT_APPEARANCE : project?.appearance ?? DEFAULT_APPEARANCE;
   const settings = isDocumentMode ? DEFAULT_SETTINGS : project?.settings ?? DEFAULT_SETTINGS;
@@ -199,6 +201,7 @@ export default function App() {
     if (startupAttempted.current || !openLastSession || !isTauriRuntime()) return;
     const timer = window.setTimeout(() => {
       startupAttempted.current = true;
+      if (sessionActiveRef.current) return;
       let last: { kind?: string; path?: string } | null = null;
       try {
         last = JSON.parse(window.localStorage.getItem('paperscape.lastSession') || 'null');
@@ -211,11 +214,15 @@ export default function App() {
           ? openRecent(last.path)
           : openFolder(last.path);
       void restore.then((ok) => {
-        if (!ok) window.localStorage.removeItem('paperscape.lastSession');
+        if (ok) {
+          setLeftOpen(true);
+        } else {
+          window.localStorage.removeItem('paperscape.lastSession');
+        }
       });
     }, 180);
     return () => window.clearTimeout(timer);
-  }, [openFolder, openLastSession, openRecent]);
+  }, [openFolder, openLastSession, openRecent, setLeftOpen]);
 
   const showNotice = useCallback((message: string) => setNotice(message), []);
 
@@ -363,34 +370,46 @@ export default function App() {
     if (isProjectOpen) await closeProject();
     if (isDocumentMode) await closeWorkspace();
     const ok = await openDocx();
-    if (ok) setFocusMode(false);
-  }, [closeProject, closeWorkspace, isDocumentMode, isProjectOpen, openDocx]);
+    if (ok) {
+      setLeftOpen(true);
+      setFocusMode(false);
+    }
+  }, [closeProject, closeWorkspace, isDocumentMode, isProjectOpen, openDocx, setLeftOpen]);
 
   const handleOpenDocxPath = useCallback(
     async (path: string) => {
       if (isProjectOpen) await closeProject();
       if (isDocumentMode) await closeWorkspace();
       const ok = await openDocx(path);
-      if (ok) setFocusMode(false);
+      if (ok) {
+        setLeftOpen(true);
+        setFocusMode(false);
+      }
     },
-    [closeProject, closeWorkspace, isDocumentMode, isProjectOpen, openDocx],
+    [closeProject, closeWorkspace, isDocumentMode, isProjectOpen, openDocx, setLeftOpen],
   );
 
   const handleOpenFolder = useCallback(async () => {
     if (isProjectOpen) await closeProject();
     if (isDocumentMode) await closeWorkspace();
     const ok = await openFolder();
-    if (ok) setFocusMode(false);
-  }, [closeProject, closeWorkspace, isDocumentMode, isProjectOpen, openFolder]);
+    if (ok) {
+      setLeftOpen(true);
+      setFocusMode(false);
+    }
+  }, [closeProject, closeWorkspace, isDocumentMode, isProjectOpen, openFolder, setLeftOpen]);
 
   const handleOpenFolderPath = useCallback(
     async (path: string) => {
       if (isProjectOpen) await closeProject();
       if (isDocumentMode) await closeWorkspace();
       const ok = await openFolder(path);
-      if (ok) setFocusMode(false);
+      if (ok) {
+        setLeftOpen(true);
+        setFocusMode(false);
+      }
     },
-    [closeProject, closeWorkspace, isDocumentMode, isProjectOpen, openFolder],
+    [closeProject, closeWorkspace, isDocumentMode, isProjectOpen, openFolder, setLeftOpen],
   );
 
   const handleDroppedPaths = useCallback(
@@ -415,9 +434,12 @@ export default function App() {
       if (isProjectOpen) await closeProject();
       if (isDocumentMode) await closeWorkspace();
       const ok = await openPath(item.path);
-      if (ok) setFocusMode(false);
+      if (ok) {
+        setLeftOpen(true);
+        setFocusMode(false);
+      }
     },
-    [closeProject, closeWorkspace, isDocumentMode, isProjectOpen, openPath, openRecent],
+    [closeProject, closeWorkspace, isDocumentMode, isProjectOpen, openPath, openRecent, setLeftOpen],
   );
 
   const handleSaveDocumentNow = useCallback(async () => {
@@ -809,6 +831,44 @@ export default function App() {
     0,
   );
 
+  const settingsPanel = (
+    <SettingsPanel
+      open={rightOpen && !focusMode}
+      documentMode={isDocumentMode}
+      theme={themeMode}
+      settings={settings}
+      appearance={appearance}
+      savedThemes={savedThemes}
+      focusMode={focusMode}
+      onThemeChange={setThemeMode}
+      onSettingsChange={updateSettings}
+      onModeChange={changeWritingMode}
+      onBackgroundChange={updateBackground}
+      onReadingOpacityChange={setReadingOpacity}
+      onPaperChange={updatePaper}
+      onApplyPreset={applyPreset}
+      onApplySavedTheme={applySavedTheme}
+      onDeleteSavedTheme={deleteSavedTheme}
+      onSaveTheme={saveCurrentTheme}
+      onChooseImage={handleAddBackground}
+      defaultDocumentsDir={defaultDocumentsDir}
+      onChooseDefaultDocumentsDir={() => void handleChooseDefaultDocumentsDir()}
+      uiZoom={uiZoom}
+      onUiZoomChange={setUiZoom}
+      openLastSession={openLastSession}
+      onOpenLastSessionChange={setOpenLastSession}
+      onManageFonts={openFontManager}
+      proofreadingEnabled={proofreading.enabled}
+      proofreadingDictionaryCount={proofreading.dictionary.length}
+      proofreadingIgnoredCount={proofreading.ignored.length}
+      onProofreadingEnabledChange={proofreading.setEnabled}
+      onClearProofreadingDictionary={proofreading.clearDictionary}
+      onClearProofreadingIgnored={proofreading.clearIgnored}
+      onToggleFocus={toggleFocusMode}
+      onClose={toggleRight}
+    />
+  );
+
   const titleBar = (
     <TitleBar
       projectName={activeDocument?.name ?? project?.name ?? (documentRoot ? baseName(documentRoot) : '')}
@@ -817,6 +877,7 @@ export default function App() {
       rightOpen={rightOpen}
       isMaximized={isMaximized}
       focusMode={focusMode}
+      leftPanelLabel={isDocumentMode ? 'files' : 'chapters'}
       onToggleLeft={toggleLeft}
       onToggleRight={toggleRight}
       onToggleFocus={toggleFocusMode}
@@ -1004,6 +1065,7 @@ export default function App() {
                 </div>
               </main>
             )}
+            {settingsPanel}
           </div>
         ) : isProjectOpen && activeChapter ? (
           <div className="workspace">
@@ -1039,40 +1101,7 @@ export default function App() {
               onUpdate={updateActiveChapter}
             />
 
-            <SettingsPanel
-              open={rightOpen && !focusMode}
-              theme={themeMode}
-              settings={settings}
-              appearance={appearance}
-              savedThemes={savedThemes}
-              focusMode={focusMode}
-              onThemeChange={setThemeMode}
-              onSettingsChange={updateSettings}
-              onModeChange={changeWritingMode}
-              onBackgroundChange={updateBackground}
-              onReadingOpacityChange={setReadingOpacity}
-              onPaperChange={updatePaper}
-              onApplyPreset={applyPreset}
-              onApplySavedTheme={applySavedTheme}
-              onDeleteSavedTheme={deleteSavedTheme}
-              onSaveTheme={saveCurrentTheme}
-              onChooseImage={handleAddBackground}
-              defaultDocumentsDir={defaultDocumentsDir}
-              onChooseDefaultDocumentsDir={() => void handleChooseDefaultDocumentsDir()}
-              uiZoom={uiZoom}
-              onUiZoomChange={setUiZoom}
-              openLastSession={openLastSession}
-              onOpenLastSessionChange={setOpenLastSession}
-              onManageFonts={openFontManager}
-              proofreadingEnabled={proofreading.enabled}
-              proofreadingDictionaryCount={proofreading.dictionary.length}
-              proofreadingIgnoredCount={proofreading.ignored.length}
-              onProofreadingEnabledChange={proofreading.setEnabled}
-              onClearProofreadingDictionary={proofreading.clearDictionary}
-              onClearProofreadingIgnored={proofreading.clearIgnored}
-              onToggleFocus={toggleFocusMode}
-              onClose={toggleRight}
-            />
+            {settingsPanel}
           </div>
         ) : (
           <ProjectLauncher

@@ -44,6 +44,7 @@ interface SettingsPanelProps {
   onClearProofreadingIgnored: () => void;
   onToggleFocus: () => void;
   onClose: () => void;
+  documentMode?: boolean;
 }
 
 const THEME_OPTIONS: Array<{ mode: ThemeMode; icon: IconName }> = [
@@ -85,6 +86,7 @@ export const SettingsPanel = memo(function SettingsPanel({
   onClearProofreadingIgnored,
   onToggleFocus,
   onClose,
+  documentMode = false,
 }: SettingsPanelProps) {
   return (
     <aside
@@ -111,21 +113,32 @@ export const SettingsPanel = memo(function SettingsPanel({
       </div>
 
       <div className="settings-scroll">
-        <AppearanceSettings
-          appearance={appearance}
-          savedThemes={savedThemes}
-          focusMode={focusMode}
-          onModeChange={onModeChange}
-          onBackgroundChange={onBackgroundChange}
-          onReadingOpacityChange={onReadingOpacityChange}
-          onPaperChange={onPaperChange}
-          onApplyPreset={onApplyPreset}
-          onApplySavedTheme={onApplySavedTheme}
-          onDeleteSavedTheme={onDeleteSavedTheme}
-          onSaveTheme={onSaveTheme}
-          onChooseImage={onChooseImage}
-          onToggleFocus={onToggleFocus}
-        />
+        {!documentMode ? (
+          <AppearanceSettings
+            appearance={appearance}
+            savedThemes={savedThemes}
+            focusMode={focusMode}
+            onModeChange={onModeChange}
+            onBackgroundChange={onBackgroundChange}
+            onReadingOpacityChange={onReadingOpacityChange}
+            onPaperChange={onPaperChange}
+            onApplyPreset={onApplyPreset}
+            onApplySavedTheme={onApplySavedTheme}
+            onDeleteSavedTheme={onDeleteSavedTheme}
+            onSaveTheme={onSaveTheme}
+            onChooseImage={onChooseImage}
+            onToggleFocus={onToggleFocus}
+          />
+        ) : (
+          <section className="settings-section" aria-labelledby="document-settings-heading">
+            <h3 id="document-settings-heading" className="settings-label">
+              文件模式
+            </h3>
+            <p className="settings-note">
+              当前直接编辑磁盘上的 DOCX。背景、纸张和正文排版使用应用默认值，不写入 DOCX；界面缩放、字体和校对设置仍可调整。
+            </p>
+          </section>
+        )}
 
         <section className="settings-section" aria-labelledby="theme-heading">
           <h3 id="theme-heading" className="settings-label">
@@ -148,76 +161,78 @@ export const SettingsPanel = memo(function SettingsPanel({
           <p className="settings-note">界面会保持安静的暖纸色，深色模式同样低对比。</p>
         </section>
 
-        <section className="settings-section" aria-labelledby="typography-heading">
-          <div className="settings-label-row">
-            <h3 id="typography-heading" className="settings-label">
-              正文排版
-            </h3>
-            <button
-              type="button"
-              className="text-button"
-              onClick={() => onSettingsChange(DEFAULT_SETTINGS)}
+        {!documentMode ? (
+          <section className="settings-section" aria-labelledby="typography-heading">
+            <div className="settings-label-row">
+              <h3 id="typography-heading" className="settings-label">
+                正文排版
+              </h3>
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => onSettingsChange(DEFAULT_SETTINGS)}
+              >
+                <Icon name="reset" size={13} />
+                恢复默认
+              </button>
+            </div>
+
+            <div className="range-field">
+              <div className="range-meta">
+                <label htmlFor="font-size">字号</label>
+                <output htmlFor="font-size">{settings.fontSize} px</output>
+              </div>
+              <input
+                id="font-size"
+                type="range"
+                min={14}
+                max={24}
+                step={1}
+                value={settings.fontSize}
+                onChange={(event) => onSettingsChange({ fontSize: Number(event.target.value) })}
+              />
+            </div>
+
+            <div className="range-field">
+              <div className="range-meta">
+                <label htmlFor="line-height">行距</label>
+                <output htmlFor="line-height">{settings.lineHeight.toFixed(1)}</output>
+              </div>
+              <input
+                id="line-height"
+                type="range"
+                min={1.4}
+                max={2.4}
+                step={0.1}
+                value={settings.lineHeight}
+                onChange={(event) => onSettingsChange({ lineHeight: Number(event.target.value) })}
+              />
+            </div>
+
+            <div className="range-field">
+              <div className="range-meta">
+                <label htmlFor="editor-width">沉浸式阅读宽度</label>
+                <output htmlFor="editor-width">{settings.editorWidth} px</output>
+              </div>
+              <input
+                id="editor-width"
+                type="range"
+                min={EDITOR_WIDTH_MIN}
+                max={EDITOR_WIDTH_MAX}
+                step={10}
+                value={settings.editorWidth}
+                onChange={(event) => onSettingsChange({ editorWidth: Number(event.target.value) })}
+              />
+            </div>
+
+            <div
+              className="type-preview"
+              style={{ fontSize: settings.fontSize, lineHeight: settings.lineHeight }}
             >
-              <Icon name="reset" size={13} />
-              恢复默认
-            </button>
-          </div>
-
-          <div className="range-field">
-            <div className="range-meta">
-              <label htmlFor="font-size">字号</label>
-              <output htmlFor="font-size">{settings.fontSize} px</output>
+              让文字慢下来。
             </div>
-            <input
-              id="font-size"
-              type="range"
-              min={14}
-              max={24}
-              step={1}
-              value={settings.fontSize}
-              onChange={(event) => onSettingsChange({ fontSize: Number(event.target.value) })}
-            />
-          </div>
-
-          <div className="range-field">
-            <div className="range-meta">
-              <label htmlFor="line-height">行距</label>
-              <output htmlFor="line-height">{settings.lineHeight.toFixed(1)}</output>
-            </div>
-            <input
-              id="line-height"
-              type="range"
-              min={1.4}
-              max={2.4}
-              step={0.1}
-              value={settings.lineHeight}
-              onChange={(event) => onSettingsChange({ lineHeight: Number(event.target.value) })}
-            />
-          </div>
-
-          <div className="range-field">
-            <div className="range-meta">
-              <label htmlFor="editor-width">沉浸式阅读宽度</label>
-              <output htmlFor="editor-width">{settings.editorWidth} px</output>
-            </div>
-            <input
-              id="editor-width"
-              type="range"
-              min={EDITOR_WIDTH_MIN}
-              max={EDITOR_WIDTH_MAX}
-              step={10}
-              value={settings.editorWidth}
-              onChange={(event) => onSettingsChange({ editorWidth: Number(event.target.value) })}
-            />
-          </div>
-
-          <div
-            className="type-preview"
-            style={{ fontSize: settings.fontSize, lineHeight: settings.lineHeight }}
-          >
-            让文字慢下来。
-          </div>
-        </section>
+          </section>
+        ) : null}
 
         <section className="settings-section" aria-labelledby="interface-heading">
           <h3 id="interface-heading" className="settings-label">
@@ -296,8 +311,17 @@ export const SettingsPanel = memo(function SettingsPanel({
           <div className="storage-card">
             <span className="status-dot" aria-hidden="true" />
             <div>
-              <p>章节与本项目偏好保存在项目文件夹</p>
-              <p className="storage-detail">正文是独立的 Tiptap JSON 章节文件；背景图片使用本机 IndexedDB 缓存。</p>
+              {documentMode ? (
+                <>
+                  <p>DOCX 保存在你选择的位置</p>
+                  <p className="storage-detail">应用不会把正文强制移入 AppData；配置和缓存属于本机应用数据。</p>
+                </>
+              ) : (
+                <>
+                  <p>章节与本项目偏好保存在项目文件夹</p>
+                  <p className="storage-detail">正文是独立的 Tiptap JSON 章节文件；背景图片使用本机 IndexedDB 缓存。</p>
+                </>
+              )}
             </div>
           </div>
           <div className="default-docs-field">

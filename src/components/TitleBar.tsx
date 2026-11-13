@@ -8,6 +8,7 @@ interface TitleBarProps {
   rightOpen: boolean;
   isMaximized: boolean;
   focusMode: boolean;
+  leftPanelLabel?: 'chapters' | 'files';
   menu: ReactNode;
   onToggleLeft: () => void;
   onToggleRight: () => void;
@@ -24,6 +25,7 @@ export function TitleBar({
   rightOpen,
   isMaximized,
   focusMode,
+  leftPanelLabel = 'chapters',
   menu,
   onToggleLeft,
   onToggleRight,
@@ -34,6 +36,7 @@ export function TitleBar({
 }: TitleBarProps) {
   const [infoOpen, setInfoOpen] = useState(false);
   const infoRef = useRef<HTMLDivElement>(null);
+  const leftPanelName = leftPanelLabel === 'files' ? '文件树' : '章节目录';
   const handleDoubleClick = (event: MouseEvent<HTMLElement>) => {
     if ((event.target as HTMLElement).closest('button, input, a, [role="menu"]')) return;
     onToggleMaximize();
@@ -116,9 +119,9 @@ export function TitleBar({
         <button
           type="button"
           className={`tool-button${leftOpen ? ' is-active' : ''}`}
-          aria-label={leftOpen ? '隐藏章节目录' : '显示章节目录'}
+          aria-label={leftOpen ? `隐藏${leftPanelName}` : `显示${leftPanelName}`}
           aria-pressed={leftOpen}
-          title={leftOpen ? '隐藏章节目录 (Ctrl+B)' : '显示章节目录 (Ctrl+B)'}
+          title={leftOpen ? `隐藏${leftPanelName} (Ctrl+B)` : `显示${leftPanelName} (Ctrl+B)`}
           onClick={onToggleLeft}
         >
           <Icon name="panel-left" size={16} />
