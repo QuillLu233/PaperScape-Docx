@@ -16,7 +16,14 @@ git branch v1-baseline
 commit 38d5d8e fix: make window close reliable and save before exit
 ```
 
-V1 项目格式保留读取；没有自动迁移、移动或删除 V1 文稿。
+补充了独立备份文件：
+
+- `backups/PaperScape-v1.0.0-source.zip`：从基线导出的完整源码/资源归档。
+- `backups/PaperScape-v1.0.0.bundle`：完整 Git 历史。
+- `backups/V1_BACKUP_MANIFEST.md`：恢复说明、SHA256 和验证记录。
+- `backups/SHA256SUMS.txt`：备份文件校验和。
+
+已验证归档内版本为 1.0.0、安装包哈希与当前 V1 安装包一致，`git bundle verify` 通过。未发现需要迁移/备份的 `.paperscape` 用户项目。V1 项目格式保留读取；没有自动迁移、移动或删除 V1 文稿。
 
 ### 实现
 

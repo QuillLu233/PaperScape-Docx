@@ -167,4 +167,11 @@ git branch v1-baseline
 commit 38d5d8e
 ```
 
+另外已补做完整备份（从基线提交导出，不依赖 V1.1 工作区）：
+
+- [源码 ZIP](backups/PaperScape-v1.0.0-source.zip)
+- [完整 Git 历史 bundle](backups/PaperScape-v1.0.0.bundle)
+- [备份清单与恢复说明](backups/V1_BACKUP_MANIFEST.md)
+- [校验和](backups/SHA256SUMS.txt)
+
 V1 原项目格式保留读取，不做自动迁移。
