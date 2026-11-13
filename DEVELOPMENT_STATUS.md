@@ -17,9 +17,9 @@
 - React 正式构建：通过，约 3.6 s。
 - Tauri Windows Release：`pnpm tauri build --no-bundle` 通过，约 24.2 s，保留 Cargo target 缓存。
 - EXE：`src-tauri/target/release/paperscape.exe`，**9,927,168 字节**。
-- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,210,911 字节**。
-- ZIP SHA256：`CBE727E8B81CE650577B5465765B03B36B326E9FCF48A0E9949381675F1B0CE8`。
-- EXE SHA256：`3FA2207D53E13862673B7537E596563B4140BF01C0B88AA84DA13006F1869B4F`。
+- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,211,085 字节**。
+- ZIP SHA256：`C04A14074FA09B69166F290B3C17E633FE693DBEA563C8A7576BB6FC0FFDA9DB`。
+- EXE SHA256：`963BC0BD112A35B2251E56C3AA3B7A0116FA91207BA98231F1B4809130DCE4C1`。
 - ZIP 内只有 `PaperScape-v1.1-Portable/PaperScape.exe` 和 `README.txt`。
 - **未生成 NSIS/MSI**；未引入 Electron、额外大型运行时或后台服务。
 
@@ -27,7 +27,7 @@
 
 | 指标 | 实测 | 目标/结论 |
 | --- | --- | --- |
-| ZIP 体积 | 3,210,911 B（约 3.06 MiB） | ≤30 MB，达到 |
+| ZIP 体积 | 3,211,085 B（约 3.06 MiB） | ≤30 MB，达到 |
 | EXE 体积 | 9,927,168 B | 轻量 |
 | 启动到窗口（热缓存，任务计划口径） | 255 / 84 / 54 ms | ≤2 s 目标达到；**不是严格冷启动** |
 | V1 项目空闲 Working Set（含 7 个进程） | **379.2 MB** | 150 MB 挑战目标**未达到** |
@@ -101,6 +101,15 @@
 - **自动化**：新增 `SettingsPanel.test.tsx`，锁定文件模式不显示项目专属排版控件；前端测试更新为 **16 个文件、66 个测试通过**。
 - **V1.0 自定义背景恢复**：文件模式现在显示完整 `AppearanceSettings`（写作模式、背景预设/图片、亮度、模糊、暗角、遮罩、纸张、保存主题）。文件模式外观保存在本机 `__document__` 外观记录，不写入 DOCX；V1 项目仍使用项目自身的 `project.json` 外观，原有 V1 项目背景继续保留。
 - 修复后的 Portable ZIP 已重新构建并校验。
+
+### 专注自动全屏与文稿栏折叠（2026-11-13）
+
+- 从普通窗口进入专注模式时自动进入全屏，退出专注恢复进入前的窗口尺寸；原本已在全屏时不会擅自退出全屏。
+- 全屏仍使用临时置顶覆盖 Windows 11 任务栏，退出时取消置顶。
+- 文稿信息栏顶部新增收起/展开箭头，可隐藏整条文件信息与保存操作；偏好保存在 localStorage，重新打开仍保持。
+- 收起后保存仍可通过 `Ctrl+S`、文件菜单和状态栏完成；展开箭头固定在顶部右侧。
+- 真实窗口验证：非全屏 2000×1100 → 专注全屏 2560×1600（`WS_EX_TOPMOST`）→ Esc 退出恢复 2000×1100，置顶清除；文稿栏收起后仅保留顶部箭头，再展开恢复保存按钮。
+- 前端测试保持 **16 个文件、66 个测试通过**。
 
 ### 文稿关闭按钮（2026-11-13）
 

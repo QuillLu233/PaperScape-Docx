@@ -134,7 +134,7 @@ export default function App() {
   const { uiZoom, setUiZoom } = useUiZoom();
   const { docZoom, setDocZoom, resetDocZoom } = useDocumentZoom();
   const { leftOpen, rightOpen, toggleLeft, toggleRight, setLeftOpen } = usePanels();
-  const { isMaximized, isFullscreen, minimize, toggleMaximize, toggleFullscreen, close } =
+  const { isMaximized, isFullscreen, isDesktop, minimize, toggleMaximize, toggleFullscreen, close } =
     useWindowState();
   const [dialog, setDialog] = useState<DialogName>(null);
   const [fontManagerOpen, setFontManagerOpen] = useState(false);
@@ -142,6 +142,11 @@ export default function App() {
     loadProjectAppearance('__document__'),
   );
   const [focusMode, setFocusMode] = useState(false);
+  const focusAutoFullscreenRef = useRef(false);
+  const previousFocusModeRef = useRef(false);
+  const [documentBarCollapsed, setDocumentBarCollapsed] = useState(
+    () => window.localStorage.getItem('paperscape.documentBarCollapsed') === 'true',
+  );
   const [focusPaperOpacity, setFocusPaperOpacity] = useState(85);
   const [focusBrightness, setFocusBrightness] = useState(100);
   const [focusBlur, setFocusBlur] = useState(0);
@@ -295,6 +300,31 @@ export default function App() {
     isDocumentMode,
     isProjectOpen,
   ]);
+
+  useEffect(() => {
+    const wasFocused = previousFocusModeRef.current;
+    previousFocusModeRef.current = focusMode;
+    if (wasFocused === focusMode) return;
+    if (focusMode) {
+      if (isDesktop && !isFullscreen) {
+        focusAutoFullscreenRef.current = true;
+        void toggleFullscreen();
+      }
+      return;
+    }
+    if (focusAutoFullscreenRef.current) {
+      focusAutoFullscreenRef.current = false;
+      if (isDesktop && isFullscreen) void toggleFullscreen();
+    }
+  }, [focusMode, isDesktop, isFullscreen, toggleFullscreen]);
+
+  const toggleDocumentBar = useCallback(() => {
+    setDocumentBarCollapsed((current) => {
+      const next = !current;
+      window.localStorage.setItem('paperscape.documentBarCollapsed', String(next));
+      return next;
+    });
+  }, []);
 
   const toggleFocusFromShortcut = useCallback(() => {
     const now = Date.now();
@@ -1039,23 +1069,39 @@ export default function App() {
                 onAddProofreadingWord={proofreading.addDictionary}
                 onIgnoreProofreading={proofreading.ignore}
                 header={
-                  <DocumentBar
-                    document={activeDocument}
-                    folder={documentRoot}
-                    saving={documentSaving}
-                    error={documentError}
-                    recovery={documentRecovery}
-                    recoveryError={documentRecoveryError}
-                    onSave={() => void handleSaveDocumentNow()}
-                    onSaveAs={() => void handleSaveDocumentAsNow()}
-                    onReveal={() => void handleRevealDocument()}
-                    onAuthorizeOverwrite={authorizeOverwrite}
-                    onToggleReadOnly={toggleReadOnly}
-                    onRestoreRecovery={restoreDocumentRecovery}
-                    onDiscardRecovery={discardDocumentRecovery}
-                    onClearError={clearDocumentError}
-                    onCloseWorkspace={() => void closeWorkspace()}
-                  />
+                  <div className="document-bar-shell">
+                    <div className="document-bar-toggle-row">
+                      <button
+                        type="button"
+                        className="document-bar-toggle"
+                        aria-label={documentBarCollapsed ? '展开文稿信息栏' : '收起文稿信息栏'}
+                        aria-expanded={!documentBarCollapsed}
+                        title={documentBarCollapsed ? '展开文稿信息栏' : '收起文稿信息栏'}
+                        onClick={toggleDocumentBar}
+                      >
+                        <Icon name={documentBarCollapsed ? 'chevron-down' : 'chevron-up'} size={11} />
+                      </button>
+                    </div>
+                    {!documentBarCollapsed ? (
+                      <DocumentBar
+                        document={activeDocument}
+                        folder={documentRoot}
+                        saving={documentSaving}
+                        error={documentError}
+                        recovery={documentRecovery}
+                        recoveryError={documentRecoveryError}
+                        onSave={() => void handleSaveDocumentNow()}
+                        onSaveAs={() => void handleSaveDocumentAsNow()}
+                        onReveal={() => void handleRevealDocument()}
+                        onAuthorizeOverwrite={authorizeOverwrite}
+                        onToggleReadOnly={toggleReadOnly}
+                        onRestoreRecovery={restoreDocumentRecovery}
+                        onDiscardRecovery={discardDocumentRecovery}
+                        onClearError={clearDocumentError}
+                        onCloseWorkspace={() => void closeWorkspace()}
+                      />
+                    ) : null}
+                  </div>
                 }
                 onUpdate={updateDocument}
               />

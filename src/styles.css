@@ -4051,3 +4051,42 @@ body {
   padding: 2px 6px;
   font-size: 9px;
 }
+
+/* Collapsible document information bar */
+.document-bar-shell {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+}
+
+.document-bar-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 18px;
+  padding: 0 12px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border-bottom: 1px solid var(--line);
+}
+
+.document-bar-toggle {
+  display: grid;
+  width: 22px;
+  height: 16px;
+  place-items: center;
+  border-radius: 4px;
+  color: var(--muted);
+}
+
+.document-bar-toggle:hover {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+.document-bar-shell .document-bar {
+  border-top: 0;
+}
+
+.app-shell.is-focus-mode .document-bar-shell {
+  display: none;
+}
