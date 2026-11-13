@@ -6,6 +6,7 @@ import { TextAlign } from '@tiptap/extension-text-align';
 import { TextStyleKit } from '@tiptap/extension-text-style';
 import { StarterKit } from '@tiptap/starter-kit';
 import { BlockStyle } from './extensions/BlockStyle';
+import { Proofreading } from './extensions/Proofreading';
 import { SearchHighlight } from './extensions/SearchHighlight';
 
 export const FONT_FAMILIES = [
@@ -62,5 +63,6 @@ export function createEditorExtensions(): Extensions {
     }),
     BlockStyle,
     SearchHighlight,
+    Proofreading,
   ];
 }

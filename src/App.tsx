@@ -37,6 +37,7 @@ import { useWindowState } from './hooks/useWindowState';
 import { useProject } from './project/useProject';
 import { useFonts } from './fonts/useFonts';
 import { FontManagerDialog } from './components/FontManagerDialog';
+import { useProofreading } from './proofreading/useProofreading';
 import type { ChapterSummary, HistoryEntry, RecoveryCandidate } from './project/types';
 
 type DialogName = 'shortcuts' | 'about' | null;
@@ -126,6 +127,7 @@ export default function App() {
   } = projectController;
   const { mode: themeMode, setMode: setThemeMode } = useTheme();
   const fonts = useFonts();
+  const proofreading = useProofreading();
   const { uiZoom, setUiZoom } = useUiZoom();
   const { docZoom, setDocZoom, resetDocZoom } = useDocumentZoom();
   const { leftOpen, rightOpen, toggleLeft, toggleRight } = usePanels();
@@ -877,6 +879,8 @@ export default function App() {
           onOpenLastSessionChange={setOpenLastSession}
           onChooseDefaultDocumentsDir={() => void handleChooseDefaultDocumentsDir()}
           onManageFonts={openFontManager}
+          proofreadingEnabled={proofreading.enabled}
+          onToggleProofreading={() => proofreading.setEnabled(!proofreading.enabled)}
           onShowShortcuts={() => setDialog('shortcuts')}
           onShowAbout={() => setDialog('about')}
         />
@@ -949,6 +953,11 @@ export default function App() {
                 standalone
                 docZoom={docZoom}
                 onDocZoomChange={setDocZoom}
+                proofreadingEnabled={proofreading.enabled}
+                proofreadingDictionary={proofreading.dictionary}
+                proofreadingIgnored={proofreading.ignored}
+                onAddProofreadingWord={proofreading.addDictionary}
+                onIgnoreProofreading={proofreading.ignore}
                 header={
                   <DocumentBar
                     document={activeDocument}
@@ -1022,6 +1031,11 @@ export default function App() {
               focusMode={focusMode}
               docZoom={docZoom}
               onDocZoomChange={setDocZoom}
+              proofreadingEnabled={proofreading.enabled}
+              proofreadingDictionary={proofreading.dictionary}
+              proofreadingIgnored={proofreading.ignored}
+              onAddProofreadingWord={proofreading.addDictionary}
+              onIgnoreProofreading={proofreading.ignore}
               onUpdate={updateActiveChapter}
             />
 
@@ -1050,6 +1064,12 @@ export default function App() {
               openLastSession={openLastSession}
               onOpenLastSessionChange={setOpenLastSession}
               onManageFonts={openFontManager}
+              proofreadingEnabled={proofreading.enabled}
+              proofreadingDictionaryCount={proofreading.dictionary.length}
+              proofreadingIgnoredCount={proofreading.ignored.length}
+              onProofreadingEnabledChange={proofreading.setEnabled}
+              onClearProofreadingDictionary={proofreading.clearDictionary}
+              onClearProofreadingIgnored={proofreading.clearIgnored}
               onToggleFocus={toggleFocusMode}
               onClose={toggleRight}
             />

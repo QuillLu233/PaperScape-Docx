@@ -36,6 +36,12 @@ interface SettingsPanelProps {
   openLastSession: boolean;
   onOpenLastSessionChange: (value: boolean) => void;
   onManageFonts: () => void;
+  proofreadingEnabled: boolean;
+  proofreadingDictionaryCount: number;
+  proofreadingIgnoredCount: number;
+  onProofreadingEnabledChange: (value: boolean) => void;
+  onClearProofreadingDictionary: () => void;
+  onClearProofreadingIgnored: () => void;
   onToggleFocus: () => void;
   onClose: () => void;
 }
@@ -71,6 +77,12 @@ export const SettingsPanel = memo(function SettingsPanel({
   openLastSession,
   onOpenLastSessionChange,
   onManageFonts,
+  proofreadingEnabled,
+  proofreadingDictionaryCount,
+  proofreadingIgnoredCount,
+  onProofreadingEnabledChange,
+  onClearProofreadingDictionary,
+  onClearProofreadingIgnored,
   onToggleFocus,
   onClose,
 }: SettingsPanelProps) {
@@ -238,6 +250,45 @@ export const SettingsPanel = memo(function SettingsPanel({
           </button>
         </section>
 
+        <section className="settings-section" aria-labelledby="proofreading-heading">
+          <h3 id="proofreading-heading" className="settings-label">
+            中文校对
+          </h3>
+          <label className="settings-check-row">
+            <input
+              type="checkbox"
+              checked={proofreadingEnabled}
+              onChange={(event) => onProofreadingEnabledChange(event.target.checked)}
+            />
+            <span>启用离线中文校对</span>
+          </label>
+          <p className="settings-note">
+            仅检查重复字词、连续标点、括号引号配对、中英文标点混用和多余空格；只检查当前段落，不联网、不自动修改正文。
+          </p>
+          <div className="settings-proofreading-stats">
+            <span>个人词典 {proofreadingDictionaryCount} 项</span>
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={proofreadingDictionaryCount === 0}
+              onClick={onClearProofreadingDictionary}
+            >
+              清空
+            </button>
+          </div>
+          <div className="settings-proofreading-stats">
+            <span>已忽略 {proofreadingIgnoredCount} 处</span>
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={proofreadingIgnoredCount === 0}
+              onClick={onClearProofreadingIgnored}
+            >
+              清空
+            </button>
+          </div>
+        </section>
+
         <section className="settings-section" aria-labelledby="data-heading">
           <h3 id="data-heading" className="settings-label">
             本地存储
@@ -264,7 +315,7 @@ export const SettingsPanel = memo(function SettingsPanel({
 
         <div className="settings-version">
           <span>PaperScape 1.1.0</span>
-          <span>文件管理阶段</span>
+          <span>校对阶段</span>
         </div>
       </div>
     </aside>

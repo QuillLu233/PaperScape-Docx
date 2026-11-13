@@ -1,5 +1,18 @@
 # PaperScape 性能与打包报告
 
+## V1.1 第四阶段补充（2026-11-13）
+
+- 构建：`pnpm tauri build --no-bundle`，V1.1.0 release，**未生成 NSIS**。
+- 前端生产构建：388 modules。
+- 初始 JS：960.08 kB（gzip 296.15 kB）；CSS 63.25 kB（gzip 12.70 kB）。
+- release 程序大小：9,923,072 字节（不含安装包）。
+- 中文校对是纯 TypeScript 规则模块：无网络请求、无模型文件、无 Python 服务、无独立进程。
+- 只读取当前选区所在段落；输入防抖 650ms，选区变化 300ms，初次检查 120ms。
+- 超过 12,000 个位置的单段直接跳过，避免长段阻塞输入。
+- 规则测试对 9,000 字符段落执行通过，阈值 100ms；该结果是无设备无关的单元环境短测，不代表所有机器。
+- 装饰更新使用独立 ProseMirror transaction，不重建 Tiptap，不触发文档保存内容变化。
+- 输入法组合期间暂停检查；不引入常驻轮询、视频或 Canvas 动画。
+
 ## V1.1 第三阶段补充（2026-11-13）
 
 - 构建：`pnpm tauri build --no-bundle`，V1.1.0 release，**未生成 NSIS**。

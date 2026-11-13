@@ -9,13 +9,17 @@ import {
   type ReactNode,
 } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
+import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import type { ProjectAppearance, WritingSettings } from '../types';
 import type { ChapterFile } from '../project/types';
 import { createEditorExtensions } from '../editor/editorConfig';
+import { proofreadingPluginKey } from '../editor/extensions/Proofreading';
+import { collectProofreadingIssues, type ProofreadingIssue } from '../proofreading/rules';
 import { getPageDimensions, getPaperMargins, colorWithAlpha, paperTextColors } from '../appearance/presets';
 import { countCharacters, excerpt, formatCount } from '../lib/text';
 import { EditorToolbar } from './EditorToolbar';
 import { FindReplaceBar } from './FindReplaceBar';
+import { ProofreadingPopover } from './ProofreadingPopover';
 
 export interface EditorPaneHandle {
   focus: () => void;
@@ -37,6 +41,11 @@ interface EditorPaneProps {
   standalone?: boolean;
   docZoom?: number;
   header?: ReactNode;
+  proofreadingEnabled?: boolean;
+  proofreadingDictionary?: string[];
+  proofreadingIgnored?: string[];
+  onAddProofreadingWord?: (word: string) => void;
+  onIgnoreProofreading?: (fingerprint: string) => void;
   onDocZoomChange?: (value: number) => void;
   onUpdate: (
     patch: Partial<Pick<ChapterFile, 'title' | 'doc' | 'characterCount' | 'excerpt'>>,
@@ -55,16 +64,30 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
     standalone = false,
     docZoom = 100,
     header,
+    proofreadingEnabled = false,
+    proofreadingDictionary = [],
+    proofreadingIgnored = [],
+    onAddProofreadingWord,
+    onIgnoreProofreading,
     onDocZoomChange,
     onUpdate,
   },
   ref,
 ) {
   const [searchOpen, setSearchOpen] = useState(false);
+  const [proofreadingPopup, setProofreadingPopup] = useState<{
+    issue: ProofreadingIssue;
+    rect: { left: number; top: number; right: number; bottom: number };
+  } | null>(null);
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
   const initializedRef = useRef(false);
   const paneRef = useRef<HTMLElement>(null);
+  const proofreadingIssuesRef = useRef(new Map<string, ProofreadingIssue>());
+  const proofreadingTimerRef = useRef<number | undefined>(undefined);
+  const proofreadingHoverRef = useRef<number | undefined>(undefined);
+  const composingRef = useRef(false);
+  const scheduleProofreadingRef = useRef<(delay?: number) => void>(() => undefined);
 
   const editor = useEditor({
     extensions: createEditorExtensions(),
@@ -73,6 +96,10 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
     shouldRerenderOnTransaction: false,
     onCreate: () => {
       initializedRef.current = true;
+      scheduleProofreadingRef.current(120);
+    },
+    onSelectionUpdate: () => {
+      scheduleProofreadingRef.current(300);
     },
     editorProps: {
       attributes: {
@@ -93,8 +120,174 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
         characterCount: countCharacters(text),
         excerpt: excerpt(text),
       });
+      scheduleProofreadingRef.current(650);
     },
   });
+
+  const clearProofreadingDecorations = useCallback(() => {
+    if (!editor || editor.isDestroyed) return;
+    proofreadingIssuesRef.current.clear();
+    editor.view.dispatch(
+      editor.state.tr.setMeta(proofreadingPluginKey, DecorationSet.empty),
+    );
+    setProofreadingPopup(null);
+  }, [editor]);
+
+  const runProofreading = useCallback(() => {
+    if (!editor || editor.isDestroyed) return;
+    if (!proofreadingEnabled || composingRef.current || editor.view.composing) {
+      clearProofreadingDecorations();
+      return;
+    }
+    const { $from } = editor.state.selection;
+    const parent = $from.parent;
+    if (parent.type.name !== 'paragraph' && parent.type.name !== 'heading') {
+      clearProofreadingDecorations();
+      return;
+    }
+    let hasInlineNode = false;
+    parent.forEach((node) => {
+      if (!node.isText) hasInlineNode = true;
+    });
+    if (hasInlineNode || parent.content.size > 12_000) {
+      clearProofreadingDecorations();
+      return;
+    }
+    const text = parent.textContent;
+    const issues = collectProofreadingIssues(text, {
+      dictionary: proofreadingDictionary,
+      ignored: proofreadingIgnored,
+      maxIssues: 24,
+    });
+    const textStart = $from.start();
+    const decorations = issues.map((issue) =>
+      Decoration.inline(textStart + issue.from, textStart + issue.to, {
+        class: 'proofreading-issue',
+        'data-proofreading-id': issue.id,
+        title: issue.message,
+      }),
+    );
+    proofreadingIssuesRef.current = new Map(issues.map((issue) => [issue.id, issue]));
+    try {
+      editor.view.dispatch(
+        editor.state.tr.setMeta(
+          proofreadingPluginKey,
+          DecorationSet.create(editor.state.doc, decorations),
+        ),
+      );
+    } catch {
+      return;
+    }
+    setProofreadingPopup((current) => {
+      if (!current) return current;
+      return proofreadingIssuesRef.current.has(current.issue.id) ? current : null;
+    });
+  }, [
+    clearProofreadingDecorations,
+    editor,
+    proofreadingDictionary,
+    proofreadingEnabled,
+    proofreadingIgnored,
+  ]);
+
+  const scheduleProofreading = useCallback(
+    (delay = 650) => {
+      window.clearTimeout(proofreadingTimerRef.current);
+      if (!proofreadingEnabled) {
+        clearProofreadingDecorations();
+        return;
+      }
+      proofreadingTimerRef.current = window.setTimeout(runProofreading, delay);
+    },
+    [clearProofreadingDecorations, proofreadingEnabled, runProofreading],
+  );
+  scheduleProofreadingRef.current = scheduleProofreading;
+
+  useEffect(() => {
+    scheduleProofreading(220);
+    return () => window.clearTimeout(proofreadingTimerRef.current);
+  }, [scheduleProofreading]);
+
+  useEffect(() => {
+    if (!proofreadingEnabled) clearProofreadingDecorations();
+  }, [clearProofreadingDecorations, proofreadingEnabled]);
+
+  useEffect(() => {
+    const dom = editor?.view.dom;
+    if (!dom) return;
+    const onCompositionStart = () => {
+      composingRef.current = true;
+      window.clearTimeout(proofreadingTimerRef.current);
+    };
+    const onCompositionEnd = () => {
+      composingRef.current = false;
+      scheduleProofreading(280);
+    };
+    dom.addEventListener('compositionstart', onCompositionStart);
+    dom.addEventListener('compositionend', onCompositionEnd);
+    return () => {
+      dom.removeEventListener('compositionstart', onCompositionStart);
+      dom.removeEventListener('compositionend', onCompositionEnd);
+    };
+  }, [editor, scheduleProofreading]);
+
+  useEffect(() => {
+    const dom = editor?.view.dom;
+    if (!dom) return;
+    const show = (element: HTMLElement) => {
+      const id = element.dataset.proofreadingId;
+      if (!id) return;
+      const issue = proofreadingIssuesRef.current.get(id);
+      if (!issue) return;
+      const rect = element.getBoundingClientRect();
+      setProofreadingPopup({
+        issue,
+        rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
+      });
+    };
+    const findIssue = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return null;
+      return target.closest<HTMLElement>('[data-proofreading-id]');
+    };
+    const onMouseOver = (event: MouseEvent) => {
+      const element = findIssue(event.target);
+      if (!element) return;
+      window.clearTimeout(proofreadingHoverRef.current);
+      proofreadingHoverRef.current = window.setTimeout(() => show(element), 220);
+    };
+    const onClick = (event: MouseEvent) => {
+      const element = findIssue(event.target);
+      if (!element) return;
+      window.clearTimeout(proofreadingHoverRef.current);
+      show(element);
+    };
+    const onScroll = () => {
+      setProofreadingPopup(null);
+    };
+    dom.addEventListener('mouseover', onMouseOver);
+    dom.addEventListener('click', onClick);
+    dom.addEventListener('scroll', onScroll, true);
+    return () => {
+      window.clearTimeout(proofreadingHoverRef.current);
+      dom.removeEventListener('mouseover', onMouseOver);
+      dom.removeEventListener('click', onClick);
+      dom.removeEventListener('scroll', onScroll, true);
+    };
+  }, [editor]);
+
+  useEffect(() => {
+    if (!proofreadingPopup) return;
+    const onPointerDown = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest('.proofreading-popover') || target.closest('.proofreading-issue')) {
+        return;
+      }
+      setProofreadingPopup(null);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [proofreadingPopup]);
 
   const focus = useCallback(() => editor?.commands.focus(), [editor]);
   const blur = useCallback(() => editor?.commands.blur(), [editor]);
@@ -210,6 +403,23 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
           </div>
         </article>
       </div>
+
+      {proofreadingPopup ? (
+        <ProofreadingPopover
+          issue={proofreadingPopup.issue}
+          rect={proofreadingPopup.rect}
+          onIgnore={() => {
+            onIgnoreProofreading?.(proofreadingPopup.issue.fingerprint);
+            setProofreadingPopup(null);
+          }}
+          onAddDictionary={() => {
+            const word = proofreadingPopup.issue.word || proofreadingPopup.issue.text;
+            onAddProofreadingWord?.(word);
+            setProofreadingPopup(null);
+          }}
+          onClose={() => setProofreadingPopup(null)}
+        />
+      ) : null}
     </main>
   );
 });

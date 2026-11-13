@@ -64,6 +64,8 @@ interface MenuBarProps {
   onOpenLastSessionChange: (value: boolean) => void;
   onChooseDefaultDocumentsDir: () => void;
   onManageFonts: () => void;
+  proofreadingEnabled: boolean;
+  onToggleProofreading: () => void;
   onShowShortcuts: () => void;
   onShowAbout: () => void;
 }
@@ -115,6 +117,8 @@ export function MenuBar({
   onOpenLastSessionChange,
   onChooseDefaultDocumentsDir,
   onManageFonts,
+  proofreadingEnabled,
+  onToggleProofreading,
   onShowShortcuts,
   onShowAbout,
 }: MenuBarProps) {
@@ -311,6 +315,11 @@ export function MenuBar({
           onSelect: () => onOpenLastSessionChange(!openLastSession),
         },
         { separator: true },
+        {
+          label: '中文校对',
+          checked: proofreadingEnabled,
+          onSelect: onToggleProofreading,
+        },
         { label: '字体管理…', onSelect: onManageFonts },
       ],
     },
