@@ -27,6 +27,12 @@
    - 安装器配置为 `webviewInstallMode: skip`，不会下载/安装 WebView2。
    - 目标机器需要已有 Microsoft Edge WebView2 Runtime；Windows 11 通常已包含。缺少 WebView2 时应用无法启动。
 
+6. **不要直接用 `cargo build --release` 生成发行包**
+   - Tauri 的生产资源嵌入需要 CLI 启用的 `custom-protocol` 特性。
+   - 直接执行 `cargo build --release` 会生成尝试连接 `localhost:1420` 的二进制，看起来像“无法访问此页面”。
+   - 发行构建必须使用 `pnpm tauri build --bundles nsis`。
+   - 早期测试便携版曾误用该二进制；现已用正式 Tauri 构建重新生成并验证启动。
+
 ## 性能
 
 1. **空闲内存未达到 150 MB 目标**

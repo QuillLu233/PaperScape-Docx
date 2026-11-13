@@ -24,13 +24,13 @@
 | 指标 | 实测 |
 | --- | --- |
 | NSIS setup | `release/PaperScape_1.0.0_x64-setup.exe` |
-| setup 字节数 | **2,379,050 bytes（2.269 MiB）** |
+| setup 字节数 | **2,378,595 bytes（2.269 MiB）** |
 | 目标“尽量不超过 30 MB” | **达到**（不含 WebView2） |
 | 安装后主程序 | `paperscape.exe`，9,582,592 bytes |
 | WebView2 | 安装包**不包含**，使用系统已有 WebView2；安装器设置为 `skip` |
 | 签名 | **NotSigned，未签名** |
 | MSI | **未生成**；本机没有 WiX，且 NSIS 已满足优先目标 |
-| SHA256 | `87442301992CA40A0EBCABD132CF0FC2CBF25A08D62B13AADAB9F61BFDE125F9` |
+| SHA256 | `F1F36296849C5B981B2629122C1608707C228683DD92F99A4187B19C3555CB61` |
 
 ## 三、前端构建与按需加载
 
@@ -128,7 +128,7 @@ release 版空闲 10 秒后，读取主进程及所有 `msedgewebview2.exe` 子�
 
 ## 八、安装与签名实测
 
-- NSIS setup 成功构建：2,379,050 bytes。
+- NSIS setup 成功构建：2,378,595 bytes。
 - 在**自定义工作区目录**静默安装成功，生成 `paperscape.exe` 和 `uninstall.exe`；`uninstall.exe /S` 成功删除安装目录。
 - 安装器实际生成的 `paperscape.exe` 为 1.0.0，已复制到用户本地应用目录启动并显示“PaperScape 纸境”。
 - 默认 `%LOCALAPPDATA%\PaperScape` 安装在本测试环境被系统/安全策略拒绝写入；安装器 UI 报“无法打开要写入的文件”。这是本机环境限制，不能据此宣称默认路径安装通过。

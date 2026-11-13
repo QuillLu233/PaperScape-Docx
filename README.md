@@ -4,7 +4,7 @@ PaperScape 是一个安静、轻量的 Windows 桌面长篇写作空间。正文
 
 - **版本：1.0.0（正式版）**
 - **安装包：** [PaperScape_1.0.0_x64-setup.exe](release/PaperScape_1.0.0_x64-setup.exe)
-- **安装包大小：** 2,379,050 bytes（约 2.27 MiB）
+- **安装包大小：** 2,378,595 bytes（约 2.27 MiB）
 - **签名：** **未签名（NotSigned）**。Windows SmartScreen 可能提示“未知发布者”。
 - **WebView2：** 安装包不包含 WebView2，使用 Windows 已有的 Microsoft Edge WebView2 Runtime。
 
@@ -104,12 +104,24 @@ pnpm build
 pnpm tauri build --bundles nsis
 ```
 
+> 必须用 `pnpm tauri build` 生成发行版。直接执行 `cargo build --release` 不会启用 Tauri 的 `custom-protocol`，生成的程序会尝试连接 `localhost:1420`，不能作为安装包或便携版分发。
+
 构建产物：
 
 - 主程序：`src-tauri/target/release/paperscape.exe`
 - NSIS：`src-tauri/target/release/bundle/nsis/PaperScape_1.0.0_x64-setup.exe`
 
 仓库中已提供最终安装包副本：[release/PaperScape_1.0.0_x64-setup.exe](release/PaperScape_1.0.0_x64-setup.exe)。
+
+### 安装器无法写入时的便携版
+
+如果本机安全策略阻止安装器写入 `%LOCALAPPDATA%`，可使用免安装包：
+
+[release/PaperScape-1.0.0-portable.zip](release/PaperScape-1.0.0-portable.zip)
+
+解压后直接双击 `PaperScape.exe`。便携版不会写入“应用和功能”，卸载时退出程序并删除文件夹即可。
+
+> 早期测试生成的便携版曾误用未启用 `custom-protocol` 的裸 `cargo build --release` 二进制，启动会显示 `localhost` 拒绝连接；该问题已用正式 Tauri 构建修复。当前 `release/PaperScape-1.0.0-portable.zip` 已重新生成并验证启动。
 
 ### 测试
 
