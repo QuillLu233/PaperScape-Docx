@@ -314,8 +314,8 @@ export const SettingsPanel = memo(function SettingsPanel({
         </section>
 
         <div className="settings-version">
-          <span>PaperScape 1.1.0</span>
-          <span>校对阶段</span>
+          <span>V1.1.0</span>
+          <span>正式版</span>
         </div>
       </div>
     </aside>

@@ -99,7 +99,7 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
         </span>
         <div>
           <p className="about-name">PaperScape 纸境</p>
-          <p className="about-version">1.1.0 · 文件管理阶段</p>
+          <p className="about-version">1.1.0 · 正式版</p>
         </div>
       </div>
       <p className="modal-lead">

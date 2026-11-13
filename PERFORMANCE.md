@@ -1,5 +1,60 @@
 # PaperScape 性能与打包报告
 
+## V1.1.0 最终发布实测（2026-11-13）
+
+### 构建
+
+- `pnpm check`：通过，约 2.9 s。
+- `pnpm test`：14 个文件、64 个测试通过，约 7.4 s。
+- `cargo check --offline`：通过；`cargo test --offline --lib`：17 个通过，0.51 s。
+- React 正式构建：约 3.6 s。
+- Tauri 2 Windows Release（`--no-bundle`）：约 24.2 s。
+- EXE：9,923,072 字节。
+- Portable ZIP：3,209,922 字节（约 3.06 MiB），低于 30 MB 目标。
+- ZIP SHA256：`6599A2E03FCC8E92B9EDC26A3BE6BB77E7FA8F6AD68DD35E49D395DD89DD1658`。
+- EXE SHA256：`47C5AB23921820C0735829E04CC7116E552B29592BB2CC5802B37F3B392A64CC`。
+- ZIP 内只有 `PaperScape.exe` 和 `README.txt`；无 WebView2 Runtime、无 NSIS/MSI。
+- Cargo target、node_modules 和锁文件全部保留。
+
+### 启动
+
+| 运行 | 启动到窗口可见 |
+| --- | ---: |
+| 1 | 255 ms |
+| 2 | 84 ms |
+| 3 | 54 ms |
+
+测量方式：任务计划启动，轮询主窗口句柄；包含任务启动开销，不包含人工双击。系统和 WebView2 文件缓存已热，**不是严格清空缓存的冷启动**。严格冷启动未测。
+
+### 空闲内存与 CPU
+
+测量 PID 树为 1 个 `PaperScape.exe` + 6 个 `msedgewebview2.exe`，共 7 个进程。
+
+| 状态 | Working Set | Private Memory | 空闲 CPU |
+| --- | ---: | ---: | ---: |
+| V1 项目空闲（10 s） | **379.2 MB** | **209.3 MB** | **0.013%** |
+| 普通 DOCX 空闲（10 s） | **395 MB** | **261.4 MB** | **0.039%** |
+
+- 目标“空闲内存 150 MB，含 WebView2 子进程”：**未达到**。
+- 目标“空闲 CPU 接近 0%”：**达到**。
+- 没有用 Private Memory 替换 Working Set 来宣称达标。
+- 主要内存基线来自 WebView2/Chromium 进程树；本阶段没有为降低数字而移除功能或改变安全边界。
+
+### 长篇样本
+
+- `final-long.docx` 从点击到标题出现：**168 ms**（当前 120 段样本）。
+- 长篇逐字输入、查找和撤销历史未完成稳定的 UIA 输入自动化，不能据此宣称长篇输入延迟已达标。
+
+### 优化审计
+
+- React 编辑器使用 `shouldRerenderOnTransaction: false`；专注/全屏不重建 Tiptap。
+- DOCX 导入/导出仍在独立动态 chunk 中，初始主 bundle 不包含完整转换器。
+- 字体列表在打开字体管理时读取，导入字体选中时才加载。
+- 中文校对只分析当前段落，650ms 防抖，不逐键全篇扫描。
+- 未发现无意义后台定时器；20ms 组合键兼容轮询仅在前台窗口运行，空闲 CPU 实测约 0.01%–0.04%。
+- 自动保存使用防抖、临时文件/原子替换和恢复草稿；没有为了省资源去掉备份或安全写入。
+- 本轮没有发现可安全、显著降低 WebView2 基线的改动，因此没有做破坏性“优化”。
+
 ## V1.1 第四阶段补充（2026-11-13）
 
 - 构建：`pnpm tauri build --no-bundle`，V1.1.0 release，**未生成 NSIS**。

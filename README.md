@@ -1,10 +1,19 @@
 # PaperScape 纸境
 
-PaperScape 是一个面向 Windows 的安静写作空间。V1.1 第四阶段在沉浸式写作基础上增加 **离线、轻量、可关闭的中文文本校对**。
+PaperScape 是一个面向 Windows 的安静写作空间。V1.1 已完成文件管理、界面缩放、全屏/专注写作、自定义字体和离线中文校对，并以 **Windows 绿色便携 ZIP** 发布。
 
-> 当前开发版本：**1.1.0（V1.1 第四阶段：轻量级中文校对）**
+> 当前发布版本：**1.1.0（V1.1 正式绿色版）**
 >
-> 本阶段**没有生成新的 NSIS 安装包**。仓库中保留的 V1.0 安装包仍可安装旧版本；V1.1 请从源码构建 release 程序。
+> 本阶段**没有生成 NSIS 或 MSI 安装包**。发布物为 `release/PaperScape-v1.1-Portable.zip`；Windows 需要已有 WebView2 Runtime。
+
+## V1.1.0 绿色便携版
+
+- 发布文件：`release/PaperScape-v1.1-Portable.zip`
+- 包内：`PaperScape-v1.1-Portable/PaperScape.exe`、`README.txt`
+- 不包含源代码、`node_modules`、Cargo `target`、测试文稿或开发缓存。
+- 无需安装向导、管理员权限、注册表修改或后台服务。
+- 不包含 WebView2 Runtime；Windows 10/11 通常已自带。
+- 详细启动、数据位置、升级注意事项和限制见包内 `README.txt`。
 
 ## V1.1 新增功能
 
