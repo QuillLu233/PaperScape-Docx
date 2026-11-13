@@ -4,7 +4,7 @@ PaperScape 是一个安静、轻量的 Windows 桌面长篇写作空间。正文
 
 - **版本：1.0.0（正式版）**
 - **安装包：** [PaperScape_1.0.0_x64-setup.exe](release/PaperScape_1.0.0_x64-setup.exe)
-- **安装包大小：** 2,378,595 bytes（约 2.27 MiB）
+- **安装包大小：** 2,383,333 bytes（约 2.27 MiB）
 - **签名：** **未签名（NotSigned）**。Windows SmartScreen 可能提示“未知发布者”。
 - **WebView2：** 安装包不包含 WebView2，使用 Windows 已有的 Microsoft Edge WebView2 Runtime。
 

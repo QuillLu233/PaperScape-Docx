@@ -172,6 +172,11 @@ export default function App() {
     if (ok) showNotice('项目已保存');
   }, [saveNow, showNotice]);
 
+  const handleWindowClose = useCallback(async () => {
+    if (isProjectOpen) await handleSaveProject();
+    await close();
+  }, [close, handleSaveProject, isProjectOpen]);
+
   const handleNewProject = useCallback(async () => {
     if (project) {
       const ok = await closeProject();
@@ -463,7 +468,7 @@ export default function App() {
       onToggleFocus={toggleFocusMode}
       onMinimize={minimize}
       onToggleMaximize={toggleMaximize}
-      onClose={() => void close()}
+      onClose={() => void handleWindowClose()}
       menu={
         <MenuBar
           hasProject={isProjectOpen}
@@ -492,7 +497,7 @@ export default function App() {
             if (activeSummary) setDeleteTarget(activeSummary);
           }}
           onSave={() => void handleSaveProject()}
-          onExit={() => void close()}
+          onExit={() => void handleWindowClose()}
           onUndo={() => editorRef.current?.undo()}
           onRedo={() => editorRef.current?.redo()}
           onSelectAll={() => editorRef.current?.selectAll()}

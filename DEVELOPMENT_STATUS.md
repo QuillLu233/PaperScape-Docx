@@ -13,8 +13,8 @@
 | 简体中文 README | `README.md` |
 | NSIS 安装包 | `release/PaperScape_1.0.0_x64-setup.exe` |
 | 便携版 | `release/PaperScape-1.0.0-portable.zip` |
-| 安装包大小 | 2,378,595 bytes（2.269 MiB） |
-| SHA256 | `F1F36296849C5B981B2629122C1608707C228683DD92F99A4187B19C3555CB61` |
+| 安装包大小 | 2,383,333 bytes（2.273 MiB） |
+| SHA256 | `62776A5312EC135FBAA36D3DE944AC3422A63119E546C1A84E7C6A0F0F52B530` |
 | 性能报告 | `PERFORMANCE.md` |
 | 已知问题 | `KNOWN_ISSUES.md` |
 | 开发记录 | 本文件 |
@@ -42,8 +42,9 @@
 - `bundle.windows.webviewInstallMode` 设置为 `skip`，安装包不包含/不下载 WebView2，只依赖系统已有运行时。
 - NSIS 改为简体中文单语言，无语言选择页。
 - 通过中完整性计划任务完成 Tauri release + NSIS 打包；NSIS 工具正常下载并生成 setup。
-- release 主程序：9,582,592 bytes，FileVersion 1.0.0。
+- release 主程序：9,592,320 bytes，FileVersion 1.0.0。
 - **生产构建修复**：最终阶段曾直接运行 `cargo build --release`，该命令没有启用 Tauri 的 `custom-protocol`，生成的二进制会连接 `localhost:1420`。已重新执行 `pnpm tauri build --bundles nsis`，重新生成受影响的安装包和便携版，并验证启动器可见。发行构建必须以 `pnpm tauri build` 为准。
+- **关闭修复**：真实窗口中发现标题栏关闭按钮和原生 `WM_CLOSE` 均不退出。已在 Rust 窗口事件中显式调用 `app.exit(0)`，并在前端关闭前保存当前项目。重新构建后验证：关闭按钮退出、`WM_CLOSE` 退出。
 
 ### 文档
 
@@ -99,7 +100,7 @@
 
 | 指标 | 实测 | 目标 | 判定 |
 | --- | ---: | ---: | --- |
-| NSIS setup | 2,378,595 bytes / 2.269 MiB | ≤ 30 MB | 达到 |
+| NSIS setup | 2,383,333 bytes / 2.273 MiB | ≤ 30 MB | 达到 |
 | 初始 JS | 810.00 kB（gzip 250.47 kB） | 优化 | 已完成按需拆分 |
 | 启动到启动器可交互 | 0.469 / 0.511 / 0.746 s | ≤ 2 s（冷启动） | 本次缓存已热场景达到；严格冷启动未验证 |
 | 空闲内存（启动器） | 362.5 MB Working Set / 203 MB private | ≤ 150 MB | **未达到** |

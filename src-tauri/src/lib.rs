@@ -543,6 +543,11 @@ fn save_docx_export(path: String, bytes: Vec<u8>) -> Result<String, String> {
     Ok(target.to_string_lossy().to_string())
 }
 
+#[tauri::command]
+fn quit_app(app: AppHandle) {
+    app.exit(0);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -567,8 +572,14 @@ pub fn run() {
             choose_docx_open_path,
             read_docx_file,
             choose_docx_save_path,
-            save_docx_export
+            save_docx_export,
+            quit_app
         ])
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { .. } = event {
+                window.app_handle().exit(0);
+            }
+        })
         .setup(|app| {
             if let Some(window) = app.get_webview_window("main") {
                 if let Ok(Some(monitor)) = window.current_monitor() {
