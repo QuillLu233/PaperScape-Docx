@@ -5,14 +5,14 @@
 ### 构建
 
 - `pnpm check`：通过，约 2.9 s。
-- `pnpm test`：15 个文件、65 个测试通过，约 7.4 s。
+- `pnpm test`：16 个文件、66 个测试通过，约 7.4 s。
 - `cargo check --offline`：通过；`cargo test --offline --lib`：17 个通过，0.51 s。
 - React 正式构建：约 3.6 s。
 - Tauri 2 Windows Release（`--no-bundle`）：约 24.2 s。
 - EXE：9,924,096 字节。
-- Portable ZIP：3,210,371 字节（约 3.06 MiB），低于 30 MB 目标。
-- ZIP SHA256：`C7EF40564EBAD829A360413B9F0D83C2B25B73BFCB300B0C91302AA95DEE3441`。
-- EXE SHA256：`E3BE264D2AD95973810F3CAA066FB870A09FABE25741BF8BA69A42E3B8929EE7`。
+- Portable ZIP：3,210,550 字节（约 3.06 MiB），低于 30 MB 目标。
+- ZIP SHA256：`11AE40146D4663EF93EDF3CBA6B00164D52751BABA352E4FEB116965E5D274DE`。
+- EXE SHA256：`D672908B3334010C578BC2F5C279988C6269F15D1E5535E1D517F5F1E5337267`。
 - ZIP 内只有 `PaperScape.exe` 和 `README.txt`；无 WebView2 Runtime、无 NSIS/MSI。
 - Cargo target、node_modules 和锁文件全部保留。
 

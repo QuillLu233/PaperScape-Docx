@@ -1279,8 +1279,16 @@ input[type="range"] {
 }
 
 .status-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   justify-self: center;
   color: var(--accent);
+  line-height: 1;
+}
+
+.status-saved svg {
+  flex: 0 0 auto;
 }
 
 .status-shortcuts {

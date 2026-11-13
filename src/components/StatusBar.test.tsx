@@ -25,6 +25,7 @@ describe('StatusBar', () => {
       />,
     );
     expect(screen.getByText(/已保存/)).toBeInTheDocument();
+    expect(screen.getByText(/已保存/).parentElement?.querySelector('svg')).toBeInTheDocument();
     const zoom = screen.getByRole('combobox', { name: '文稿缩放' });
     await user.selectOptions(zoom, '120');
     expect(onZoomChange).toHaveBeenCalledWith(120);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { WorkspaceNode } from '../workspace/types';
 import { baseName } from '../workspace/useDocumentWorkspace';
 import { Icon } from './Icon';
@@ -24,6 +24,25 @@ interface TreeRowProps {
   onToggle: (path: string) => void;
   onOpenFile: (node: WorkspaceNode) => void;
   onOpenProject: (path: string) => void;
+}
+
+const nameCollator = new Intl.Collator('zh-CN', {
+  numeric: true,
+  sensitivity: 'base',
+});
+
+/** Folders first, then natural chapter/file order (79 before 113). */
+export function sortWorkspaceNodes(nodes: WorkspaceNode[]): WorkspaceNode[] {
+  return [...nodes]
+    .sort((left, right) => {
+      if (left.isDir !== right.isDir) return left.isDir ? -1 : 1;
+      return nameCollator.compare(left.name, right.name);
+    })
+    .map((node) =>
+      node.isDir && node.children.length > 0
+        ? { ...node, children: sortWorkspaceNodes(node.children) }
+        : node,
+    );
 }
 
 function TreeRow({
@@ -102,6 +121,7 @@ export function FileTree({
   onClose,
 }: FileTreeProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const sortedTree = useMemo(() => sortWorkspaceNodes(tree), [tree]);
 
   useEffect(() => {
     setExpanded(new Set());
@@ -169,7 +189,7 @@ export function FileTree({
           <p className="file-empty">这个文件夹里还没有可显示的文稿。</p>
         ) : (
           <ul>
-            {tree.map((node) => (
+            {sortedTree.map((node) => (
               <TreeRow
                 key={node.path}
                 node={node}
