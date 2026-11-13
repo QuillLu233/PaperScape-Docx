@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { JSONContent } from '@tiptap/core';
 import type { ChapterFile } from '../project/types';
 import { EMPTY_DOC } from '../project/types';
@@ -112,6 +112,7 @@ export function useDocumentWorkspace(): DocumentWorkspace {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const autoSaveFailedDocRef = useRef<JSONContent | null>(null);
   const [recovery, setRecovery] = useState<RecoveryDraft | null>(null);
   const [recoveryError, setRecoveryError] = useState('');
 
@@ -467,6 +468,35 @@ export function useDocumentWorkspace(): DocumentWorkspace {
     }, 1200);
     return () => window.clearTimeout(timer);
   }, [document?.characterCount, document?.dirty, document?.doc, document?.name, document?.path, document?.title]);
+
+  useEffect(() => {
+    if (
+      !document?.dirty ||
+      !document.path ||
+      document.readOnly ||
+      saving ||
+      autoSaveFailedDocRef.current === document.doc ||
+      (!document.risk.safeToOverwrite && !document.overwriteAuthorized)
+    ) {
+      return;
+    }
+    const documentAtSchedule = document.doc;
+    const timer = window.setTimeout(() => {
+      void save().then((ok) => {
+        if (!ok) autoSaveFailedDocRef.current = documentAtSchedule;
+      });
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [
+    document?.characterCount,
+    document?.dirty,
+    document?.overwriteAuthorized,
+    document?.path,
+    document?.readOnly,
+    document?.risk.safeToOverwrite,
+    save,
+    saving,
+  ]);
 
   const editorChapter = useMemo<ChapterFile | null>(() => {
     if (!document) return null;
