@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 
 :root {
   --titlebar-height: 40px;
@@ -3611,4 +3611,344 @@ body {
 
 .status-saved {
   white-space: nowrap;
+}
+
+/* V1.1 phase 3: native fullscreen + immersive focus */
+.app-shell.is-focus-mode .titlebar,
+.app-shell.is-focus-mode .chapter-sidebar,
+.app-shell.is-focus-mode .settings-panel,
+.app-shell.is-focus-mode .statusbar,
+.app-shell.is-focus-mode .editor-top,
+.app-shell.is-focus-mode .document-bar {
+  display: none;
+}
+
+.app-shell.is-focus-mode .workspace-stage {
+  background: transparent;
+}
+
+.app-shell.is-focus-mode .workspace {
+  background: transparent;
+}
+
+.app-shell.is-focus-mode .editor-pane {
+  background: transparent;
+}
+
+.app-shell.is-focus-mode .editor-scroll {
+  align-items: flex-start;
+  padding: 124px 28px 96px;
+}
+
+.app-shell.is-focus-mode .editor-sheet {
+  margin: 0 auto;
+}
+
+.focus-chrome {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 220;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 16px 12px;
+  background: linear-gradient(to bottom, rgba(20, 24, 19, 0.45), transparent);
+  opacity: 0;
+  pointer-events: auto;
+  transition: opacity 160ms ease;
+}
+
+.focus-chrome::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 44px;
+  content: "";
+}
+
+.focus-chrome:hover,
+.focus-chrome:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.focus-exit {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 7px;
+  background: rgba(20, 24, 19, 0.62);
+  color: #f3f0e8;
+  font-size: 12px;
+}
+
+.focus-exit:hover {
+  background: rgba(20, 24, 19, 0.82);
+}
+
+.focus-exit kbd {
+  margin-left: 2px;
+  padding: 1px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 9px;
+}
+
+.focus-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 7px;
+  background: rgba(20, 24, 19, 0.55);
+  color: #ebe7dc;
+}
+
+.focus-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 88px;
+  font-size: 10px;
+}
+
+.focus-controls input[type="range"] {
+  width: 100%;
+  accent-color: #a9c2a6;
+}
+
+@media (max-width: 900px) {
+  .focus-chrome {
+    flex-direction: column;
+  }
+
+  .focus-controls {
+    max-width: calc(100vw - 32px);
+  }
+}
+
+/* V1.1 phase 3: font manager */
+.font-manager-card {
+  width: min(820px, calc(100vw - 40px));
+  max-height: min(760px, calc(100vh - 40px));
+}
+
+.font-manager-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.font-target-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-alt);
+}
+
+.font-target-tabs button {
+  flex: 1;
+  height: 29px;
+  border-radius: 5px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.font-target-tabs button.is-active {
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 1px 3px var(--shadow);
+}
+
+.font-current-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.font-current-row > span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.font-current-row strong {
+  margin: 0 5px;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.font-current-row small {
+  margin-left: 6px;
+  font-size: 10px;
+}
+
+.font-preview {
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-alt);
+}
+
+.font-preview-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.font-preview p {
+  margin: 9px 0 0;
+  color: var(--ink);
+  font-size: 20px;
+  line-height: 1.55;
+}
+
+.font-preview p.font-preview-latin {
+  margin-top: 3px;
+  font-size: 15px;
+}
+
+.font-search {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 31px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+}
+
+.font-search input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  outline: none;
+}
+
+.font-list {
+  min-height: 150px;
+  max-height: 330px;
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.font-group-label {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 7px 3px 5px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.font-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 4px 3px;
+  border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+}
+
+.font-row-main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 3px 5px;
+  border-radius: 4px;
+  text-align: left;
+}
+
+.font-row-main:hover {
+  background: var(--accent-soft);
+}
+
+.font-row-main strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.font-row-main small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.font-row .secondary-button {
+  min-height: 26px;
+  padding: 3px 7px;
+  font-size: 10px;
+}
+
+.font-row .secondary-button.is-danger {
+  color: var(--danger);
+}
+
+.font-error {
+  border-radius: 5px;
+  padding: 6px 8px;
+  background: color-mix(in srgb, var(--danger) 9%, transparent);
+  color: var(--danger);
+  font-size: 11px;
+}
+
+.font-empty {
+  padding: 22px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 11px;
+}
+
+.font-license {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.65;
+}
+
+@media (max-width: 700px) {
+  .font-row {
+    flex-wrap: wrap;
+  }
+
+  .font-row-main {
+    flex-basis: 100%;
+  }
+}
+
+.font-manager-entry {
+  width: 100%;
+  margin-top: 8px;
 }

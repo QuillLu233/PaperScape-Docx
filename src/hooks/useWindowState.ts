@@ -3,13 +3,16 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import {
   closeWindow,
   isTauriEnvironment,
+  isWindowFullscreen,
   isWindowMaximized,
   minimizeWindow,
+  toggleFullscreenWindow,
   toggleMaximizeWindow,
 } from '../lib/window';
 
 export function useWindowState() {
   const [isMaximized, setIsMaximized] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(isTauriEnvironment);
 
   useEffect(() => {
@@ -27,12 +30,23 @@ export function useWindowState() {
         if (!cancelled) setIsDesktop(false);
       });
 
+    void isWindowFullscreen()
+      .then((value) => {
+        if (!cancelled) setIsFullscreen(value);
+      })
+      .catch(() => undefined);
+
     windowApi
       .onResized(() => {
         windowApi
           .isMaximized()
           .then((value) => {
             if (!cancelled) setIsMaximized(value);
+          })
+          .catch(() => undefined);
+        void isWindowFullscreen()
+          .then((value) => {
+            if (!cancelled) setIsFullscreen(value);
           })
           .catch(() => undefined);
       })
@@ -61,5 +75,10 @@ export function useWindowState() {
     await closeWindow();
   }, []);
 
-  return { isMaximized, isDesktop, minimize, toggleMaximize, close };
+  const toggleFullscreen = useCallback(async () => {
+    await toggleFullscreenWindow();
+    setIsFullscreen(await isWindowFullscreen());
+  }, []);
+
+  return { isMaximized, isFullscreen, isDesktop, minimize, toggleMaximize, toggleFullscreen, close };
 }

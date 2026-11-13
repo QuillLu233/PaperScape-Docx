@@ -35,6 +35,7 @@ interface SettingsPanelProps {
   onUiZoomChange: (value: number) => void;
   openLastSession: boolean;
   onOpenLastSessionChange: (value: boolean) => void;
+  onManageFonts: () => void;
   onToggleFocus: () => void;
   onClose: () => void;
 }
@@ -69,6 +70,7 @@ export const SettingsPanel = memo(function SettingsPanel({
   onUiZoomChange,
   openLastSession,
   onOpenLastSessionChange,
+  onManageFonts,
   onToggleFocus,
   onClose,
 }: SettingsPanelProps) {
@@ -231,6 +233,9 @@ export const SettingsPanel = memo(function SettingsPanel({
             />
             <span>启动时打开上次项目或文件夹</span>
           </label>
+          <button type="button" className="secondary-button font-manager-entry" onClick={onManageFonts}>
+            字体管理…
+          </button>
         </section>
 
         <section className="settings-section" aria-labelledby="data-heading">

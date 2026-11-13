@@ -227,6 +227,21 @@ describe('PaperScape shell', () => {
     expect(document.documentElement.style.getPropertyValue('--ui-scale')).toBe('1.5');
   });
 
+  it('toggles focus mode without rebuilding the editor and preserves IME Escape', async () => {
+    const user = userEvent.setup();
+    await openApp(user);
+    const editor = screen.getByRole('textbox', { name: '正文编辑器' });
+    fireEvent.keyDown(window, { key: 'f', ctrlKey: true, shiftKey: true });
+    expect(document.querySelector('.app-shell')).toHaveClass('is-focus-mode');
+    expect(screen.getByRole('textbox', { name: '正文编辑器' })).toBe(editor);
+    expect(screen.getByRole('slider', { name: /纸张/ })).toHaveValue('85');
+    fireEvent.keyDown(window, { key: 'Escape', isComposing: true });
+    expect(document.querySelector('.app-shell')).toHaveClass('is-focus-mode');
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(document.querySelector('.app-shell')).not.toHaveClass('is-focus-mode');
+    expect(screen.getByRole('textbox', { name: '正文编辑器' })).toBe(editor);
+  });
+
   it('collapses and restores the chapter sidebar from window chrome', async () => {
     const user = userEvent.setup();
     await openApp(user);

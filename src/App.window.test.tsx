@@ -7,6 +7,8 @@ const windowApi = vi.hoisted(() => ({
   minimize: vi.fn(async () => undefined),
   toggleMaximize: vi.fn(async () => undefined),
   isMaximized: vi.fn(async () => false),
+  isFullscreen: vi.fn(async () => false),
+  setFullscreen: vi.fn(async () => undefined),
   close: vi.fn(async () => undefined),
   startResizeDragging: vi.fn(async () => undefined),
   onResized: vi.fn(async () => () => undefined),
@@ -50,6 +52,17 @@ describe('desktop window controls', () => {
 
     await user.click(screen.getByRole('button', { name: '关闭窗口' }));
     expect(windowApi.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('toggles native fullscreen with F11', async () => {
+    Object.defineProperty(window, '__TAURI_INTERNALS__', {
+      value: {},
+      configurable: true,
+    });
+    windowApi.isFullscreen.mockResolvedValue(false);
+    render(<App />);
+    fireEvent.keyDown(window, { key: 'F11' });
+    await waitFor(() => expect(windowApi.setFullscreen).toHaveBeenCalledWith(true));
   });
 
   it('starts native resize dragging from the eight transparent handles', async () => {

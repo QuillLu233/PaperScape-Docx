@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
+import { listen } from '@tauri-apps/api/event';
 import { BackgroundLayer } from './components/BackgroundLayer';
 import { ChapterSidebar } from './components/ChapterSidebar';
 import { ConfirmDialog } from './components/ConfirmDialog';
@@ -8,6 +9,7 @@ import { FileTree } from './components/FileTree';
 import { ImportDocxDialog } from './components/ImportDocxDialog';
 import { AboutDialog, ShortcutsDialog } from './components/Dialogs';
 import { EditorPane, type EditorPaneHandle } from './components/EditorPane';
+import { FocusOverlay } from './components/FocusOverlay';
 import { HistoryDialog } from './components/HistoryDialog';
 import { Icon } from './components/Icon';
 import { MenuBar } from './components/MenuBar';
@@ -33,6 +35,8 @@ import { useUiZoom } from './hooks/useUiZoom';
 import { useDocumentZoom } from './hooks/useDocumentZoom';
 import { useWindowState } from './hooks/useWindowState';
 import { useProject } from './project/useProject';
+import { useFonts } from './fonts/useFonts';
+import { FontManagerDialog } from './components/FontManagerDialog';
 import type { ChapterSummary, HistoryEntry, RecoveryCandidate } from './project/types';
 
 type DialogName = 'shortcuts' | 'about' | null;
@@ -121,12 +125,20 @@ export default function App() {
     projectPath,
   } = projectController;
   const { mode: themeMode, setMode: setThemeMode } = useTheme();
+  const fonts = useFonts();
   const { uiZoom, setUiZoom } = useUiZoom();
   const { docZoom, setDocZoom, resetDocZoom } = useDocumentZoom();
   const { leftOpen, rightOpen, toggleLeft, toggleRight } = usePanels();
-  const { isMaximized, minimize, toggleMaximize, close } = useWindowState();
+  const { isMaximized, isFullscreen, minimize, toggleMaximize, toggleFullscreen, close } =
+    useWindowState();
   const [dialog, setDialog] = useState<DialogName>(null);
+  const [fontManagerOpen, setFontManagerOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
+  const [focusPaperOpacity, setFocusPaperOpacity] = useState(85);
+  const [focusBrightness, setFocusBrightness] = useState(100);
+  const [focusBlur, setFocusBlur] = useState(0);
+  const [focusOverlay, setFocusOverlay] = useState(6);
+  const focusShortcutGuard = useRef(0);
   const [openLastSession, setOpenLastSessionState] = useState(
     () => window.localStorage.getItem('paperscape.openLastSession') !== 'false',
   );
@@ -149,6 +161,21 @@ export default function App() {
 
   const appearance = isDocumentMode ? DEFAULT_APPEARANCE : project?.appearance ?? DEFAULT_APPEARANCE;
   const settings = isDocumentMode ? DEFAULT_SETTINGS : project?.settings ?? DEFAULT_SETTINGS;
+  const effectiveBackground = focusMode
+    ? {
+        ...appearance.background,
+        brightness: focusBrightness,
+        blur: focusBlur,
+        overlay: focusOverlay,
+      }
+    : appearance.background;
+  const effectiveAppearance = focusMode
+    ? {
+        ...appearance,
+        mode: 'paper' as const,
+        paper: { ...appearance.paper, opacity: focusPaperOpacity / 100 },
+      }
+    : appearance;
   const appearanceController = useProjectAppearance(appearance, projectController.updateAppearance);
   const {
     backgroundUrl,
@@ -223,9 +250,52 @@ export default function App() {
   }, [activeChapter?.id]);
 
   const toggleFocusMode = useCallback(() => {
+    if (!isProjectOpen && !isDocumentMode) return;
+    if (!focusMode) {
+      setFocusPaperOpacity(85);
+      setFocusBrightness(appearance.background.brightness);
+      setFocusBlur(appearance.background.blur);
+      setFocusOverlay(appearance.background.overlay);
+    }
     setFocusMode((current) => !current);
     window.setTimeout(() => editorRef.current?.focus(), 0);
-  }, []);
+  }, [
+    appearance.background.blur,
+    appearance.background.brightness,
+    appearance.background.overlay,
+    focusMode,
+    isDocumentMode,
+    isProjectOpen,
+  ]);
+
+  const toggleFocusFromShortcut = useCallback(() => {
+    const now = Date.now();
+    if (now - focusShortcutGuard.current < 160) return;
+    focusShortcutGuard.current = now;
+    toggleFocusMode();
+  }, [toggleFocusMode]);
+
+  useEffect(() => {
+    if (!isTauriRuntime()) return;
+    let unlisten: (() => void) | undefined;
+    let disposed = false;
+    try {
+      void listen('toggle-focus-shortcut', () => {
+        toggleFocusFromShortcut();
+      })
+        .then((stop) => {
+          if (disposed) stop();
+          else unlisten = stop;
+        })
+        .catch(() => undefined);
+    } catch {
+      // Native accelerator is optional; the DOM shortcut remains a fallback.
+    }
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [toggleFocusFromShortcut]);
 
   const changeWritingMode = useCallback(
     (mode: typeof appearance.mode) => {
@@ -384,6 +454,11 @@ export default function App() {
       showNotice(dirError instanceof Error ? dirError.message : '无法选择默认文稿目录');
     }
   }, [setDefaultDocumentsDir, showNotice]);
+
+  const openFontManager = useCallback(() => {
+    setFontManagerOpen(true);
+    void fonts.loadFontLists();
+  }, [fonts.loadFontLists]);
 
   const handleOpenProjectPath = useCallback(
     async (path: string) => {
@@ -598,6 +673,14 @@ export default function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if ((event as KeyboardEvent & { isComposing?: boolean }).isComposing || event.keyCode === 229) {
+        return;
+      }
+      if (event.key === 'F11') {
+        event.preventDefault();
+        void toggleFullscreen();
+        return;
+      }
       if (event.key === 'Escape' && focusMode && !dialog && !deleteTarget && !historyTarget) {
         setFocusMode(false);
         return;
@@ -657,7 +740,7 @@ export default function App() {
         else if (isProjectOpen) void handleSaveProject();
       } else if (key === 'f' && event.shiftKey) {
         event.preventDefault();
-        if (isProjectOpen) toggleFocusMode();
+        if (isProjectOpen || isDocumentMode) toggleFocusFromShortcut();
       } else if (key === 'b' && !event.shiftKey) {
         if (inEditor) return;
         if (isTextEditingTarget(event.target)) return;
@@ -695,14 +778,29 @@ export default function App() {
     resetDocZoom,
     setDocZoom,
     setUiZoom,
-    toggleFocusMode,
+    toggleFocusFromShortcut,
+    toggleFullscreen,
     toggleLeft,
     toggleRight,
   ]);
 
   useEffect(() => {
-    if (dialog) editorRef.current?.blur();
-  }, [dialog]);
+    if (!focusMode) return;
+    const timer = window.setTimeout(() => {
+      const scroll = document.querySelector<HTMLElement>('.editor-scroll');
+      if (scroll && typeof scroll.scrollTo === 'function') {
+        scroll.scrollTo({ top: 0 });
+      } else if (scroll) {
+        scroll.scrollTop = 0;
+      }
+      editorRef.current?.focus();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [focusMode]);
+
+  useEffect(() => {
+    if (dialog || fontManagerOpen) editorRef.current?.blur();
+  }, [dialog, fontManagerOpen]);
 
   const fullCharacterCount = chapters.reduce(
     (total, chapter) => total + chapter.characterCount,
@@ -769,6 +867,8 @@ export default function App() {
           onToggleLeft={toggleLeft}
           onToggleRight={toggleRight}
           onToggleFocus={toggleFocusMode}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={() => void toggleFullscreen()}
           onWritingModeChange={changeWritingMode}
           onThemeChange={setThemeMode}
           uiZoom={uiZoom}
@@ -776,6 +876,7 @@ export default function App() {
           openLastSession={openLastSession}
           onOpenLastSessionChange={setOpenLastSession}
           onChooseDefaultDocumentsDir={() => void handleChooseDefaultDocumentsDir()}
+          onManageFonts={openFontManager}
           onShowShortcuts={() => setDialog('shortcuts')}
           onShowAbout={() => setDialog('about')}
         />
@@ -785,7 +886,7 @@ export default function App() {
 
   return (
     <div
-      className={`app-shell mode-${appearance.mode}${focusMode ? ' is-focus-mode' : ''}${
+      className={`app-shell mode-${effectiveAppearance.mode}${focusMode ? ' is-focus-mode' : ''}${
         isMaximized ? ' is-maximized' : ''
       }`}
     >
@@ -812,7 +913,7 @@ export default function App() {
         onDrop={(event) => void onBackgroundDrop(event)}
       >
         <BackgroundLayer
-          background={appearance.background}
+          background={effectiveBackground}
           imageUrl={backgroundUrl}
           focusMode={focusMode}
         />
@@ -842,7 +943,7 @@ export default function App() {
                 index={0}
                 total={1}
                 settings={settings}
-                appearance={appearance}
+                appearance={effectiveAppearance}
                 focusMode={focusMode}
                 readOnly={activeDocument.readOnly}
                 standalone
@@ -917,7 +1018,7 @@ export default function App() {
               index={activeIndex}
               total={chapters.length}
               settings={settings}
-              appearance={appearance}
+              appearance={effectiveAppearance}
               focusMode={focusMode}
               docZoom={docZoom}
               onDocZoomChange={setDocZoom}
@@ -948,6 +1049,7 @@ export default function App() {
               onUiZoomChange={setUiZoom}
               openLastSession={openLastSession}
               onOpenLastSessionChange={setOpenLastSession}
+              onManageFonts={openFontManager}
               onToggleFocus={toggleFocusMode}
               onClose={toggleRight}
             />
@@ -1048,6 +1150,20 @@ export default function App() {
           </div>
         ) : null}
       </div>
+
+      {focusMode ? (
+        <FocusOverlay
+          paperOpacity={focusPaperOpacity}
+          brightness={focusBrightness}
+          blur={focusBlur}
+          overlay={focusOverlay}
+          onPaperOpacityChange={setFocusPaperOpacity}
+          onBrightnessChange={setFocusBrightness}
+          onBlurChange={setFocusBlur}
+          onOverlayChange={setFocusOverlay}
+          onExit={() => setFocusMode(false)}
+        />
+      ) : null}
 
       {isProjectOpen ? (
         <StatusBar
@@ -1152,6 +1268,22 @@ export default function App() {
 
       {dialog === 'shortcuts' ? <ShortcutsDialog onClose={() => setDialog(null)} /> : null}
       {dialog === 'about' ? <AboutDialog onClose={() => setDialog(null)} /> : null}
+      {fontManagerOpen ? (
+        <FontManagerDialog
+          config={fonts.config}
+          fonts={fonts.fonts}
+          importedFonts={fonts.importedFonts}
+          loading={fonts.loading}
+          error={fonts.error}
+          onSelect={fonts.setFont}
+          onReset={fonts.resetFont}
+          onImport={fonts.importUserFont}
+          onRemove={fonts.removeFont}
+          onPreview={fonts.previewFamily}
+          onRefresh={() => void fonts.loadFontLists()}
+          onClose={() => setFontManagerOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

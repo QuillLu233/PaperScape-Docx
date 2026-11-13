@@ -1,3 +1,5 @@
+mod focus_hook;
+mod font;
 mod project;
 mod workspace;
 
@@ -402,6 +404,63 @@ pub(crate) mod save_dialog {
         )
     }
 
+    pub fn choose_font_path(owner: isize, title: &str) -> Option<String> {
+        const OFN_FILEMUSTEXIST: u32 = 0x0000_1000;
+        const OFN_NOCHANGEDIR: u32 = 0x0000_0008;
+        const OFN_PATHMUSTEXIST: u32 = 0x0000_0800;
+        const OFN_EXPLORER: u32 = 0x0008_0000;
+        const OFN_ENABLESIZING: u32 = 0x0080_0000;
+
+        let title_wide: Vec<u16> = title.encode_utf16().chain(std::iter::once(0)).collect();
+        let filter: Vec<u16> = "字体文件 (*.ttf;*.otf)\0*.ttf;*.otf\0所有文件 (*.*)\0*.*\0\0"
+            .encode_utf16()
+            .collect();
+        let extension: Vec<u16> = "ttf\0".encode_utf16().collect();
+        let mut file = vec![0u16; 32_768];
+        let mut dialog = OpenFileNameW {
+            struct_size: std::mem::size_of::<OpenFileNameW>() as u32,
+            hwnd_owner: owner,
+            instance: 0,
+            filter: filter.as_ptr(),
+            custom_filter: ptr::null_mut(),
+            max_custom_filter: 0,
+            filter_index: 1,
+            file: file.as_mut_ptr(),
+            max_file: file.len() as u32,
+            file_title: ptr::null_mut(),
+            max_file_title: 0,
+            initial_dir: ptr::null(),
+            title: title_wide.as_ptr(),
+            flags: OFN_FILEMUSTEXIST
+                | OFN_NOCHANGEDIR
+                | OFN_PATHMUSTEXIST
+                | OFN_EXPLORER
+                | OFN_ENABLESIZING,
+            file_offset: 0,
+            file_extension: 0,
+            default_extension: extension.as_ptr(),
+            custom_data: 0,
+            hook: ptr::null(),
+            template_name: ptr::null(),
+            reserved: ptr::null_mut(),
+            reserved2: 0,
+            flags_ex: 0,
+        };
+        let opened = unsafe { GetOpenFileNameW(&mut dialog) };
+        if opened == 0 {
+            return None;
+        }
+        let length = file.iter().position(|value| *value == 0).unwrap_or(0);
+        if length == 0 {
+            return None;
+        }
+        Some(
+            OsString::from_wide(&file[..length])
+                .to_string_lossy()
+                .to_string(),
+        )
+    }
+
     pub fn choose_save_path(owner: isize, title: &str, default_name: &str) -> Option<String> {
         choose_save_path_in(owner, title, default_name, None)
     }
@@ -567,6 +626,14 @@ fn quit_app(app: AppHandle) {
     app.exit(0);
 }
 
+#[cfg(target_os = "windows")]
+fn install_focus_accelerator(app: &AppHandle) {
+    focus_hook::install(app);
+}
+
+#[cfg(not(target_os = "windows"))]
+fn install_focus_accelerator(_app: &AppHandle) {}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -610,7 +677,12 @@ pub fn run() {
             workspace::recent_item_remove,
             workspace::save_docx_recovery,
             workspace::load_docx_recovery,
-            workspace::clear_docx_recovery
+            workspace::clear_docx_recovery,
+            font::list_system_fonts,
+            font::list_imported_fonts,
+            font::import_font,
+            font::remove_imported_font,
+            font::read_font_bytes
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
@@ -618,6 +690,7 @@ pub fn run() {
             }
         })
         .setup(|app| {
+            install_focus_accelerator(app.handle());
             if let Some(window) = app.get_webview_window("main") {
                 if let Ok(Some(monitor)) = window.current_monitor() {
                     let logical = monitor.size().to_logical::<f64>(monitor.scale_factor());

@@ -37,6 +37,18 @@ export async function isWindowMaximized(): Promise<boolean> {
   return getCurrentWindow().isMaximized();
 }
 
+export async function toggleFullscreenWindow(): Promise<void> {
+  if (!isTauriEnvironment()) return;
+  const windowApi = getCurrentWindow();
+  const fullscreen = await windowApi.isFullscreen();
+  await windowApi.setFullscreen(!fullscreen);
+}
+
+export async function isWindowFullscreen(): Promise<boolean> {
+  if (!isTauriEnvironment()) return false;
+  return getCurrentWindow().isFullscreen();
+}
+
 export async function startResizeWindow(direction: ResizeEdge): Promise<void> {
   if (!isTauriEnvironment()) return;
   await getCurrentWindow().startResizeDragging(direction);

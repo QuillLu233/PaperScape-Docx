@@ -54,6 +54,8 @@ interface MenuBarProps {
   onToggleLeft: () => void;
   onToggleRight: () => void;
   onToggleFocus: () => void;
+  isFullscreen: boolean;
+  onToggleFullscreen: () => void;
   onWritingModeChange: (mode: WritingMode) => void;
   onThemeChange: (mode: ThemeMode) => void;
   uiZoom: number;
@@ -61,6 +63,7 @@ interface MenuBarProps {
   openLastSession: boolean;
   onOpenLastSessionChange: (value: boolean) => void;
   onChooseDefaultDocumentsDir: () => void;
+  onManageFonts: () => void;
   onShowShortcuts: () => void;
   onShowAbout: () => void;
 }
@@ -102,6 +105,8 @@ export function MenuBar({
   onToggleLeft,
   onToggleRight,
   onToggleFocus,
+  isFullscreen,
+  onToggleFullscreen,
   onWritingModeChange,
   onThemeChange,
   uiZoom,
@@ -109,6 +114,7 @@ export function MenuBar({
   openLastSession,
   onOpenLastSessionChange,
   onChooseDefaultDocumentsDir,
+  onManageFonts,
   onShowShortcuts,
   onShowAbout,
 }: MenuBarProps) {
@@ -262,8 +268,14 @@ export function MenuBar({
           label: '专注写作',
           shortcut: 'Ctrl+Shift+F',
           checked: focusMode,
-          disabled: !hasProject,
+          disabled: !hasProject && !hasDocument,
           onSelect: onToggleFocus,
+        },
+        {
+          label: '全屏',
+          shortcut: 'F11',
+          checked: isFullscreen,
+          onSelect: onToggleFullscreen,
         },
         { separator: true },
         {
@@ -298,6 +310,8 @@ export function MenuBar({
           checked: openLastSession,
           onSelect: () => onOpenLastSessionChange(!openLastSession),
         },
+        { separator: true },
+        { label: '字体管理…', onSelect: onManageFonts },
       ],
     },
     {
