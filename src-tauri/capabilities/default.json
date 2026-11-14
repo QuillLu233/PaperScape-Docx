@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "PaperScape 涓荤獥鍙ｇ殑榛樿鏉冮檺",
+  "description": "PaperScape 娑撹崵鐛ラ崣锝囨畱姒涙顓婚弶鍐",
   "windows": ["main"],
   "permissions": [
     "core:default",
@@ -21,6 +21,7 @@
     "core:window:allow-outer-size",
     "core:window:allow-set-position",
     "core:window:allow-set-size",
+    "core:window:allow-set-focus",
     "core:window:allow-unmaximize"
   ]
 }

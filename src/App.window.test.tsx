@@ -15,6 +15,7 @@ const windowApi = vi.hoisted(() => ({
   outerSize: vi.fn(async () => ({ width: 1200, height: 800 })),
   setPosition: vi.fn(async () => undefined),
   setSize: vi.fn(async () => undefined),
+  setFocus: vi.fn(async () => undefined),
   unmaximize: vi.fn(async () => undefined),
   close: vi.fn(async () => undefined),
   startResizeDragging: vi.fn(async () => undefined),

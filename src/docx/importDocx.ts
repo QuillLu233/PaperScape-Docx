@@ -1,4 +1,5 @@
 import * as mammoth from 'mammoth';
+import JSZip from 'jszip';
 import DOMPurify from 'dompurify';
 import { generateJSON, type JSONContent } from '@tiptap/core';
 import { createEditorExtensions } from '../editor/editorConfig';
@@ -99,8 +100,68 @@ export function sanitizeDocxHtml(rawHtml: string): string {
   return container.innerHTML;
 }
 
-export async function importDocx(file: File): Promise<ImportedDocx> {
-  if (!file.name.toLowerCase().endsWith('.docx')) {
+/**
+ * Mammoth exposes paragraph indentation in its document model but does not
+ * write it to HTML. Read the original WordprocessingML indentation and carry
+ * it into the editor as text-indent so a PaperScape first-line indent survives
+ * a DOCX save/reopen round trip.
+ */
+async function applyFirstLineIndents(html: string, buffer: ArrayBuffer): Promise<string> {
+  try {
+    const zip = await JSZip.loadAsync(buffer);
+    const documentXml = await zip.file('word/document.xml')?.async('string');
+    if (!documentXml) return html;
+
+    const namespace = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+    const xml = new DOMParser().parseFromString(documentXml, 'application/xml');
+    const paragraphs = Array.from(xml.getElementsByTagNameNS(namespace, 'p')).map((paragraph) => {
+      const indent = paragraph.getElementsByTagNameNS(namespace, 'ind')[0];
+      if (!indent) return { text: '', em: 0 };
+      const text = Array.from(paragraph.getElementsByTagNameNS(namespace, 't'))
+        .map((node) => node.textContent ?? '')
+        .join('');
+      const firstLineChars =
+        indent.getAttributeNS(namespace, 'firstLineChars') ??
+        indent.getAttribute('w:firstLineChars');
+      const firstLine =
+        indent.getAttributeNS(namespace, 'firstLine') ?? indent.getAttribute('w:firstLine');
+      const em = firstLineChars
+        ? Number.parseInt(firstLineChars, 10) / 100
+        : Number.parseInt(firstLine ?? '0', 10) / 240;
+      return { text: text.replace(/\s+/g, ' ').trim(), em: Number.isFinite(em) ? em : 0 };
+    });
+
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    const htmlParagraphs = Array.from(container.querySelectorAll('p'));
+    const apply = (element: HTMLElement, em: number) => {
+      if (em > 0) element.style.textIndent = `${Number(em.toFixed(2))}em`;
+    };
+
+    if (htmlParagraphs.length === paragraphs.length) {
+      htmlParagraphs.forEach((element, index) => apply(element, paragraphs[index].em));
+    } else {
+      // Empty or unsupported paragraphs can make the two lists differ in
+      // length. Match by paragraph text in document order as a fallback.
+      let cursor = 0;
+      for (const element of htmlParagraphs) {
+        const text = (element.textContent ?? '').replace(/\s+/g, ' ').trim();
+        const match = paragraphs.findIndex(
+          (paragraph, index) => index >= cursor && paragraph.text === text,
+        );
+        if (match >= 0) {
+          apply(element, paragraphs[match].em);
+          cursor = match + 1;
+        }
+      }
+    }
+    return container.innerHTML;
+  } catch {
+    return html;
+  }
+}
+
+export async function importDocx(file: File): Promise<ImportedDocx> {  if (!file.name.toLowerCase().endsWith('.docx')) {
     throw new Error('请选择 .docx 文件（不支持把 .doc 或 HTML 改扩展名）');
   }
   if (file.size > 80 * 1024 * 1024) {
@@ -127,7 +188,8 @@ export async function importDocx(file: File): Promise<ImportedDocx> {
     },
   );
 
-  const html = sanitizeDocxHtml(result.value);
+  const htmlWithIndents = await applyFirstLineIndents(result.value, arrayBuffer);
+  const html = sanitizeDocxHtml(htmlWithIndents);
   const doc = generateJSON(html, createEditorExtensions()) as JSONContent;
   const text = htmlToPlainText(html);
   const warnings = result.messages

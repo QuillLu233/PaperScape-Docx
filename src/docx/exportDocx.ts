@@ -149,6 +149,19 @@ function headingFor(level: unknown) {
   return HeadingLevel.HEADING_3;
 }
 
+function firstLineTwips(node: JSONContent, options: DocxExportOptions): number | undefined {
+  const raw = node.attrs?.textIndent;
+  if (typeof raw === 'string') {
+    const match = /^([0-9]+(?:\.[0-9]+)?)em$/i.exec(raw.trim());
+    if (match) {
+      const em = Number.parseFloat(match[1]);
+      if (Number.isFinite(em) && em > 0) return Math.round(em * 240);
+    }
+  }
+  if (options.preset === 'novel' && node.type === 'paragraph') return 480;
+  return undefined;
+}
+
 function paragraphOptions(
   node: JSONContent,
   options: DocxExportOptions,
@@ -161,6 +174,7 @@ function paragraphOptions(
     typeof attrs.lineHeight === 'string' ? Number.parseFloat(attrs.lineHeight) : undefined;
   const normalizedLineHeight =
     typeof lineHeight === 'number' && Number.isFinite(lineHeight) ? lineHeight : 1.5;
+  const firstLine = firstLineTwips(node, options);
   return {
     children: inlineChildren(node.content, context, skipped),
     heading: node.type === 'heading' ? headingFor(attrs.level) : undefined,
@@ -170,10 +184,7 @@ function paragraphOptions(
       line: Math.round(240 * normalizedLineHeight),
       after: 120,
     },
-    indent:
-      options.preset === 'novel' && node.type === 'paragraph'
-        ? { firstLine: 480 }
-        : undefined,
+    indent: firstLine ? { firstLine } : undefined,
   };
 }
 

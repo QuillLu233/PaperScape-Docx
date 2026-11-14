@@ -12,16 +12,24 @@
 ### 构建结果
 
 - 前端类型检查：`pnpm check` 通过，约 2.9 s。
-- 前端测试：`pnpm test` **16 个文件，66 个测试通过**，约 7.4 s。
+- 前端测试：`pnpm test` **16 个文件，67 个测试通过**，约 7.4 s。
 - Rust：`cargo check --offline` 通过；`cargo test --offline --lib` **17 个测试通过**，0.51 s。
 - React 正式构建：通过，约 3.6 s。
 - Tauri Windows Release：`pnpm tauri build --no-bundle` 通过，约 24.2 s，保留 Cargo target 缓存。
-- EXE：`src-tauri/target/release/paperscape.exe`，**9,944,064 字节**。
-- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,214,861 字节**。
-- ZIP SHA256：`075BB603A9014D65B37EB1AD23CA2F648A282A570F55C8F52A8A10796DC99E5C`。
-- EXE SHA256：`6C0A09FFF377D87E5DF72982EE8DED41F96B755A6BE580084DA72403D1F244C6`。
+- EXE：`src-tauri/target/release/paperscape.exe`，**9,947,136 字节**。
+- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,215,921 字节**。
+- ZIP SHA256：`625BDA979C8CC2D6B1715B7649C52F5A94804D6874893BF599824EC018AC20FA`。
+- EXE SHA256：`81B61A4B954FE51FD7A4FBB4F3C01280801F537C98DEB33CCE04113DA523A71E`。
 - ZIP 内只有 `PaperScape-v1.1-Portable/PaperScape.exe` 和 `README.txt`。
 - **未生成 NSIS/MSI**；未引入 Electron、额外大型运行时或后台服务。
+
+### 首行缩进持久化（2026-11-14）
+
+- 工具栏 `textIndent: 2em` 现在写入 DOCX 段落 `w:ind w:firstLine="480"`，标准保存、直接保存回 DOCX 和导出均生效。
+- 导入 DOCX 时读取 `word/document.xml` 的 `w:firstLine`/`w:firstLineChars`，恢复为编辑器的 `textIndent`，重新打开后缩进不会丢失。
+- 小说排版预设仍对所有正文段落默认 480；逐段缩进优先于预设。
+- 新增 DOCX 导出→重新导入回归测试，确认 `2em → 480 twips → 2em` 往返成立。
+- 未改变正文保存、自动保存或输入法逻辑；前端测试 **16 个文件、67 个测试通过**。
 
 ### 滚动流畅度优化（2026-11-14）
 
@@ -53,8 +61,8 @@
 
 | 指标 | 实测 | 目标/结论 |
 | --- | --- | --- |
-| ZIP 体积 | 3,214,861 B（约 3.06 MiB） | ≤30 MB，达到 |
-| EXE 体积 | 9,944,064 B | 轻量 |
+| ZIP 体积 | 3,215,921 B（约 3.06 MiB） | ≤30 MB，达到 |
+| EXE 体积 | 9,947,136 B | 轻量 |
 | 启动到窗口（热缓存，任务计划口径） | 255 / 84 / 54 ms | ≤2 s 目标达到；**不是严格冷启动** |
 | V1 项目空闲 Working Set（含 7 个进程） | **379.2 MB** | 150 MB 挑战目标**未达到** |
 | V1 项目 Private Memory | **209.3 MB** | 未达到 150 MB |

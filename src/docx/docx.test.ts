@@ -77,6 +77,37 @@ describe('DOCX import and export', () => {
     expect(clean).toContain('data:image/png;base64');
   });
 
+  it('preserves a first-line indent through DOCX export and re-import', async () => {
+    const doc = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          attrs: { textIndent: '2em' },
+          content: [{ type: 'text', text: '首行缩进段落' }],
+        },
+      ],
+    };
+    const exported = await buildDocxBuffer([{ title: '缩进', doc }], {
+      preset: 'standard',
+      pageSize: 'A4',
+      fontFamily: 'Calibri',
+      fontSize: 11,
+      includeTitle: false,
+    });
+    const zip = await JSZip.loadAsync(exported.data);
+    const documentXml = await zip.file('word/document.xml')!.async('string');
+    expect(documentXml).toContain('w:firstLine="480"');
+
+    const imported = await importDocx(
+      new File([exported.data as BlobPart], 'indent.docx', {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      }),
+    );
+    const paragraphs = allNodes(imported.doc, 'paragraph');
+    expect(paragraphs[0].attrs?.textIndent).toBe('2em');
+  });
+
   it('exports a real ZIP-based Office Open XML document with A4 page geometry', async () => {
     const imported = await importDocx(sampleFile());
     const exported = await buildDocxBuffer(

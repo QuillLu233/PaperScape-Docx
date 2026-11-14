@@ -99,6 +99,9 @@ export function useWindowState() {
       } else if (await windowApi.isMaximized()) {
         await windowApi.unmaximize();
       }
+      // WebView2 can keep the previous surface size until the window is
+      // activated after a programmatic resize.
+      await windowApi.setFocus().catch(() => undefined);
       setIsMaximized(false);
       return;
     }
@@ -123,6 +126,8 @@ export function useWindowState() {
     customMaximizedRef.current = true;
     await windowApi.setPosition(monitor.workArea.position);
     await windowApi.setSize(monitor.workArea.size);
+    // Activate after resizing so WebView2 immediately adopts the new viewport.
+    await windowApi.setFocus().catch(() => undefined);
     setIsMaximized(true);
   }, []);
 
