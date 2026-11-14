@@ -328,7 +328,7 @@ export function MenuBar({
       label: '帮助',
       items: [
         { label: '键盘快捷键', onSelect: onShowShortcuts },
-        { label: '关于 PaperScape', onSelect: onShowAbout },
+        { label: '关于纸境', onSelect: onShowAbout },
       ],
     },
   ];

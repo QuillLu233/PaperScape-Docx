@@ -5,7 +5,7 @@
 - 阶段：最终验收、性能核对与 Portable ZIP 发布
 - 结论：**已完成无安装包 Windows Release 构建、绿色便携 ZIP 制作与当前环境可执行的功能回归；未生成 NSIS/MSI。设置面板在文件模式缺失和重启后文件树隐藏的问题已修复。内存挑战目标未达到，部分 GUI/字体/DPI 项目仍需人工验收。**
 - 前置文件：工作区没有 `AGENTS.md`、`V1.1_UPGRADE_PLAN.md` 或项目专属 Skill；本轮按用户任务消息和现有文档执行。没有重新初始化项目。
-- 本轮未新增产品功能；修正“正式版”版本标签、文件模式设置面板和文件树恢复，并增加验收记录、性能记录、便携包和 README。
+- 本轮新增创作者署名、关于纸境页面和 Windows EXE 版本资源；未改变文件管理、编辑器、保存或导出逻辑。版本更新日志见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## V1.1.0 最终验收与便携版
 
@@ -16,19 +16,30 @@
 - Rust：`cargo check --offline` 通过；`cargo test --offline --lib` **17 个测试通过**，0.51 s。
 - React 正式构建：通过，约 3.6 s。
 - Tauri Windows Release：`pnpm tauri build --no-bundle` 通过，约 24.2 s，保留 Cargo target 缓存。
-- EXE：`src-tauri/target/release/paperscape.exe`，**9,927,168 字节**。
-- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,211,528 字节**。
-- ZIP SHA256：`067913FF3A7FA79B6DFDABC4DDBD83BEBA61B99BCB42F6A06693C921A4D2E1E9`。
-- EXE SHA256：`2208AD2AF620E2FCDB619A5AD37D9AAC6A6C64E3828D03FB2CE03445EAE2CB99`。
+- EXE：`src-tauri/target/release/paperscape.exe`，**9,930,240 字节**。
+- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,211,993 字节**。
+- ZIP SHA256：`606155217D98352DCA04B750BBC317C04B188BE2696DE6DBDD4ABC6B1B8129FF`。
+- EXE SHA256：`83830E485EEF02AA7ED03F2E1662632D9664A45E15A60A0201EA3011BD23F54D`。
 - ZIP 内只有 `PaperScape-v1.1-Portable/PaperScape.exe` 和 `README.txt`。
 - **未生成 NSIS/MSI**；未引入 Electron、额外大型运行时或后台服务。
+
+### 品牌与版权（2026-11-13）
+
+- 统一品牌：中文「纸境」、英文「PaperScape」、创作者 QuillLulu、版权 `Copyright © 2026 QuillLulu`。
+- 欢迎页底部增加低调的 `Created by QuillLulu`；普通写作、专注/全屏、纸张及导出文件不添加水印。
+- 帮助菜单调整为“关于纸境”；关于页显示软件图标、名称、当前 Tauri 版本、创作者、版权声明和“独立设计 · AI 辅助开发”。
+- 版本号通过 Tauri `getVersion()` 读取运行中应用版本（当前 1.1.0），浏览器/测试回退到 `package.json` 版本。
+- Windows EXE 版本资源实测：`FileDescription=ProductName=PaperScape 纸境`、`CompanyName=QuillLulu`、`LegalCopyright=Copyright © 2026 QuillLulu`、`FileVersion=ProductVersion=1.1.0`。
+- 新增 `NOTICE.md` 与 `CHANGELOG.md`；入口源码增加版权头；README 增加创作者信息。
+- 未新增或更改软件授权协议；第三方组件保留原许可证与版权。
+- 测试仍为 **16 个文件、66 个测试通过**；品牌界面在隔离配置中实际截图验收。
 
 ### 性能实测（本机）
 
 | 指标 | 实测 | 目标/结论 |
 | --- | --- | --- |
-| ZIP 体积 | 3,211,528 B（约 3.06 MiB） | ≤30 MB，达到 |
-| EXE 体积 | 9,927,168 B | 轻量 |
+| ZIP 体积 | 3,211,993 B（约 3.06 MiB） | ≤30 MB，达到 |
+| EXE 体积 | 9,930,240 B | 轻量 |
 | 启动到窗口（热缓存，任务计划口径） | 255 / 84 / 54 ms | ≤2 s 目标达到；**不是严格冷启动** |
 | V1 项目空闲 Working Set（含 7 个进程） | **379.2 MB** | 150 MB 挑战目标**未达到** |
 | V1 项目 Private Memory | **209.3 MB** | 未达到 150 MB |

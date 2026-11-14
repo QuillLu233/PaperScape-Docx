@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "PaperScape",
+  "productName": "PaperScape 纸境",
   "version": "1.1.0",
   "identifier": "com.paperscape.desktop",
   "build": {
@@ -36,6 +36,10 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "publisher": "QuillLulu",
+    "copyright": "Copyright © 2026 QuillLulu",
+    "shortDescription": "纸境 PaperScape — 安静、轻量的桌面写作空间",
+    "longDescription": "纸境（PaperScape）— 安静、轻量的桌面写作空间。Created by QuillLulu. Copyright © 2026 QuillLulu.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

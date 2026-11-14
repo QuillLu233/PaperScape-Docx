@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { BRAND, readAppVersion } from '../brand';
 import { BrandMark, Icon } from './Icon';
 
 interface ModalProps {
@@ -91,20 +92,38 @@ export function ShortcutsDialog({ onClose }: { onClose: () => void }) {
 }
 
 export function AboutDialog({ onClose }: { onClose: () => void }) {
+  const [version, setVersion] = useState(BRAND.fallbackVersion);
+
+  useEffect(() => {
+    let active = true;
+    void readAppVersion().then((value) => {
+      if (active) setVersion(value);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
-    <Modal title="关于 PaperScape" eyebrow="ABOUT" onClose={onClose}>
+    <Modal title="关于纸境" eyebrow="ABOUT" onClose={onClose}>
       <div className="about-hero">
         <span className="about-mark">
           <BrandMark size={46} />
         </span>
         <div>
-          <p className="about-name">PaperScape 纸境</p>
-          <p className="about-version">1.1.0 · 正式版</p>
+          <p className="about-name">{BRAND.nameZh} {BRAND.nameEn}</p>
+          <p className="about-version">版本 {version}</p>
         </div>
       </div>
       <p className="modal-lead">
         一个安静、轻量的桌面写作空间。把章节、正文和偏好留在本机，把注意力留给文字。
       </p>
+      <div className="about-credit-lines">
+        <span>创作者：{BRAND.creator}</span>
+        <span>{BRAND.createdBy}</span>
+        <span>{BRAND.copyright}</span>
+      </div>
+      <p className="about-tagline">{BRAND.tagline}</p>
       <div className="about-facts">
         <span>Tauri 2</span>
         <span>React 19</span>
@@ -113,7 +132,7 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
         <span>Tailwind CSS</span>
       </div>
       <p className="modal-footnote">
-        本阶段新增真实文件夹、文件树和 DOCX 直接编辑：文件留在原目录，覆盖前备份原件。
+        本软件为本地桌面写作工具，不添加正文、背景或导出文件水印。
       </p>
     </Modal>
   );

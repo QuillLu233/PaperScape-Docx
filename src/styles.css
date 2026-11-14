@@ -4096,3 +4096,30 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
 }
+
+/* Brand and copyright */
+.about-credit-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 14px;
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.about-tagline {
+  margin: 9px 0 0;
+  color: var(--muted);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+}
+
+.launcher-credit {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-align: center;
+  opacity: 0.78;
+}

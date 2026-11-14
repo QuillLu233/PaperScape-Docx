@@ -1,3 +1,8 @@
+/*
+ * PaperScape 纸境
+ * Copyright © 2026 QuillLulu
+ * Created by QuillLulu
+ */
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { BackgroundLayer } from './components/BackgroundLayer';

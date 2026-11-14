@@ -2,6 +2,17 @@
 
 PaperScape 是一个面向 Windows 的安静写作空间。V1.1 已完成文件管理、界面缩放、全屏/专注写作、自定义字体和离线中文校对，并以 **Windows 绿色便携 ZIP** 发布。
 
+## 创作者与版权
+
+- 中文名称：纸境
+- 英文名称：PaperScape
+- 创作者：QuillLulu
+- 英文署名：Created by QuillLulu
+- 版权声明：Copyright © 2026 QuillLulu
+- 设计说明：独立设计 · AI 辅助开发
+
+本项目的原创界面、源代码和文档版权归 QuillLulu 所有；本 README 不构成或更改任何软件授权协议。第三方组件继续遵循各自原有许可证与版权声明，详见 [NOTICE.md](NOTICE.md)。版本记录见 [CHANGELOG.md](CHANGELOG.md)。
+
 > 当前发布版本：**1.1.0（V1.1 正式绿色版）**
 >
 > 本阶段**没有生成 NSIS 或 MSI 安装包**。发布物为 `release/PaperScape-v1.1-Portable.zip`；Windows 需要已有 WebView2 Runtime。

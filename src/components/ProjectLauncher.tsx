@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { RecentProject } from '../project/types';
 import type { RecentItem } from '../workspace/types';
+import { BRAND } from '../brand';
 import { chooseFolder, getDefaultProjectParent, isTauriRuntime } from '../project/api';
 import { hasLegacyWorkspace } from '../project/legacy';
 import { joinProjectPath } from '../project/types';
@@ -322,6 +323,8 @@ export function ProjectLauncher({
             </form>
           ) : null}
         </details>
+
+        <p className="launcher-credit">{BRAND.createdBy}</p>
       </div>
     </div>
   );

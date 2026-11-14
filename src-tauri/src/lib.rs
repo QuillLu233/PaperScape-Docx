@@ -1,3 +1,6 @@
+// PaperScape 纸境
+// Copyright © 2026 QuillLulu
+// Created by QuillLulu
 mod focus_hook;
 mod font;
 mod project;

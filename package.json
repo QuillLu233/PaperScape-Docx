@@ -2,8 +2,9 @@
   "name": "paperscape",
   "private": true,
   "version": "1.1.0",
+  "author": "QuillLulu",
   "type": "module",
-  "description": "PaperScape - a quiet desktop writing space",
+  "description": "纸境 PaperScape — 安静、轻量的桌面写作空间",
   "scripts": {
     "dev": "vite --port 1420",
     "build": "tsc --noEmit && vite build",

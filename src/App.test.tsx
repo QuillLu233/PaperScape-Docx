@@ -329,14 +329,22 @@ describe('PaperScape shell', () => {
     expect(screen.queryByRole('search', { name: '查找与替换' })).not.toBeInTheDocument();
   });
 
-  it('opens the about dialog from the help menu', async () => {
+  it('shows creator credit and opens the branded about dialog', async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: '帮助' }));
-    await user.click(screen.getByRole('menuitem', { name: '关于 PaperScape' }));
+    expect(screen.getByText('Created by QuillLulu')).toBeInTheDocument();
 
-    expect(screen.getByRole('dialog', { name: '关于 PaperScape' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '帮助' }));
+    await user.click(screen.getByRole('menuitem', { name: '关于纸境' }));
+
+    expect(screen.getByRole('dialog', { name: '关于纸境' })).toBeInTheDocument();
+    expect(screen.getByText('纸境 PaperScape')).toBeInTheDocument();
+    expect(screen.getByText('版本 1.1.0')).toBeInTheDocument();
+    expect(screen.getByText('创作者：QuillLulu')).toBeInTheDocument();
+    expect(screen.getByText('Copyright © 2026 QuillLulu')).toBeInTheDocument();
+    expect(screen.getByText('独立设计 · AI 辅助开发')).toBeInTheDocument();
+    expect(screen.getAllByText('Created by QuillLulu').length).toBeGreaterThan(1);
     await user.click(screen.getByRole('button', { name: '关闭对话框' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
