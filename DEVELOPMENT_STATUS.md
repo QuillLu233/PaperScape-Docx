@@ -16,21 +16,27 @@
 - Rust：`cargo check --offline` 通过；`cargo test --offline --lib` **17 个测试通过**，0.51 s。
 - React 正式构建：通过，约 3.6 s。
 - Tauri Windows Release：`pnpm tauri build --no-bundle` 通过，约 24.2 s，保留 Cargo target 缓存。
-- EXE：`src-tauri/target/release/paperscape.exe`，**9,932,800 字节**。
-- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,213,129 字节**。
-- ZIP SHA256：`9629BC912407011F8CC1EC025291183C3054675B22CD5588485971974BCA032B`。
-- EXE SHA256：`05E93B4C9E00CA2C42DF849E6B99FA25B90428EC07462C084AF03D7FB3E42D1C`。
+- EXE：`src-tauri/target/release/paperscape.exe`，**9,944,064 字节**。
+- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,214,861 字节**。
+- ZIP SHA256：`075BB603A9014D65B37EB1AD23CA2F648A282A570F55C8F52A8A10796DC99E5C`。
+- EXE SHA256：`6C0A09FFF377D87E5DF72982EE8DED41F96B755A6BE580084DA72403D1F244C6`。
 - ZIP 内只有 `PaperScape-v1.1-Portable/PaperScape.exe` 和 `README.txt`。
 - **未生成 NSIS/MSI**；未引入 Electron、额外大型运行时或后台服务。
 
 ### 滚动流畅度优化（2026-11-14）
 
+- 使用 WebView2 远程调试（CDP）在 1600 段、约 16 万字的 DOCX 上做滚动对比；页内 `requestAnimationFrame` 在普通/最大化窗口都稳定在约 240 Hz，最大间隔 4.4–4.7 ms，没有长任务或滚动事件导致的 React 连续更新。
+- DevTools trace 显示滚动期间每帧约 280 个 `Display::FrameDisplayed`/`DrawFrame`，`backdrop-filter` 已为 `none`，默认背景 `filter` 为 `none`，背景层与 `.editor-scroll` 分离；CSS zoom 1.0 与 1.3 的页内帧耗时无实质差异。
+- 硬件：NVIDIA RTX 5060 Laptop + Intel UHD；ANGLE D3D11，`gpu_compositing=enabled`，`directComposition=true`，`supportsOverlays=true`，`direct_rendering_display_compositor=disabled_off_ok`。
+- 进程树（1 个 PaperScape + 7 个 WebView2）：滚动 3.5 s 的 CPU 约 1.688 s（约 48% 单核），Working Set 约 419.8 MB，Private 约 343 MB；Windows GPU 计数器对本应用返回 0，未作为有效 GPU 归因。
+- 结论：页内 JS/CSS/重排不是最大化掉帧的瓶颈；差异在 Windows 原生 `WS_MAXIMIZE` 窗口的 DWM 合成路径。小窗口和真正全屏走不同路径，因此只有最大化明显掉帧。
+- 最小修改：最大化改为“填充当前显示器工作区的无边框窗口”，保留任务栏，不使用 Windows 原生最大化；还原时恢复记录的原位置/尺寸。实测最大化窗口 `IsZoomed=false`，工作区矩形 `0,0,1721,1027`，还原到 `206,95,1501,924`；最大化/还原图标和滚动高度同步。
+- 保留原有背景、半透明纸张、CSS zoom、DOCX 保存/自动保存和中文输入法逻辑；未增加新功能。
+- 前端测试 **16 个文件、66 个测试通过**。
 - 普通滚轮不再长期经过非被动 `wheel` 监听；仅在按住 `Ctrl` 时才挂载滚轮缩放监听，普通滚动重新走浏览器原生被动滚动路径。
 - 校对浮层滚动关闭改为挂在真正的 `.editor-scroll` 容器，使用 passive 监听；没有浮层时不再因滚动触发 React 状态更新。
 - 背景亮度和模糊都为默认值时不再创建全屏 `filter` 合成层；默认无滤镜的背景层更轻。
 - 编辑器滚动容器增加布局/绘制隔离和 `overscroll-behavior`；移除了文稿信息栏的实时 `backdrop-filter` 毛玻璃，减少滚动期间的合成重绘。
-- 最大化窗口时关闭 DWM 非客户区阴影，离开最大化/全屏后恢复；针对小窗口和全屏已流畅、仅最大化掉帧的 DWM 合成差异。
-- 未修改正文、保存、DOCX 导入导出或文件管理逻辑；前端测试 **16 个文件、66 个测试通过**。
 
 ### 品牌与版权（2026-11-13）
 
@@ -47,8 +53,8 @@
 
 | 指标 | 实测 | 目标/结论 |
 | --- | --- | --- |
-| ZIP 体积 | 3,213,129 B（约 3.06 MiB） | ≤30 MB，达到 |
-| EXE 体积 | 9,932,800 B | 轻量 |
+| ZIP 体积 | 3,214,861 B（约 3.06 MiB） | ≤30 MB，达到 |
+| EXE 体积 | 9,944,064 B | 轻量 |
 | 启动到窗口（热缓存，任务计划口径） | 255 / 84 / 54 ms | ≤2 s 目标达到；**不是严格冷启动** |
 | V1 项目空闲 Working Set（含 7 个进程） | **379.2 MB** | 150 MB 挑战目标**未达到** |
 | V1 项目 Private Memory | **209.3 MB** | 未达到 150 MB |

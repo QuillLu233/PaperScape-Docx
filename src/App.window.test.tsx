@@ -11,6 +11,11 @@ const windowApi = vi.hoisted(() => ({
   setFullscreen: vi.fn(async () => undefined),
   setAlwaysOnTop: vi.fn(async () => undefined),
   setShadow: vi.fn(async () => undefined),
+  outerPosition: vi.fn(async () => ({ x: 40, y: 40 })),
+  outerSize: vi.fn(async () => ({ width: 1200, height: 800 })),
+  setPosition: vi.fn(async () => undefined),
+  setSize: vi.fn(async () => undefined),
+  unmaximize: vi.fn(async () => undefined),
   close: vi.fn(async () => undefined),
   startResizeDragging: vi.fn(async () => undefined),
   onResized: vi.fn(async () => () => undefined),
@@ -19,6 +24,12 @@ const windowApi = vi.hoisted(() => ({
 
 vi.mock('@tauri-apps/api/window', () => ({
   getCurrentWindow: () => windowApi,
+  currentMonitor: vi.fn(async () => ({
+    workArea: {
+      position: { x: 0, y: 0 },
+      size: { width: 1600, height: 900 },
+    },
+  })),
 }));
 
 describe('desktop window controls', () => {
@@ -37,7 +48,7 @@ describe('desktop window controls', () => {
       value: {},
       configurable: true,
     });
-    windowApi.isMaximized.mockResolvedValueOnce(false).mockResolvedValue(true);
+    windowApi.isMaximized.mockResolvedValue(false);
     const user = userEvent.setup();
     render(<App />);
 
@@ -47,7 +58,8 @@ describe('desktop window controls', () => {
     expect(windowApi.minimize).toHaveBeenCalledTimes(1);
 
     await user.click(screen.getByRole('button', { name: '最大化窗口' }));
-    expect(windowApi.toggleMaximize).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(windowApi.setSize).toHaveBeenCalledWith({ width: 1600, height: 900 }));
+    await waitFor(() => expect(windowApi.setPosition).toHaveBeenCalledWith({ x: 0, y: 0 }));
     await waitFor(() =>
       expect(screen.getByRole('button', { name: '还原窗口' })).toBeInTheDocument(),
     );

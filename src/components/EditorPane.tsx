@@ -261,20 +261,23 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
       window.clearTimeout(proofreadingHoverRef.current);
       show(element);
     };
-    const onScroll = () => {
-      setProofreadingPopup((current) => (current ? null : current));
-    };
-    const scrollHost = dom.closest<HTMLElement>('.editor-scroll') ?? dom;
     dom.addEventListener('mouseover', onMouseOver);
     dom.addEventListener('click', onClick);
-    scrollHost.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       window.clearTimeout(proofreadingHoverRef.current);
       dom.removeEventListener('mouseover', onMouseOver);
       dom.removeEventListener('click', onClick);
-      scrollHost.removeEventListener('scroll', onScroll);
     };
   }, [editor]);
+
+  useEffect(() => {
+    if (!editor || !proofreadingPopup) return;
+    const dom = editor.view.dom;
+    const scrollHost = dom.closest<HTMLElement>('.editor-scroll') ?? dom;
+    const onScroll = () => setProofreadingPopup(null);
+    scrollHost.addEventListener('scroll', onScroll, { passive: true });
+    return () => scrollHost.removeEventListener('scroll', onScroll);
+  }, [editor, proofreadingPopup]);
 
   useEffect(() => {
     if (!proofreadingPopup) return;

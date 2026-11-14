@@ -1,19 +1,29 @@
-import { useCallback, useEffect, useState } from 'react';
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  currentMonitor,
+  getCurrentWindow,
+  type PhysicalPosition,
+  type PhysicalSize,
+} from '@tauri-apps/api/window';
 import {
   closeWindow,
   isTauriEnvironment,
   isWindowFullscreen,
-  isWindowMaximized,
   minimizeWindow,
   toggleFullscreenWindow,
-  toggleMaximizeWindow,
 } from '../lib/window';
+
+interface SavedBounds {
+  position: PhysicalPosition;
+  size: PhysicalSize;
+}
 
 export function useWindowState() {
   const [isMaximized, setIsMaximized] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(isTauriEnvironment);
+  const customMaximizedRef = useRef(false);
+  const savedBoundsRef = useRef<SavedBounds | null>(null);
 
   useEffect(() => {
     if (!isTauriEnvironment()) return;
@@ -24,7 +34,10 @@ export function useWindowState() {
     windowApi
       .isMaximized()
       .then((value) => {
-        if (!cancelled) setIsMaximized(value);
+        if (!cancelled) {
+          customMaximizedRef.current = false;
+          setIsMaximized(value);
+        }
       })
       .catch(() => {
         if (!cancelled) setIsDesktop(false);
@@ -38,12 +51,14 @@ export function useWindowState() {
 
     windowApi
       .onResized(() => {
-        windowApi
-          .isMaximized()
-          .then((value) => {
-            if (!cancelled) setIsMaximized(value);
-          })
-          .catch(() => undefined);
+        if (!cancelled && !customMaximizedRef.current) {
+          windowApi
+            .isMaximized()
+            .then((value) => {
+              if (!cancelled) setIsMaximized(value);
+            })
+            .catch(() => undefined);
+        }
         void isWindowFullscreen()
           .then((value) => {
             if (!cancelled) setIsFullscreen(value);
@@ -67,17 +82,48 @@ export function useWindowState() {
 
   useEffect(() => {
     if (!isDesktop) return;
-    // A maximized frameless window keeps a DWM non-client shadow on Windows 11.
-    // That extra DWM composition path can make WebView2 scrolling stutter while
-    // small and true-fullscreen windows scroll smoothly. Disable the shadow only
-    // in maximized/fullscreen states and restore it for normal windows.
     const windowApi = getCurrentWindow();
     void windowApi.setShadow(!isMaximized && !isFullscreen).catch(() => undefined);
   }, [isDesktop, isFullscreen, isMaximized]);
 
   const toggleMaximize = useCallback(async () => {
-    await toggleMaximizeWindow();
-    setIsMaximized(await isWindowMaximized());
+    const windowApi = getCurrentWindow();
+
+    if (customMaximizedRef.current) {
+      customMaximizedRef.current = false;
+      const saved = savedBoundsRef.current;
+      savedBoundsRef.current = null;
+      if (saved) {
+        await windowApi.setPosition(saved.position);
+        await windowApi.setSize(saved.size);
+      } else if (await windowApi.isMaximized()) {
+        await windowApi.unmaximize();
+      }
+      setIsMaximized(false);
+      return;
+    }
+
+    // A native maximized WebView2 window can enter a DWM composition path that
+    // stutters while scrolling. Fill the monitor work area with a normal
+    // borderless window instead: it looks maximized, keeps the taskbar, but
+    // retains the smooth windowed WebView2 path.
+    if (await windowApi.isMaximized()) {
+      await windowApi.unmaximize();
+      setIsMaximized(false);
+      return;
+    }
+
+    const monitor = await currentMonitor();
+    if (!monitor) return;
+
+    savedBoundsRef.current = {
+      position: await windowApi.outerPosition(),
+      size: await windowApi.outerSize(),
+    };
+    customMaximizedRef.current = true;
+    await windowApi.setPosition(monitor.workArea.position);
+    await windowApi.setSize(monitor.workArea.size);
+    setIsMaximized(true);
   }, []);
 
   const minimize = useCallback(async () => {
