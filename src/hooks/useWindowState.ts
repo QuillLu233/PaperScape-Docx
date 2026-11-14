@@ -65,6 +65,16 @@ export function useWindowState() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isDesktop) return;
+    // A maximized frameless window keeps a DWM non-client shadow on Windows 11.
+    // That extra DWM composition path can make WebView2 scrolling stutter while
+    // small and true-fullscreen windows scroll smoothly. Disable the shadow only
+    // in maximized/fullscreen states and restore it for normal windows.
+    const windowApi = getCurrentWindow();
+    void windowApi.setShadow(!isMaximized && !isFullscreen).catch(() => undefined);
+  }, [isDesktop, isFullscreen, isMaximized]);
+
   const toggleMaximize = useCallback(async () => {
     await toggleMaximizeWindow();
     setIsMaximized(await isWindowMaximized());

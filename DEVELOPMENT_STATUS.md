@@ -16,10 +16,10 @@
 - Rust：`cargo check --offline` 通过；`cargo test --offline --lib` **17 个测试通过**，0.51 s。
 - React 正式构建：通过，约 3.6 s。
 - Tauri Windows Release：`pnpm tauri build --no-bundle` 通过，约 24.2 s，保留 Cargo target 缓存。
-- EXE：`src-tauri/target/release/paperscape.exe`，**9,930,240 字节**。
-- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,212,490 字节**。
-- ZIP SHA256：`838D8DA00CB63E22DF07A212C5D74CBC487EF5405FCE9939D10EA16A2FF5B4B4`。
-- EXE SHA256：`E14B080D99518BF3AC6D726A0208F46142DCFA67B15C7F21CF3BE7653F6480EE`。
+- EXE：`src-tauri/target/release/paperscape.exe`，**9,932,800 字节**。
+- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,213,129 字节**。
+- ZIP SHA256：`9629BC912407011F8CC1EC025291183C3054675B22CD5588485971974BCA032B`。
+- EXE SHA256：`05E93B4C9E00CA2C42DF849E6B99FA25B90428EC07462C084AF03D7FB3E42D1C`。
 - ZIP 内只有 `PaperScape-v1.1-Portable/PaperScape.exe` 和 `README.txt`。
 - **未生成 NSIS/MSI**；未引入 Electron、额外大型运行时或后台服务。
 
@@ -29,6 +29,7 @@
 - 校对浮层滚动关闭改为挂在真正的 `.editor-scroll` 容器，使用 passive 监听；没有浮层时不再因滚动触发 React 状态更新。
 - 背景亮度和模糊都为默认值时不再创建全屏 `filter` 合成层；默认无滤镜的背景层更轻。
 - 编辑器滚动容器增加布局/绘制隔离和 `overscroll-behavior`；移除了文稿信息栏的实时 `backdrop-filter` 毛玻璃，减少滚动期间的合成重绘。
+- 最大化窗口时关闭 DWM 非客户区阴影，离开最大化/全屏后恢复；针对小窗口和全屏已流畅、仅最大化掉帧的 DWM 合成差异。
 - 未修改正文、保存、DOCX 导入导出或文件管理逻辑；前端测试 **16 个文件、66 个测试通过**。
 
 ### 品牌与版权（2026-11-13）
@@ -46,8 +47,8 @@
 
 | 指标 | 实测 | 目标/结论 |
 | --- | --- | --- |
-| ZIP 体积 | 3,212,490 B（约 3.06 MiB） | ≤30 MB，达到 |
-| EXE 体积 | 9,930,240 B | 轻量 |
+| ZIP 体积 | 3,213,129 B（约 3.06 MiB） | ≤30 MB，达到 |
+| EXE 体积 | 9,932,800 B | 轻量 |
 | 启动到窗口（热缓存，任务计划口径） | 255 / 84 / 54 ms | ≤2 s 目标达到；**不是严格冷启动** |
 | V1 项目空闲 Working Set（含 7 个进程） | **379.2 MB** | 150 MB 挑战目标**未达到** |
 | V1 项目 Private Memory | **209.3 MB** | 未达到 150 MB |

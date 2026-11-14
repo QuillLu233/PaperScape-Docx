@@ -10,6 +10,7 @@ const windowApi = vi.hoisted(() => ({
   isFullscreen: vi.fn(async () => false),
   setFullscreen: vi.fn(async () => undefined),
   setAlwaysOnTop: vi.fn(async () => undefined),
+  setShadow: vi.fn(async () => undefined),
   close: vi.fn(async () => undefined),
   startResizeDragging: vi.fn(async () => undefined),
   onResized: vi.fn(async () => () => undefined),
@@ -50,6 +51,7 @@ describe('desktop window controls', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: '还原窗口' })).toBeInTheDocument(),
     );
+    await waitFor(() => expect(windowApi.setShadow).toHaveBeenCalledWith(false));
 
     await user.click(screen.getByRole('button', { name: '关闭窗口' }));
     expect(windowApi.close).toHaveBeenCalledTimes(1);
