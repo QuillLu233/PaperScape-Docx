@@ -262,16 +262,17 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
       show(element);
     };
     const onScroll = () => {
-      setProofreadingPopup(null);
+      setProofreadingPopup((current) => (current ? null : current));
     };
+    const scrollHost = dom.closest<HTMLElement>('.editor-scroll') ?? dom;
     dom.addEventListener('mouseover', onMouseOver);
     dom.addEventListener('click', onClick);
-    dom.addEventListener('scroll', onScroll, true);
+    scrollHost.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       window.clearTimeout(proofreadingHoverRef.current);
       dom.removeEventListener('mouseover', onMouseOver);
       dom.removeEventListener('click', onClick);
-      dom.removeEventListener('scroll', onScroll, true);
+      scrollHost.removeEventListener('scroll', onScroll);
     };
   }, [editor]);
 
@@ -299,14 +300,56 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
   useEffect(() => {
     const node = paneRef.current;
     if (!node || !onDocZoomChange) return;
+
+    let ctrlHeld = false;
+    let wheelAttached = false;
+
     const onWheel = (event: WheelEvent) => {
-      if (!event.ctrlKey) return;
+      if (!ctrlHeld || !event.ctrlKey) return;
       event.preventDefault();
       const direction = event.deltaY < 0 ? 10 : -10;
       onDocZoomChange(docZoom + direction);
     };
-    node.addEventListener('wheel', onWheel, { passive: false });
-    return () => node.removeEventListener('wheel', onWheel);
+
+    // A permanently attached non-passive wheel listener blocks the browser's
+    // scrolling path on every wheel event. Only intercept wheel while Ctrl is
+    // held, so ordinary scrolling stays passive and smooth.
+    const attachWheel = () => {
+      if (wheelAttached) return;
+      node.addEventListener('wheel', onWheel, { passive: false });
+      wheelAttached = true;
+    };
+    const detachWheel = () => {
+      if (!wheelAttached) return;
+      node.removeEventListener('wheel', onWheel);
+      wheelAttached = false;
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Control') {
+        ctrlHeld = true;
+        attachWheel();
+      }
+    };
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key === 'Control') {
+        ctrlHeld = false;
+        detachWheel();
+      }
+    };
+    const onWindowBlur = () => {
+      ctrlHeld = false;
+      detachWheel();
+    };
+
+    window.addEventListener('keydown', onKeyDown, true);
+    window.addEventListener('keyup', onKeyUp, true);
+    window.addEventListener('blur', onWindowBlur);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown, true);
+      window.removeEventListener('keyup', onKeyUp, true);
+      window.removeEventListener('blur', onWindowBlur);
+      detachWheel();
+    };
   }, [docZoom, onDocZoomChange]);
 
   useImperativeHandle(

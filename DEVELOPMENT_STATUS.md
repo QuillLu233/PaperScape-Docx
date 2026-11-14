@@ -17,11 +17,19 @@
 - React 正式构建：通过，约 3.6 s。
 - Tauri Windows Release：`pnpm tauri build --no-bundle` 通过，约 24.2 s，保留 Cargo target 缓存。
 - EXE：`src-tauri/target/release/paperscape.exe`，**9,930,240 字节**。
-- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,211,993 字节**。
-- ZIP SHA256：`606155217D98352DCA04B750BBC317C04B188BE2696DE6DBDD4ABC6B1B8129FF`。
-- EXE SHA256：`83830E485EEF02AA7ED03F2E1662632D9664A45E15A60A0201EA3011BD23F54D`。
+- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,212,490 字节**。
+- ZIP SHA256：`838D8DA00CB63E22DF07A212C5D74CBC487EF5405FCE9939D10EA16A2FF5B4B4`。
+- EXE SHA256：`E14B080D99518BF3AC6D726A0208F46142DCFA67B15C7F21CF3BE7653F6480EE`。
 - ZIP 内只有 `PaperScape-v1.1-Portable/PaperScape.exe` 和 `README.txt`。
 - **未生成 NSIS/MSI**；未引入 Electron、额外大型运行时或后台服务。
+
+### 滚动流畅度优化（2026-11-14）
+
+- 普通滚轮不再长期经过非被动 `wheel` 监听；仅在按住 `Ctrl` 时才挂载滚轮缩放监听，普通滚动重新走浏览器原生被动滚动路径。
+- 校对浮层滚动关闭改为挂在真正的 `.editor-scroll` 容器，使用 passive 监听；没有浮层时不再因滚动触发 React 状态更新。
+- 背景亮度和模糊都为默认值时不再创建全屏 `filter` 合成层；默认无滤镜的背景层更轻。
+- 编辑器滚动容器增加布局/绘制隔离和 `overscroll-behavior`；移除了文稿信息栏的实时 `backdrop-filter` 毛玻璃，减少滚动期间的合成重绘。
+- 未修改正文、保存、DOCX 导入导出或文件管理逻辑；前端测试 **16 个文件、66 个测试通过**。
 
 ### 品牌与版权（2026-11-13）
 
@@ -38,7 +46,7 @@
 
 | 指标 | 实测 | 目标/结论 |
 | --- | --- | --- |
-| ZIP 体积 | 3,211,993 B（约 3.06 MiB） | ≤30 MB，达到 |
+| ZIP 体积 | 3,212,490 B（约 3.06 MiB） | ≤30 MB，达到 |
 | EXE 体积 | 9,930,240 B | 轻量 |
 | 启动到窗口（热缓存，任务计划口径） | 255 / 84 / 54 ms | ≤2 s 目标达到；**不是严格冷启动** |
 | V1 项目空闲 Working Set（含 7 个进程） | **379.2 MB** | 150 MB 挑战目标**未达到** |

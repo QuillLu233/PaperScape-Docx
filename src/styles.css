@@ -4123,3 +4123,16 @@ body {
   text-align: center;
   opacity: 0.78;
 }
+
+/* Scroll performance: keep the long editor in its own paint/compositing context. */
+.editor-scroll {
+  contain: layout paint;
+  overscroll-behavior: contain;
+  will-change: scroll-position;
+}
+
+/* Avoid a full-surface backdrop blur repaint over the editor while scrolling. */
+.document-bar {
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  backdrop-filter: none;
+}

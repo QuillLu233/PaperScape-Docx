@@ -12,10 +12,10 @@ export const BackgroundLayer = memo(function BackgroundLayer({
   imageUrl,
   focusMode,
 }: BackgroundLayerProps) {
-  const filter = useMemo(
-    () => `brightness(${background.brightness}%) blur(${background.blur}px)`,
-    [background.brightness, background.blur],
-  );
+  const filter = useMemo(() => {
+    if (background.brightness === 100 && background.blur === 0) return undefined;
+    return `brightness(${background.brightness}%) blur(${background.blur}px)`;
+  }, [background.brightness, background.blur]);
 
   const colorStyle = useMemo(() => {
     if (background.kind === 'solid') return { backgroundColor: background.color };
@@ -42,7 +42,7 @@ export const BackgroundLayer = memo(function BackgroundLayer({
           style={{
             backgroundImage: `url("${imageUrl}")`,
             filter,
-            transform: background.blur > 0 ? 'scale(1.04)' : 'scale(1.005)',
+            transform: background.blur > 0 ? 'scale(1.04)' : undefined,
           }}
         />
       ) : (
