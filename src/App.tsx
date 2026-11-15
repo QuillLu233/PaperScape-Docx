@@ -473,48 +473,47 @@ export default function App() {
 
   const handleOpenDocx = useCallback(async () => {
     if (isProjectOpen) await closeProject();
-    if (isDocumentMode) await closeWorkspace();
     const ok = await openDocx();
     if (ok) {
       setLeftOpen(true);
       setFocusMode(false);
     }
-  }, [closeProject, closeWorkspace, isDocumentMode, isProjectOpen, openDocx, setLeftOpen]);
+  }, [closeProject, isProjectOpen, openDocx, setLeftOpen]);
 
   const handleOpenDocxPath = useCallback(
     async (path: string) => {
       if (isProjectOpen) await closeProject();
-      if (isDocumentMode) await closeWorkspace();
+      // Keep the current document workspace visible while the next DOCX is
+      // read and parsed. Closing it first renders the welcome/empty shell for
+      // one frame, which reads as a full-page reload flash.
       const ok = await openDocx(path);
       if (ok) {
         setLeftOpen(true);
         setFocusMode(false);
       }
     },
-    [closeProject, closeWorkspace, isDocumentMode, isProjectOpen, openDocx, setLeftOpen],
+    [closeProject, isProjectOpen, openDocx, setLeftOpen],
   );
 
   const handleOpenFolder = useCallback(async () => {
     if (isProjectOpen) await closeProject();
-    if (isDocumentMode) await closeWorkspace();
     const ok = await openFolder();
     if (ok) {
       setLeftOpen(true);
       setFocusMode(false);
     }
-  }, [closeProject, closeWorkspace, isDocumentMode, isProjectOpen, openFolder, setLeftOpen]);
+  }, [closeProject, isProjectOpen, openFolder, setLeftOpen]);
 
   const handleOpenFolderPath = useCallback(
     async (path: string) => {
       if (isProjectOpen) await closeProject();
-      if (isDocumentMode) await closeWorkspace();
       const ok = await openFolder(path);
       if (ok) {
         setLeftOpen(true);
         setFocusMode(false);
       }
     },
-    [closeProject, closeWorkspace, isDocumentMode, isProjectOpen, openFolder, setLeftOpen],
+    [closeProject, isProjectOpen, openFolder, setLeftOpen],
   );
 
   const handleDroppedPaths = useCallback(

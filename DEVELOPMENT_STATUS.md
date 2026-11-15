@@ -17,11 +17,18 @@
 - React 正式构建：通过，约 3.6 s。
 - Tauri Windows Release：`pnpm tauri build --no-bundle` 通过，约 24.2 s，保留 Cargo target 缓存。
 - EXE：`src-tauri/target/release/paperscape.exe`，**9,947,136 字节**。
-- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,215,921 字节**。
-- ZIP SHA256：`625BDA979C8CC2D6B1715B7649C52F5A94804D6874893BF599824EC018AC20FA`。
-- EXE SHA256：`81B61A4B954FE51FD7A4FBB4F3C01280801F537C98DEB33CCE04113DA523A71E`。
+- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,215,989 字节**。
+- ZIP SHA256：`7D5B56FB458997907E435F0CB1E6989E23427952931A4F197CE44F1B7D887615`。
+- EXE SHA256：`F3E9A7451AB2367AF5334051F21B777304F7B4960EE3E2CE58F2C733FB127769`。
 - ZIP 内只有 `PaperScape-v1.1-Portable/PaperScape.exe` 和 `README.txt`。
 - **未生成 NSIS/MSI**；未引入 Electron、额外大型运行时或后台服务。
+
+### 文档切换闪屏修复（2026-11-15）
+
+- 现象：从左侧文件树切换 DOCX 时，工作区会关闭一帧，欢迎页/纯背景短暂出现，看起来像整页重新加载。
+- 根因：`handleOpenDocxPath` 在读取新文档前先调用 `closeWorkspace()`，清空 root/tree/document，导致 `isDocumentMode` 短暂为 false。
+- 修复：切换文件或文件夹时不再先关闭当前工作区；旧编辑区和文件树保持可见，新文档读取、解析完成后一次性替换。打开失败时也保留当前文档，不再闪回欢迎页。
+- 没有修改 DOCX 保存、自动保存或编辑器内容；前端测试 **16 个文件、67 个测试通过**。
 
 ### 首行缩进持久化（2026-11-14）
 
@@ -61,7 +68,7 @@
 
 | 指标 | 实测 | 目标/结论 |
 | --- | --- | --- |
-| ZIP 体积 | 3,215,921 B（约 3.06 MiB） | ≤30 MB，达到 |
+| ZIP 体积 | 3,215,989 B（约 3.06 MiB） | ≤30 MB，达到 |
 | EXE 体积 | 9,947,136 B | 轻量 |
 | 启动到窗口（热缓存，任务计划口径） | 255 / 84 / 54 ms | ≤2 s 目标达到；**不是严格冷启动** |
 | V1 项目空闲 Working Set（含 7 个进程） | **379.2 MB** | 150 MB 挑战目标**未达到** |
