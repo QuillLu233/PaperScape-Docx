@@ -39,6 +39,31 @@ const CLOSED_PAIRS: Array<[string, string]> = [
   ['『', '』'],
   ['〈', '〉'],
 ];
+
+const PAIR_LABELS: Record<string, string> = {
+  '“': '左双引号',
+  '”': '右双引号',
+  '‘': '左单引号',
+  '’': '右单引号',
+  '（': '左括号',
+  '）': '右括号',
+  '【': '左方括号',
+  '】': '右方括号',
+  '《': '左书名号',
+  '》': '右书名号',
+  '「': '左直角引号',
+  '」': '右直角引号',
+  '『': '左双直角引号',
+  '』': '右双直角引号',
+  '〈': '左尖括号',
+  '〉': '右尖括号',
+};
+
+/** A paragraph-opening quote may continue dialogue from the previous paragraph. */
+function isParagraphOpening(text: string, index: number): boolean {
+  return text.slice(0, index).trim() === '';
+}
+
 const MIXED_PUNCTUATION: Record<string, string> = {
   ',': '，',
   '.': '。',
@@ -209,25 +234,26 @@ export function collectProofreadingIssues(
     const top = stack[stack.length - 1];
     if (top && top.close === char) {
       stack.pop();
-    } else {
+    } else if (!isParagraphOpening(text, index)) {
       add(
         'punctuation-pair',
         index,
         index + 1,
         char,
-        `“${char}”缺少对应的前引/前括号。`,
+        `${PAIR_LABELS[char] ?? '右引号/右括号'}缺少对应的${PAIR_LABELS[pair[0]] ?? '左引号/左括号'}。`,
         `检查“${pair[0]}${pair[1]}”的配对。`,
       );
     }
   }
   for (const unclosed of stack) {
+    if (isParagraphOpening(text, unclosed.index)) continue;
     add(
       'punctuation-pair',
       unclosed.index,
       unclosed.index + 1,
       unclosed.open,
-      `“${unclosed.open}”没有闭合。`,
-      `补充对应的“${unclosed.close}”。`,
+      `${PAIR_LABELS[unclosed.open] ?? '左引号/左括号'}没有闭合。`,
+      `补充对应的${PAIR_LABELS[unclosed.close] ?? '右引号/右括号'}。`,
     );
   }
 

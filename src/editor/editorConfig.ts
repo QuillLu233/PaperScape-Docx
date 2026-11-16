@@ -6,6 +6,7 @@ import { TextAlign } from '@tiptap/extension-text-align';
 import { TextStyleKit } from '@tiptap/extension-text-style';
 import { StarterKit } from '@tiptap/starter-kit';
 import { BlockStyle } from './extensions/BlockStyle';
+import { ChineseQuotes } from './extensions/ChineseQuotes';
 import { Proofreading } from './extensions/Proofreading';
 import { SearchHighlight } from './extensions/SearchHighlight';
 
@@ -62,6 +63,7 @@ export function createEditorExtensions(): Extensions {
       placeholder: '从这里开始，写下第一句话……',
     }),
     BlockStyle,
+    ChineseQuotes,
     SearchHighlight,
     Proofreading,
   ];

@@ -28,6 +28,11 @@ describe('Chinese proofreading rules', () => {
     expect(collectProofreadingIssues('他说：“你好。”')).toHaveLength(0);
   });
 
+  it('does not flag a dialogue quote that continues from the previous paragraph', () => {
+    expect(collectProofreadingIssues('“这一段对话从上一段延续下来。')).toHaveLength(0);
+    expect(collectProofreadingIssues('“源氏。”千鸟匠')).toHaveLength(0);
+  });
+
   it('flags English punctuation inside Chinese but not English-only text', () => {
     const issues = collectProofreadingIssues('这是中文,错误。');
     expect(issues.some((issue) => issue.rule === 'mixed-punctuation' && issue.text === ',')).toBe(true);
