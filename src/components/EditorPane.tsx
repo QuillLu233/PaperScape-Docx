@@ -17,6 +17,7 @@ import { proofreadingPluginKey } from '../editor/extensions/Proofreading';
 import { collectProofreadingIssues, type ProofreadingIssue } from '../proofreading/rules';
 import { getPageDimensions, getPaperMargins, colorWithAlpha, paperTextColors } from '../appearance/presets';
 import { getCaretFollowDelta, getWritingSpace } from '../editor/writingScroll';
+import { useTextDrag } from '../editor/useTextDrag';
 import { countCharacters, excerpt, formatCount } from '../lib/text';
 import { EditorToolbar } from './EditorToolbar';
 import { FindReplaceBar } from './FindReplaceBar';
@@ -85,6 +86,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
   onUpdateRef.current = onUpdate;
   const initializedRef = useRef(false);
   const paneRef = useRef<HTMLElement>(null);
+  const dropIndicatorRef = useRef<HTMLDivElement>(null);
   const proofreadingIssuesRef = useRef(new Map<string, ProofreadingIssue>());
   const proofreadingTimerRef = useRef<number | undefined>(undefined);
   const proofreadingHoverRef = useRef<number | undefined>(undefined);
@@ -132,6 +134,8 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
       scheduleProofreadingRef.current(650);
     },
   });
+
+  useTextDrag(editor, paneRef, dropIndicatorRef);
 
   const followCaret = useCallback(() => {
     if (!editor || editor.isDestroyed || editor.view.composing || composingRef.current) return;
@@ -546,6 +550,8 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
           <div className="editor-writing-space" style={{ height: writingSpace }} aria-hidden="true" />
         </article>
       </div>
+
+      <div ref={dropIndicatorRef} className="editor-drop-caret" aria-hidden="true" />
 
       {proofreadingPopup ? (
         <ProofreadingPopover

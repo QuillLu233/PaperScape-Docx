@@ -4144,3 +4144,28 @@ body {
   min-height: 0;
   pointer-events: none;
 }
+
+/* Internal ProseMirror text drag: keep native WebView2/Tauri file drop enabled. */
+.editor-drop-caret {
+  position: fixed;
+  z-index: 90;
+  display: none;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--accent-strong, #4f6f52);
+  pointer-events: none;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--surface, #fff) 70%, transparent);
+}
+
+.editor-drop-caret.is-copy {
+  background: var(--accent, #6f8f72);
+}
+
+body.is-text-dragging,
+body.is-text-dragging * {
+  cursor: grabbing !important;
+}
+
+body.is-text-dragging .tiptap {
+  user-select: none;
+}
