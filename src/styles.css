@@ -4136,3 +4136,11 @@ body {
   background: color-mix(in srgb, var(--surface) 96%, transparent);
   backdrop-filter: none;
 }
+
+/* View-only writing buffer: never part of the document or DOCX export. */
+.editor-writing-space {
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 0;
+  pointer-events: none;
+}

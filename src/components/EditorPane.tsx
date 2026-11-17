@@ -16,6 +16,7 @@ import { createEditorExtensions } from '../editor/editorConfig';
 import { proofreadingPluginKey } from '../editor/extensions/Proofreading';
 import { collectProofreadingIssues, type ProofreadingIssue } from '../proofreading/rules';
 import { getPageDimensions, getPaperMargins, colorWithAlpha, paperTextColors } from '../appearance/presets';
+import { getCaretFollowDelta, getWritingSpace } from '../editor/writingScroll';
 import { countCharacters, excerpt, formatCount } from '../lib/text';
 import { EditorToolbar } from './EditorToolbar';
 import { FindReplaceBar } from './FindReplaceBar';
@@ -75,6 +76,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
   ref,
 ) {
   const [searchOpen, setSearchOpen] = useState(false);
+  const [scrollViewportHeight, setScrollViewportHeight] = useState(0);
   const [proofreadingPopup, setProofreadingPopup] = useState<{
     issue: ProofreadingIssue;
     rect: { left: number; top: number; right: number; bottom: number };
@@ -88,6 +90,12 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
   const proofreadingHoverRef = useRef<number | undefined>(undefined);
   const composingRef = useRef(false);
   const scheduleProofreadingRef = useRef<(delay?: number) => void>(() => undefined);
+  const followCaretRef = useRef<() => void>(() => undefined);
+  const scheduleFollowRef = useRef<() => void>(() => undefined);
+  const followPausedRef = useRef(false);
+  const followFrameRef = useRef<number | undefined>(undefined);
+  const autoScrollUntilRef = useRef(0);
+  const lastScrollTopRef = useRef(0);
 
   const editor = useEditor({
     extensions: createEditorExtensions(),
@@ -120,9 +128,94 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
         characterCount: countCharacters(text),
         excerpt: excerpt(text),
       });
+      if (!composingRef.current) scheduleFollowRef.current();
       scheduleProofreadingRef.current(650);
     },
   });
+
+  const followCaret = useCallback(() => {
+    if (!editor || editor.isDestroyed || editor.view.composing || composingRef.current) return;
+    if (followPausedRef.current) return;
+    const host = paneRef.current?.querySelector<HTMLElement>('.editor-scroll');
+    if (!host || host.clientHeight <= 0) return;
+    const selection = editor.state.selection;
+    if (!selection.empty) return;
+    let coords: { top: number; bottom: number } | null = null;
+    try {
+      coords = editor.view.coordsAtPos(selection.head);
+    } catch {
+      return;
+    }
+    if (!coords) return;
+    const hostRect = host.getBoundingClientRect();
+    const delta = getCaretFollowDelta(coords.bottom, hostRect.top, host.clientHeight);
+    if (delta <= 0) return;
+    const maxScroll = Math.max(0, host.scrollHeight - host.clientHeight);
+    if (host.scrollTop >= maxScroll - 1) return;
+    autoScrollUntilRef.current = performance.now() + 200;
+    host.scrollTop = Math.min(maxScroll, host.scrollTop + delta);
+  }, [editor]);
+  followCaretRef.current = followCaret;
+
+  const scheduleFollow = useCallback(() => {
+    if (!editor || editor.isDestroyed || editor.view.composing || composingRef.current) return;
+    followPausedRef.current = false;
+    if (followFrameRef.current) window.cancelAnimationFrame(followFrameRef.current);
+    // Two frames let the line wrap and caret geometry settle before measuring.
+    followFrameRef.current = window.requestAnimationFrame(() => {
+      followFrameRef.current = window.requestAnimationFrame(() => {
+        followFrameRef.current = undefined;
+        followCaretRef.current();
+      });
+    });
+  }, [editor]);
+  scheduleFollowRef.current = scheduleFollow;
+
+  useEffect(() => {
+    return () => {
+      if (followFrameRef.current) window.cancelAnimationFrame(followFrameRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    const host = paneRef.current?.querySelector<HTMLElement>('.editor-scroll');
+    if (!host) return;
+    const measure = () => {
+      const next = host.clientHeight;
+      setScrollViewportHeight((current) => (Math.abs(current - next) > 1 ? next : current));
+    };
+    measure();
+    const observer =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    observer?.observe(host);
+    window.addEventListener('resize', measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [editor, focusMode]);
+
+  useEffect(() => {
+    const host = paneRef.current?.querySelector<HTMLElement>('.editor-scroll');
+    if (!host) return;
+    lastScrollTopRef.current = host.scrollTop;
+    const onScroll = () => {
+      const top = host.scrollTop;
+      if (performance.now() > autoScrollUntilRef.current && top < lastScrollTopRef.current - 2) {
+        followPausedRef.current = true;
+      }
+      lastScrollTopRef.current = top;
+    };
+    const onWheel = (event: WheelEvent) => {
+      if (event.deltaY < 0) followPausedRef.current = true;
+    };
+    host.addEventListener('scroll', onScroll, { passive: true });
+    host.addEventListener('wheel', onWheel, { passive: true });
+    return () => {
+      host.removeEventListener('scroll', onScroll);
+      host.removeEventListener('wheel', onWheel);
+    };
+  }, [editor]);
 
   const clearProofreadingDecorations = useCallback(() => {
     if (!editor || editor.isDestroyed) return;
@@ -222,6 +315,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
     const onCompositionEnd = () => {
       composingRef.current = false;
       scheduleProofreading(280);
+      scheduleFollowRef.current();
     };
     dom.addEventListener('compositionstart', onCompositionStart);
     dom.addEventListener('compositionend', onCompositionEnd);
@@ -394,6 +488,8 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
         '--reading-opacity': appearance.readingOpacity,
       };
 
+  const writingSpace = getWritingSpace(scrollViewportHeight, docZoom / 100);
+
   return (
     <main
       ref={paneRef}
@@ -447,6 +543,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
           >
             <EditorContent editor={editor} />
           </div>
+          <div className="editor-writing-space" style={{ height: writingSpace }} aria-hidden="true" />
         </article>
       </div>
 
