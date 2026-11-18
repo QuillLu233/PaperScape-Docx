@@ -340,7 +340,7 @@ describe('PaperScape shell', () => {
 
     expect(screen.getByRole('dialog', { name: '关于纸境' })).toBeInTheDocument();
     expect(screen.getByText('纸境 PaperScape')).toBeInTheDocument();
-    expect(screen.getByText('版本 1.1.0')).toBeInTheDocument();
+    expect(screen.getByText('版本 1.1.2')).toBeInTheDocument();
     expect(screen.getByText('创作者：QuillLulu')).toBeInTheDocument();
     expect(screen.getByText('Copyright © 2026 QuillLulu')).toBeInTheDocument();
     expect(screen.getByText('独立设计 · AI 辅助开发')).toBeInTheDocument();

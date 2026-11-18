@@ -13,20 +13,20 @@ PaperScape 是一个面向 Windows 的安静写作空间。V1.1 已完成文件�
 
 本项目的原创界面、源代码和文档版权归 QuillLulu 所有；本 README 不构成或更改任何软件授权协议。第三方组件继续遵循各自原有许可证与版权声明，详见 [NOTICE.md](NOTICE.md)。版本记录见 [CHANGELOG.md](CHANGELOG.md)。
 
-> 当前发布版本：**1.1.0（V1.1 正式绿色版）**
+> 当前发布版本：**1.1.2（V1.1.2 正式绿色版）**
 >
-> 本阶段**没有生成 NSIS 或 MSI 安装包**。发布物为 `release/PaperScape-v1.1-Portable.zip`；Windows 需要已有 WebView2 Runtime。
+> 本阶段**没有生成 NSIS 或 MSI 安装包**。发布物为 `release/PaperScape-v1.1.2-Portable.zip`；Windows 需要已有 WebView2 Runtime。
 
-## V1.1.0 绿色便携版
+## V1.1.2 绿色便携版
 
-- 发布文件：`release/PaperScape-v1.1-Portable.zip`
-- 包内：`PaperScape-v1.1-Portable/PaperScape.exe`、`README.txt`
+- 发布文件：`release/PaperScape-v1.1.2-Portable.zip`
+- 包内：`PaperScape-v1.1.2-Portable/PaperScape.exe`、`README.txt`
 - 不包含源代码、`node_modules`、Cargo `target`、测试文稿或开发缓存。
 - 无需安装向导、管理员权限、注册表修改或后台服务。
 - 不包含 WebView2 Runtime；Windows 10/11 通常已自带。
 - 详细启动、数据位置、升级注意事项和限制见包内 `README.txt`。
 
-## 最近修复（2026-11-15）
+## V1.1.2 新增与修复
 
 - 文件树切换 DOCX 时保持当前工作区，避免整页闪白一帧。
 - 最大化改为填充显示器工作区的无边框窗口；最大化/还原后立即刷新视口，不需要点击边框。
