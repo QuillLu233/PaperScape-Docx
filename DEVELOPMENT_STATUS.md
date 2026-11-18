@@ -17,11 +17,17 @@
 - React 正式构建：通过，约 3.6 s。
 - Tauri Windows Release：`pnpm tauri build --no-bundle` 通过，约 24.2 s，保留 Cargo target 缓存。
 - EXE：`src-tauri/target/release/paperscape.exe`，**9,949,696 字节**。
-- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,219,071 字节**。
-- ZIP SHA256：`C093FFECA2A64E7D7C99211F70F8AF0AC00D417080832BF7C1996879795AFC48`。
-- EXE SHA256：`E71B425EB45DA55F694294C68773F2013C90349CDAE14F50D338C8FB1C77E62A`。
+- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,219,154 字节**。
+- ZIP SHA256：`C34E1D772CCA09FD361F3FF5ED3D5B2FCF9EAF2AA97FFBAD4C52F1750603EE88`。
+- EXE SHA256：`94BFE5AA585F5B17EAF905DD765290782D3F0F0A37C41BE9DDDD74678E42B433`。
 - ZIP 内只有 `PaperScape-v1.1-Portable/PaperScape.exe` 和 `README.txt`。
 - **未生成 NSIS/MSI**；未引入 Electron、额外大型运行时或后台服务。
+
+### 文件模式视图切换修复（2026-11-18）
+
+- “视图 → 沉浸式模式/纸张式模式”和“设置面板”此前只判断 `hasProject`，因此在 DOCX 文件模式下全部灰掉；但文件模式本身已有独立的外观设置和写入逻辑。
+- 改为同时允许 `hasProject || hasDocument`；文件模式切换后写入 `documentAppearance` 并持久化，项目模式行为不变。
+- 前端测试 **19 个文件、77 个测试通过**。
 
 ### 新建项目与新建文稿自动保存（2026-11-18）
 
@@ -110,7 +116,7 @@
 
 | 指标 | 实测 | 目标/结论 |
 | --- | --- | --- |
-| ZIP 体积 | 3,219,071 B（约 3.06 MiB） | ≤30 MB，达到 |
+| ZIP 体积 | 3,219,154 B（约 3.06 MiB） | ≤30 MB，达到 |
 | EXE 体积 | 9,949,696 B | 轻量 |
 | 启动到窗口（热缓存，任务计划口径） | 255 / 84 / 54 ms | ≤2 s 目标达到；**不是严格冷启动** |
 | V1 项目空闲 Working Set（含 7 个进程） | **379.2 MB** | 150 MB 挑战目标**未达到** |

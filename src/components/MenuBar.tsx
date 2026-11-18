@@ -269,7 +269,7 @@ export function MenuBar({
           label: '设置面板',
           shortcut: 'Ctrl+Shift+B',
           checked: rightOpen,
-          disabled: !hasProject,
+          disabled: !hasProject && !hasDocument,
           onSelect: onToggleRight,
         },
         {
@@ -289,13 +289,13 @@ export function MenuBar({
         {
           label: '沉浸式模式',
           checked: writingMode === 'immersive',
-          disabled: !hasProject,
+          disabled: !hasProject && !hasDocument,
           onSelect: () => onWritingModeChange('immersive'),
         },
         {
           label: '纸张式模式',
           checked: writingMode === 'paper',
-          disabled: !hasProject,
+          disabled: !hasProject && !hasDocument,
           onSelect: () => onWritingModeChange('paper'),
         },
         { separator: true },
