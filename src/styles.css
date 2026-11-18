@@ -4169,3 +4169,14 @@ body.is-text-dragging * {
 body.is-text-dragging .tiptap {
   user-select: none;
 }
+
+.menu-trigger:disabled,
+.menu-item:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+
+.menu-trigger:disabled:hover {
+  background: transparent;
+  color: var(--ink-soft);
+}

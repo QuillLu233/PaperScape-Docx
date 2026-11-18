@@ -141,6 +141,10 @@ export function MenuBar({
     };
   }, [openMenu]);
 
+  useEffect(() => {
+    if (!hasProject && openMenu === 'chapter') setOpenMenu(null);
+  }, [hasProject, openMenu]);
+
   const menus: MenuDefinition[] = [
     {
       id: 'file',
@@ -348,14 +352,20 @@ export function MenuBar({
             className={`menu-trigger${openMenu === menu.id ? ' is-open' : ''}`}
             aria-haspopup="menu"
             aria-expanded={openMenu === menu.id}
+            disabled={menu.id === 'chapter' && !hasProject}
+            title={
+              menu.id === 'chapter' && !hasProject
+                ? '章节管理仅适用于 V1 项目；当前是 DOCX 文件模式'
+                : undefined
+            }
             onClick={() => setOpenMenu((current) => (current === menu.id ? null : menu.id))}
             onPointerEnter={() => {
-              if (openMenu) setOpenMenu(menu.id);
+              if (openMenu && !(menu.id === 'chapter' && !hasProject)) setOpenMenu(menu.id);
             }}
           >
             {menu.label}
           </button>
-          {openMenu === menu.id && (
+          {openMenu === menu.id && !(menu.id === 'chapter' && !hasProject) && (
             <div className="menu-surface" role="menu" aria-label={`${menu.label}菜单`}>
               {menu.items.map((entry, index) =>
                 entry.separator ? (

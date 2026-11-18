@@ -17,11 +17,19 @@
 - React 正式构建：通过，约 3.6 s。
 - Tauri Windows Release：`pnpm tauri build --no-bundle` 通过，约 24.2 s，保留 Cargo target 缓存。
 - EXE：`src-tauri/target/release/paperscape.exe`，**9,949,184 字节**。
-- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,218,540 字节**。
-- ZIP SHA256：`AD2A153E4EDB8736EBF235FB8C7D7661A714C7CDD66C1DEF7D47608EACAAF023`。
-- EXE SHA256：`A2817C927B895363DB5AD647030CAFEFFB6BB402518B31A3D74D547224729013`。
+- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,218,844 字节**。
+- ZIP SHA256：`5B6CA0B1B8B1692B458C542A61A5D1F09A4D8F8DF93EAF3AE7FBF6BB8F0E3B4A`。
+- EXE SHA256：`BFD942C11E8F8623572107398E8809951A0647932BF209917F3EAAA4C3DF8AC3`。
 - ZIP 内只有 `PaperScape-v1.1-Portable/PaperScape.exe` 和 `README.txt`。
 - **未生成 NSIS/MSI**；未引入 Electron、额外大型运行时或后台服务。
+
+### 章节菜单/按钮可用性修复（2026-11-18）
+
+- 复现截图场景：当前是 DOCX 文件模式，没有 V1 项目；`章节` 菜单的六个命令全部被 `hasProject` 禁用，但菜单入口仍可打开，禁用项样式几乎没有变化，看起来像“按钮全部失灵”。
+- 修复：文件模式/欢迎页禁用 `章节` 菜单入口，并提示“章节管理仅适用于 V1 项目；当前是 DOCX 文件模式”；禁用菜单项统一灰化；项目关闭时自动收起章节菜单。
+- 验证文件树行按钮仍能打开 DOCX；项目模式的章节菜单入口和新建章节仍正常，新建后章节数 1→2。
+- 文字拖动监听改为只在已有选区按下后才挂载 window pointer 监听，普通点击不经过全局指针处理，避免任何潜在点击干扰。
+- 前端测试 **19 个文件、77 个测试通过**。
 
 ### 编辑器内部文字拖放（2026-11-17）
 
@@ -94,7 +102,7 @@
 
 | 指标 | 实测 | 目标/结论 |
 | --- | --- | --- |
-| ZIP 体积 | 3,218,540 B（约 3.06 MiB） | ≤30 MB，达到 |
+| ZIP 体积 | 3,218,844 B（约 3.06 MiB） | ≤30 MB，达到 |
 | EXE 体积 | 9,949,184 B | 轻量 |
 | 启动到窗口（热缓存，任务计划口径） | 255 / 84 / 54 ms | ≤2 s 目标达到；**不是严格冷启动** |
 | V1 项目空闲 Working Set（含 7 个进程） | **379.2 MB** | 150 MB 挑战目标**未达到** |

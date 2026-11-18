@@ -37,6 +37,7 @@ export function useTextDrag(
     let candidate: Candidate | null = null;
     let drag: DragState | null = null;
     let frame: number | undefined;
+    let listening = false;
 
     const hideIndicator = () => {
       indicator.style.display = 'none';
@@ -103,6 +104,27 @@ export function useTextDrag(
       drag = null;
       hideIndicator();
       document.body.classList.remove('is-text-dragging');
+      detachWindow();
+    };
+
+    const detachWindow = () => {
+      if (!listening) return;
+      listening = false;
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', finish);
+      window.removeEventListener('pointercancel', onCancel);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('blur', onCancel);
+    };
+
+    const attachWindow = () => {
+      if (listening) return;
+      listening = true;
+      window.addEventListener('pointermove', onPointerMove, { passive: false });
+      window.addEventListener('pointerup', finish);
+      window.addEventListener('pointercancel', onCancel);
+      window.addEventListener('keydown', onKeyDown);
+      window.addEventListener('blur', onCancel);
     };
 
     const onPointerDown = (event: PointerEvent) => {
@@ -114,6 +136,7 @@ export function useTextDrag(
       const coords = dropPosition(event.clientX, event.clientY);
       if (coords === null || coords < from || coords > to) return;
       candidate = { x: event.clientX, y: event.clientY, from, to };
+      attachWindow();
     };
 
     const onPointerMove = (event: PointerEvent) => {
@@ -172,18 +195,10 @@ export function useTextDrag(
     };
 
     dom.addEventListener('pointerdown', onPointerDown);
-    window.addEventListener('pointermove', onPointerMove, { passive: false });
-    window.addEventListener('pointerup', finish);
-    window.addEventListener('pointercancel', onCancel);
-    window.addEventListener('keydown', onKeyDown);
     dom.addEventListener('dragstart', onDragStart, true);
     return () => {
       cleanup();
       dom.removeEventListener('pointerdown', onPointerDown);
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', finish);
-      window.removeEventListener('pointercancel', onCancel);
-      window.removeEventListener('keydown', onKeyDown);
       dom.removeEventListener('dragstart', onDragStart, true);
     };
   }, [editor, indicatorRef, paneRef]);
