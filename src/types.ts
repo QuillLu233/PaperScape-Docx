@@ -28,6 +28,7 @@ export type MarginPreset = 'normal' | 'narrow' | 'wide' | 'custom';
 export type UiColorMode = 'environment' | 'light' | 'dark' | 'system';
 export type DisplayColorMode = 'auto' | 'dark' | 'light' | 'custom';
 export type EnvironmentPresetType = 'official' | 'custom' | 'legacy';
+export type EnvironmentPresetGroup = 'permanent' | 'festival';
 
 export interface EnvironmentUiColors {
   titlebar: string;
@@ -73,6 +74,7 @@ export interface EnvironmentPreset {
   name: string;
   schemaVersion: 1;
   presetType: EnvironmentPresetType;
+  group: EnvironmentPresetGroup;
   uiTheme: 'light' | 'dark';
   uiColors: EnvironmentUiColors;
   backgroundType: BackgroundKind;

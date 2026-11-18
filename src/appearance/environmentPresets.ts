@@ -13,9 +13,16 @@ interface EnvironmentSeed {
   background: [string, string, string];
   uiMain: string;
   sidebar: string;
+  panel?: string;
   accent: string;
   paper: string;
   text: string;
+  textSoft?: string;
+  border?: string;
+  selected?: string;
+  group: 'permanent' | 'festival';
+  animationType?: string;
+  animationColor?: string;
   uiTheme: 'light' | 'dark';
 }
 
@@ -60,30 +67,34 @@ export function contrastRatio(first: string, second: string): number {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
-export function createUiColors(seed: Pick<EnvironmentSeed, 'uiMain' | 'sidebar' | 'accent' | 'paper' | 'text' | 'uiTheme'>): EnvironmentUiColors {
+export function createUiColors(seed: Pick<EnvironmentSeed, 'uiMain' | 'sidebar' | 'accent' | 'paper' | 'text' | 'uiTheme'> & Partial<Pick<EnvironmentSeed, 'panel' | 'textSoft' | 'border' | 'selected'>>): EnvironmentUiColors {
   const { uiMain, sidebar, accent, paper, text, uiTheme } = seed;
+  const panel = seed.panel ?? uiMain;
+  const textSoft = seed.textSoft ?? mixColor(text, paper, 0.2);
+  const border = seed.border ?? mixColor(paper, text, uiTheme === 'dark' ? 0.22 : 0.15);
+  const selected = seed.selected ?? mixColor(uiMain, accent, uiTheme === 'dark' ? 0.3 : 0.2);
   const dark = uiTheme === 'dark';
   return {
     titlebar: uiMain,
     menubar: uiMain,
-    toolbar: uiMain,
+    toolbar: panel,
     sidebar,
-    settings: uiMain,
+    settings: panel,
     statusbar: sidebar,
-    popup: dark ? mixColor(uiMain, paper, 0.35) : uiMain,
+    popup: panel,
     button: mixColor(uiMain, accent, 0.08),
     accent,
     accentStrong: dark ? mixColor(accent, '#ffffff', 0.18) : mixColor(accent, text, 0.22),
     accentSoft: mixColor(uiMain, accent, dark ? 0.16 : 0.12),
-    border: mixColor(paper, text, dark ? 0.22 : 0.15),
+    border,
     ink: text,
-    inkSoft: mixColor(text, paper, 0.2),
+    inkSoft: textSoft,
     muted: mixColor(text, paper, dark ? 0.52 : 0.46),
     hover: mixColor(uiMain, accent, dark ? 0.2 : 0.1),
-    selected: mixColor(uiMain, accent, dark ? 0.3 : 0.2),
+    selected,
     scrollbar: mixColor(text, paper, dark ? 0.35 : 0.28),
     caret: accent,
-    selection: colorAlpha(accent, dark ? 0.42 : 0.28),
+    selection: colorAlpha(selected, dark ? 0.42 : 0.28),
     proofreading: dark ? '#d9b46a' : '#b07a2e',
   };
 }
@@ -110,6 +121,7 @@ const SEEDS: EnvironmentSeed[] = [
     accent: '#57755B',
     paper: '#FAF9F0',
     text: '#344536',
+    group: 'permanent',
     uiTheme: 'light',
   },
   {
@@ -121,6 +133,7 @@ const SEEDS: EnvironmentSeed[] = [
     accent: '#677481',
     paper: '#FFFFFF',
     text: '#333333',
+    group: 'permanent',
     uiTheme: 'light',
   },
   {
@@ -132,6 +145,7 @@ const SEEDS: EnvironmentSeed[] = [
     accent: '#A47B4D',
     paper: '#FBF0DC',
     text: '#563E26',
+    group: 'permanent',
     uiTheme: 'light',
   },
   {
@@ -143,6 +157,7 @@ const SEEDS: EnvironmentSeed[] = [
     accent: '#75B3CF',
     paper: '#203349',
     text: '#EDF4FA',
+    group: 'permanent',
     uiTheme: 'dark',
   },
   {
@@ -154,6 +169,7 @@ const SEEDS: EnvironmentSeed[] = [
     accent: '#72C8CF',
     paper: '#1B394B',
     text: '#F0F6FA',
+    group: 'permanent',
     uiTheme: 'dark',
   },
   {
@@ -165,6 +181,7 @@ const SEEDS: EnvironmentSeed[] = [
     accent: '#9CA8B7',
     paper: '#292D32',
     text: '#EEEEEE',
+    group: 'permanent',
     uiTheme: 'dark',
   },
   {
@@ -176,6 +193,7 @@ const SEEDS: EnvironmentSeed[] = [
     accent: '#BC9CDE',
     paper: '#352A4B',
     text: '#F3EAFA',
+    group: 'permanent',
     uiTheme: 'dark',
   },
   {
@@ -187,6 +205,7 @@ const SEEDS: EnvironmentSeed[] = [
     accent: '#B77259',
     paper: '#FFF0E0',
     text: '#603C36',
+    group: 'permanent',
     uiTheme: 'light',
   },
   {
@@ -198,6 +217,7 @@ const SEEDS: EnvironmentSeed[] = [
     accent: '#4D8067',
     paper: '#EDF2E7',
     text: '#29483A',
+    group: 'permanent',
     uiTheme: 'light',
   },
   {
@@ -209,6 +229,7 @@ const SEEDS: EnvironmentSeed[] = [
     accent: '#AD7197',
     paper: '#F9EEF5',
     text: '#65405E',
+    group: 'permanent',
     uiTheme: 'light',
   },
   {
@@ -220,6 +241,43 @@ const SEEDS: EnvironmentSeed[] = [
     accent: '#648BA9',
     paper: '#F6F9FC',
     text: '#263B50',
+    group: 'permanent',
+    uiTheme: 'light',
+  },
+  {
+    id: 'christmas-carol',
+    name: '圣诞颂歌',
+    background: ['#142F29', '#28634E', '#862F3C'],
+    uiMain: '#203C33',
+    sidebar: '#29483D',
+    panel: '#29483D',
+    accent: '#E9CB8D',
+    paper: '#FFF6E6',
+    text: '#3C483C',
+    textSoft: '#B8C8BB',
+    border: '#577266',
+    selected: '#416652',
+    group: 'festival',
+    animationType: 'snow',
+    animationColor: '#E9CB8D',
+    uiTheme: 'dark',
+  },
+  {
+    id: 'spring-festival',
+    name: '岁序新春',
+    background: ['#791924', '#B32E35', '#D58043'],
+    uiMain: '#F7ECDF',
+    sidebar: '#EDDDCF',
+    panel: '#F7ECDF',
+    accent: '#AD3933',
+    paper: '#FFF5E2',
+    text: '#59372C',
+    textSoft: '#88665C',
+    border: '#D8B9A5',
+    selected: '#ECD1C4',
+    group: 'festival',
+    animationType: 'gradient',
+    animationColor: '#F5D79C',
     uiTheme: 'light',
   },
 ];
@@ -249,10 +307,10 @@ function createEnvironment(seed: EnvironmentSeed): EnvironmentPreset {
   };
   const animation: EnvironmentAnimationSettings = {
     enabled: false,
-    type: 'none',
+    type: seed.animationType ?? 'none',
     speed: 1,
     intensity: 0.5,
-    color: seed.accent,
+    color: seed.animationColor ?? seed.accent,
     lowPower: true,
   };
   const paper = createPaper(seed.paper, 0.98);
@@ -262,6 +320,7 @@ function createEnvironment(seed: EnvironmentSeed): EnvironmentPreset {
     name: seed.name,
     schemaVersion: 1,
     presetType: 'official',
+    group: seed.group,
     uiTheme: seed.uiTheme,
     uiColors,
     backgroundType: 'gradient',

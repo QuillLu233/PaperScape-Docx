@@ -4305,3 +4305,12 @@ body.is-text-dragging .tiptap {
 .environment-save-current button { min-height: 25px; padding: 3px 7px; font-size: 10px; }
 .environment-foot-actions { display: flex; gap: 7px; }
 @media (max-width: 460px) { .environment-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.environment-group-title {
+  margin: 4px 0 7px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.environment-group-title-festival { margin-top: 16px; color: var(--accent-strong); }

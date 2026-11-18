@@ -114,30 +114,84 @@ export function EnvironmentPresetDialog({
 
         <div className="environment-dialog-scroll">
           {tab === 'official' ? (
-            <div className="environment-grid">
-              {OFFICIAL_ENVIRONMENTS.map((preset, index) => (
-                <button
-                  key={preset.id}
-                  type="button"
-                  className={`environment-card${preset.id === currentId ? ' is-active' : ''}`}
-                  aria-pressed={preset.id === currentId}
-                  onClick={() => {
-                    onApply(preset);
-                    onClose();
-                  }}
-                >
-                  <span className="environment-thumb" style={environmentThumbnailStyle(preset)}>
-                    <span className="environment-thumb-ui" style={{ background: preset.uiColors.titlebar }} />
-                    <span className="environment-thumb-paper" style={{ background: preset.paper.color }} />
-                  </span>
-                  <span className="environment-card-label">
-                    <span className="environment-number">{String(index + 1).padStart(2, '0')}</span>
-                    <strong>{preset.name}</strong>
-                    {preset.id === currentId ? <Icon name="check" size={12} /> : null}
-                  </span>
-                </button>
-              ))}
-            </div>
+            <>
+              <h3 className="environment-group-title">常驻主题</h3>
+              <div className="environment-grid">
+                {OFFICIAL_ENVIRONMENTS.filter((preset) => preset.group === 'permanent').map(
+                  (preset) => {
+                    const index = OFFICIAL_ENVIRONMENTS.indexOf(preset);
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        className={`environment-card${preset.id === currentId ? ' is-active' : ''}`}
+                        aria-pressed={preset.id === currentId}
+                        onClick={() => {
+                          onApply(preset);
+                          onClose();
+                        }}
+                      >
+                        <span className="environment-thumb" style={environmentThumbnailStyle(preset)}>
+                          <span
+                            className="environment-thumb-ui"
+                            style={{ background: preset.uiColors.titlebar }}
+                          />
+                          <span
+                            className="environment-thumb-paper"
+                            style={{ background: preset.paper.color }}
+                          />
+                        </span>
+                        <span className="environment-card-label">
+                          <span className="environment-number">
+                            {String(index + 1).padStart(2, '0')}
+                          </span>
+                          <strong>{preset.name}</strong>
+                          {preset.id === currentId ? <Icon name="check" size={12} /> : null}
+                        </span>
+                      </button>
+                    );
+                  },
+                )}
+              </div>
+              <h3 className="environment-group-title environment-group-title-festival">节日主题</h3>
+              <div className="environment-grid">
+                {OFFICIAL_ENVIRONMENTS.filter((preset) => preset.group === 'festival').map(
+                  (preset) => {
+                    const index = OFFICIAL_ENVIRONMENTS.indexOf(preset);
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        className={`environment-card${preset.id === currentId ? ' is-active' : ''}`}
+                        aria-pressed={preset.id === currentId}
+                        onClick={() => {
+                          onApply(preset);
+                          onClose();
+                        }}
+                      >
+                        <span className="environment-thumb" style={environmentThumbnailStyle(preset)}>
+                          <span
+                            className="environment-thumb-ui"
+                            style={{ background: preset.uiColors.titlebar }}
+                          />
+                          <span
+                            className="environment-thumb-paper"
+                            style={{ background: preset.paper.color }}
+                          />
+                        </span>
+                        <span className="environment-card-label">
+                          <span className="environment-number">
+                            {String(index + 1).padStart(2, '0')}
+                          </span>
+                          <strong>{preset.name}</strong>
+                          {preset.id === currentId ? <Icon name="check" size={12} /> : null}
+                        </span>
+                      </button>
+                    );
+                  },
+                )}
+              </div>
+            </>
           ) : presets.length === 0 ? (
             <p className="environment-empty">还没有个人预设。调整当前环境后可以保存为我的预设。</p>
           ) : (

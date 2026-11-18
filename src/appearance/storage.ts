@@ -275,6 +275,7 @@ function legacyThemeToEnvironment(theme: SavedTheme): EnvironmentPreset {
     name: theme.name,
     schemaVersion: 1,
     presetType: 'custom',
+    group: 'permanent',
     uiTheme: theme.uiTheme ?? 'light',
     uiColors: theme.uiColors ? { ...theme.uiColors } : { ...DEFAULT_UI_COLORS },
     backgroundType: theme.background.kind,
@@ -323,6 +324,7 @@ export function sanitizeEnvironmentPreset(value: unknown): EnvironmentPreset | n
     name: value.name.trim().slice(0, 60),
     schemaVersion: 1,
     presetType,
+    group: value.group === 'festival' ? 'festival' : 'permanent',
     uiTheme,
     uiColors,
     backgroundType:
@@ -383,6 +385,7 @@ export function createEnvironmentFromAppearance(
     name: name.trim() || '我的环境',
     schemaVersion: 1,
     presetType: 'custom',
+    group: 'permanent',
     uiTheme: appearance.uiTheme,
     uiColors: { ...appearance.uiColors },
     backgroundType: appearance.background.kind,

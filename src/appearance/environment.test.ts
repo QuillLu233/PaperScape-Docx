@@ -22,9 +22,11 @@ import { resolveUiTheme } from './themeRuntime';
 describe('V2 environment presets', () => {
   beforeEach(() => localStorage.clear());
 
-  it('provides eleven complete official environments', () => {
-    expect(OFFICIAL_ENVIRONMENTS).toHaveLength(11);
-    expect(new Set(OFFICIAL_ENVIRONMENTS.map((preset) => preset.id)).size).toBe(11);
+  it('provides thirteen complete official environments', () => {
+    expect(OFFICIAL_ENVIRONMENTS).toHaveLength(13);
+    expect(new Set(OFFICIAL_ENVIRONMENTS.map((preset) => preset.id)).size).toBe(13);
+    expect(OFFICIAL_ENVIRONMENTS.filter((preset) => preset.group === 'permanent')).toHaveLength(11);
+    expect(OFFICIAL_ENVIRONMENTS.filter((preset) => preset.group === 'festival')).toHaveLength(2);
     for (const preset of OFFICIAL_ENVIRONMENTS) {
       expect(preset.name.length).toBeGreaterThan(0);
       expect(preset.gradientColors).toHaveLength(3);
@@ -34,6 +36,26 @@ describe('V2 environment presets', () => {
       expect(preset.immersive.customWidth).toBeGreaterThan(600);
       expect(preset.display.colorMode).toBe('auto');
     }
+  });
+
+  it('registers the two festival environments with their reference palettes', () => {
+    const christmas = getOfficialEnvironment('christmas-carol')!;
+    expect(christmas.group).toBe('festival');
+    expect(christmas.uiColors.titlebar).toBe('#203C33');
+    expect(christmas.uiColors.sidebar).toBe('#29483D');
+    expect(christmas.uiColors.accent).toBe('#E9CB8D');
+    expect(christmas.uiColors.border).toBe('#577266');
+    expect(christmas.uiColors.selected).toBe('#416652');
+    expect(christmas.paper.color).toBe('#FFF6E6');
+
+    const spring = getOfficialEnvironment('spring-festival')!;
+    expect(spring.group).toBe('festival');
+    expect(spring.uiColors.titlebar).toBe('#F7ECDF');
+    expect(spring.uiColors.sidebar).toBe('#EDDDCF');
+    expect(spring.uiColors.accent).toBe('#AD3933');
+    expect(spring.uiColors.border).toBe('#D8B9A5');
+    expect(spring.uiColors.selected).toBe('#ECD1C4');
+    expect(spring.paper.color).toBe('#FFF5E2');
   });
 
   it('preserves the classic environment when migrating old appearance data', () => {
@@ -71,7 +93,7 @@ describe('V2 environment presets', () => {
   it('keeps auto display text readable and honors overrides', () => {
     const light = cloneAppearance(DEFAULT_APPEARANCE);
     light.display.colorMode = 'auto';
-    expect(resolveDisplayColor(light)).toBe('#252820');
+    expect(resolveDisplayColor(light)).toBe('#344536');
 
     const dark = cloneAppearance(DEFAULT_APPEARANCE);
     dark.paper.color = '#1b1d1a';

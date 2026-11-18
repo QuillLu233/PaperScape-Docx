@@ -162,6 +162,13 @@ export function resolveDisplayColor(
   if (appearance.display.colorMode === 'custom') return appearance.display.color;
   if (appearance.display.colorMode === 'dark') return '#252820';
   if (appearance.display.colorMode === 'light') return '#f2eee4';
+  const supplied = appearance.display.color;
+  if (
+    /^#[0-9a-f]{6}$/i.test(supplied) &&
+    contrastRatio(supplied, effectivePaperColor) >= 4.5
+  ) {
+    return supplied;
+  }
   const preferred = paperTextColors(effectivePaperColor).ink;
   const fallback = preferred === '#252820' ? '#f2eee4' : '#252820';
   return contrastRatio(preferred, effectivePaperColor) >= 4.5
