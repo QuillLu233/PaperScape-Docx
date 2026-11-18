@@ -1,11 +1,16 @@
 import type {
   BackgroundKind,
   BackgroundStyle,
+  EnvironmentAnimationSettings,
+  EnvironmentDisplaySettings,
+  EnvironmentPreset,
+  EnvironmentUiColors,
   MarginPreset,
   PageSize,
   PaperSettings,
   ProjectAppearance,
   SavedTheme,
+  UiColorMode,
 } from '../types';
 import {
   BACKGROUND_PRESETS,
@@ -15,10 +20,18 @@ import {
   cloneAppearance,
   cloneBackground,
   clonePaper,
+  paperTextColors,
 } from './presets';
+import {
+  DEFAULT_ANIMATION,
+  DEFAULT_DISPLAY,
+  DEFAULT_UI_COLORS,
+  OFFICIAL_ENVIRONMENTS,
+} from './environmentPresets';
 
 const APPEARANCE_KEY = 'paperscape.project-appearance.v1';
 const SAVED_THEMES_KEY = 'paperscape.saved-themes.v1';
+const ENVIRONMENT_PRESETS_KEY = 'paperscape.environment-presets.v1';
 const MEDIA_DB = 'paperscape-media';
 const MEDIA_STORE = 'backgrounds';
 const MEDIA_DB_VERSION = 1;
@@ -50,6 +63,7 @@ function sanitizeBackground(value: unknown): BackgroundStyle {
     kind,
     color: safeColor(value.color, DEFAULT_BACKGROUND.color),
     gradientFrom: safeColor(value.gradientFrom, DEFAULT_BACKGROUND.gradientFrom),
+    gradientMid: safeColor(value.gradientMid, DEFAULT_BACKGROUND.gradientMid ?? DEFAULT_BACKGROUND.gradientFrom),
     gradientTo: safeColor(value.gradientTo, DEFAULT_BACKGROUND.gradientTo),
     gradientAngle: clampNumber(value.gradientAngle, 0, 360, DEFAULT_BACKGROUND.gradientAngle),
     imageId: typeof value.imageId === 'string' && value.imageId ? value.imageId : null,
@@ -91,13 +105,95 @@ function sanitizePaper(value: unknown): PaperSettings {
   };
 }
 
-export function sanitizeAppearance(value: unknown): ProjectAppearance {
-  if (!isRecord(value)) return cloneAppearance(DEFAULT_APPEARANCE);
+function sanitizeUiColors(value: unknown): EnvironmentUiColors {
+  if (!isRecord(value)) return { ...DEFAULT_UI_COLORS };
+  const base = DEFAULT_UI_COLORS;
+  const keys: Array<keyof EnvironmentUiColors> = [
+    'titlebar',
+    'menubar',
+    'toolbar',
+    'sidebar',
+    'settings',
+    'statusbar',
+    'popup',
+    'button',
+    'accent',
+    'accentStrong',
+    'accentSoft',
+    'border',
+    'ink',
+    'inkSoft',
+    'muted',
+    'hover',
+    'selected',
+    'scrollbar',
+    'caret',
+    'selection',
+    'proofreading',
+  ];
+  const result: Record<string, string> = { ...base };
+  const record = value as Record<string, unknown>;
+  for (const key of keys) {
+    const name = key as string;
+    result[name] = safeColor(record[name], base[key]);
+  }
+  return result as unknown as EnvironmentUiColors;
+}
+
+function sanitizeDisplay(value: unknown): EnvironmentDisplaySettings {
+  const record = isRecord(value) ? value : {};
+  const mode = record.colorMode;
+  return {
+    colorMode:
+      mode === 'auto' || mode === 'dark' || mode === 'light' || mode === 'custom'
+        ? mode
+        : DEFAULT_DISPLAY.colorMode,
+    color: safeColor(record.color, DEFAULT_DISPLAY.color),
+    fontFamily:
+      typeof record.fontFamily === 'string' ? record.fontFamily.slice(0, 160) : '',
+  };
+}
+
+function sanitizeAnimation(value: unknown): EnvironmentAnimationSettings {
+  const record = isRecord(value) ? value : {};
+  return {
+    enabled: record.enabled === true,
+    type: typeof record.type === 'string' ? record.type.slice(0, 40) : 'none',
+    speed: clampNumber(record.speed, 0.2, 3, DEFAULT_ANIMATION.speed),
+    intensity: clampNumber(record.intensity, 0, 1, DEFAULT_ANIMATION.intensity),
+    color: safeColor(record.color, DEFAULT_ANIMATION.color),
+    lowPower: record.lowPower !== false,
+  };
+}
+
+export function sanitizeAppearance(value: unknown): ProjectAppearance {  if (!isRecord(value)) return cloneAppearance(DEFAULT_APPEARANCE);
+  const paper = sanitizePaper(value.paper);
+  const legacyMode = value.uiColorMode;
+  const uiColorMode: UiColorMode =
+    legacyMode === 'environment' ||
+    legacyMode === 'light' ||
+    legacyMode === 'dark' ||
+    legacyMode === 'system'
+      ? legacyMode
+      : 'system';
+  const uiTheme: 'light' | 'dark' =
+    value.uiTheme === 'dark' || value.uiTheme === 'light'
+      ? value.uiTheme
+      : paperTextColors(paper.color).ink === '#252820'
+        ? 'light'
+        : 'dark';
   return {
     mode: value.mode === 'immersive' || value.mode === 'paper' ? value.mode : 'paper',
     background: sanitizeBackground(value.background),
     readingOpacity: clampNumber(value.readingOpacity, 0.2, 1, DEFAULT_APPEARANCE.readingOpacity),
-    paper: sanitizePaper(value.paper),
+    paper,
+    immersive: sanitizePaper(value.immersive ?? value.paper),
+    presetId: typeof value.presetId === 'string' && value.presetId ? value.presetId : 'legacy',
+    uiTheme,
+    uiColorMode,
+    uiColors: sanitizeUiColors(value.uiColors),
+    display: sanitizeDisplay(value.display),
+    animation: sanitizeAnimation(value.animation),
   };
 }
 
@@ -146,6 +242,11 @@ export function loadSavedThemes(): SavedTheme[] {
         background: sanitizeBackground(item.background),
         readingOpacity: clampNumber(item.readingOpacity, 0.2, 1, 0.8),
         paper: sanitizePaper(item.paper),
+        immersive: sanitizePaper(item.immersive ?? item.paper),
+        uiTheme: item.uiTheme === 'dark' ? 'dark' : 'light',
+        uiColors: sanitizeUiColors(item.uiColors),
+        display: sanitizeDisplay(item.display),
+        animation: sanitizeAnimation(item.animation),
       }));
   } catch {
     return [];
@@ -163,6 +264,190 @@ export function saveSavedThemes(themes: SavedTheme[]): void {
 
 export function createThemeId(): string {
   return `theme-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+}
+
+const LEGACY_ENVIRONMENT_MIGRATED_KEY = 'paperscape.environment-presets.migrated.v1';
+
+function legacyThemeToEnvironment(theme: SavedTheme): EnvironmentPreset {
+  const paper = clonePaper(theme.paper);
+  return {
+    id: `legacy-${theme.id}`,
+    name: theme.name,
+    schemaVersion: 1,
+    presetType: 'custom',
+    uiTheme: theme.uiTheme ?? 'light',
+    uiColors: theme.uiColors ? { ...theme.uiColors } : { ...DEFAULT_UI_COLORS },
+    backgroundType: theme.background.kind,
+    gradientColors: [
+      theme.background.gradientFrom,
+      theme.background.gradientMid ?? theme.background.gradientFrom,
+      theme.background.gradientTo,
+    ],
+    background: cloneBackground(theme.background),
+    paper,
+    immersive: theme.immersive ? clonePaper(theme.immersive) : clonePaper(paper),
+    display: theme.display ? { ...theme.display } : { ...DEFAULT_DISPLAY },
+    animation: theme.animation ? { ...theme.animation } : { ...DEFAULT_ANIMATION },
+    resourceReferences: theme.background.imageId ? [theme.background.imageId] : [],
+  };
+}
+
+export function sanitizeEnvironmentPreset(value: unknown): EnvironmentPreset | null {
+  if (!isRecord(value) || typeof value.name !== 'string' || !value.name.trim()) return null;
+  if (value.schemaVersion !== undefined && value.schemaVersion !== 1) return null;
+  const background = sanitizeBackground(value.background);
+  const paper = sanitizePaper(value.paper);
+  const immersive = sanitizePaper(value.immersive ?? value.paper);
+  const uiColors = sanitizeUiColors(value.uiColors);
+  const uiTheme = value.uiTheme === 'dark' ? 'dark' : 'light';
+  const presetType = value.presetType === 'legacy' ? 'legacy' : 'custom';
+  const gradientColors: [string, string, string] = [
+    safeColor(
+      Array.isArray(value.gradientColors) ? value.gradientColors[0] : undefined,
+      background.gradientFrom,
+    ),
+    safeColor(
+      Array.isArray(value.gradientColors) ? value.gradientColors[1] : undefined,
+      background.gradientMid ?? background.gradientFrom,
+    ),
+    safeColor(
+      Array.isArray(value.gradientColors) ? value.gradientColors[2] : undefined,
+      background.gradientTo,
+    ),
+  ];
+  return {
+    id:
+      typeof value.id === 'string' && value.id.trim()
+        ? value.id.slice(0, 100)
+        : `environment-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    name: value.name.trim().slice(0, 60),
+    schemaVersion: 1,
+    presetType,
+    uiTheme,
+    uiColors,
+    backgroundType:
+      background.kind === 'image' || background.kind === 'solid' || background.kind === 'gradient'
+        ? background.kind
+        : 'gradient',
+    gradientColors,
+    background,
+    paper,
+    immersive,
+    display: sanitizeDisplay(value.display),
+    animation: sanitizeAnimation(value.animation),
+    resourceReferences: Array.isArray(value.resourceReferences)
+      ? value.resourceReferences.filter((item): item is string => typeof item === 'string').slice(0, 20)
+      : [],
+  };
+}
+
+export function loadEnvironmentPresets(): EnvironmentPreset[] {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(ENVIRONMENT_PRESETS_KEY);
+    if (raw === null) {
+      const legacy = loadSavedThemes().map(legacyThemeToEnvironment);
+      if (legacy.length > 0) saveEnvironmentPresets(legacy);
+      localStorage.setItem(LEGACY_ENVIRONMENT_MIGRATED_KEY, '1');
+      return legacy;
+    }
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((item) => sanitizeEnvironmentPreset(item))
+      .filter((item): item is EnvironmentPreset => Boolean(item));
+  } catch {
+    return [];
+  }
+}
+
+export function saveEnvironmentPresets(presets: EnvironmentPreset[]): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(
+      ENVIRONMENT_PRESETS_KEY,
+      JSON.stringify(presets.filter((preset) => preset.presetType !== 'official')),
+    );
+  } catch {
+    // Preset persistence failures must not interrupt writing.
+  }
+}
+
+export function createEnvironmentFromAppearance(
+  name: string,
+  appearance: ProjectAppearance,
+): EnvironmentPreset {
+  const id = `environment-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  return {
+    id,
+    name: name.trim() || '我的环境',
+    schemaVersion: 1,
+    presetType: 'custom',
+    uiTheme: appearance.uiTheme,
+    uiColors: { ...appearance.uiColors },
+    backgroundType: appearance.background.kind,
+    gradientColors: [
+      appearance.background.gradientFrom,
+      appearance.background.gradientMid ?? appearance.background.gradientFrom,
+      appearance.background.gradientTo,
+    ],
+    background: cloneBackground(appearance.background),
+    paper: clonePaper(appearance.paper),
+    immersive: clonePaper(appearance.immersive),
+    display: { ...appearance.display },
+    animation: { ...appearance.animation },
+    resourceReferences: appearance.background.imageId ? [appearance.background.imageId] : [],
+  };
+}
+
+export function applyEnvironmentPreset(
+  appearance: ProjectAppearance,
+  preset: EnvironmentPreset,
+): ProjectAppearance {
+  return {
+    ...appearance,
+    presetId: preset.id,
+    uiTheme: preset.uiTheme,
+    uiColors: { ...preset.uiColors },
+    background: cloneBackground(preset.background),
+    paper: clonePaper(preset.paper),
+    immersive: clonePaper(preset.immersive),
+    readingOpacity: preset.immersive.opacity,
+    display: { ...preset.display },
+    animation: { ...preset.animation },
+  };
+}
+
+export function exportEnvironmentPreset(preset: EnvironmentPreset): string {
+  return JSON.stringify(
+    {
+      ...preset,
+      presetType: 'custom',
+      exportedAt: new Date().toISOString(),
+    },
+    null,
+    2,
+  );
+}
+
+export function importEnvironmentPreset(text: string): EnvironmentPreset {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error('预设文件不是有效的 JSON');
+  }
+  if (!isRecord(parsed)) throw new Error('预设文件格式无效');
+  if (parsed.schemaVersion !== 1) throw new Error('不支持的预设版本');
+  if (typeof parsed.name !== 'string' || !parsed.name.trim()) {
+    throw new Error('预设缺少名称');
+  }
+  const sanitized = sanitizeEnvironmentPreset(parsed);
+  if (!sanitized) throw new Error('预设字段校验失败');
+  const officialIds = new Set(OFFICIAL_ENVIRONMENTS.map((preset) => preset.id));
+  if (officialIds.has(sanitized.id)) sanitized.id = createThemeId();
+  sanitized.presetType = 'custom';
+  return sanitized;
 }
 
 export function createBackgroundPreset(presetId: string): BackgroundStyle {
@@ -186,6 +471,11 @@ export function createSavedTheme(
     },
     readingOpacity: appearance.readingOpacity,
     paper: clonePaper(appearance.paper),
+    immersive: clonePaper(appearance.immersive),
+    uiTheme: appearance.uiTheme,
+    uiColors: { ...appearance.uiColors },
+    display: { ...appearance.display },
+    animation: { ...appearance.animation },
   };
 }
 

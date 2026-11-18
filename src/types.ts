@@ -25,12 +25,73 @@ export type BackgroundKind = 'solid' | 'gradient' | 'image';
 export type PageSize = 'A4' | 'Letter' | 'custom';
 export type MarginPreset = 'normal' | 'narrow' | 'wide' | 'custom';
 
+export type UiColorMode = 'environment' | 'light' | 'dark' | 'system';
+export type DisplayColorMode = 'auto' | 'dark' | 'light' | 'custom';
+export type EnvironmentPresetType = 'official' | 'custom' | 'legacy';
+
+export interface EnvironmentUiColors {
+  titlebar: string;
+  menubar: string;
+  toolbar: string;
+  sidebar: string;
+  settings: string;
+  statusbar: string;
+  popup: string;
+  button: string;
+  accent: string;
+  accentStrong: string;
+  accentSoft: string;
+  border: string;
+  ink: string;
+  inkSoft: string;
+  muted: string;
+  hover: string;
+  selected: string;
+  scrollbar: string;
+  caret: string;
+  selection: string;
+  proofreading: string;
+}
+
+export interface EnvironmentDisplaySettings {
+  colorMode: DisplayColorMode;
+  color: string;
+  fontFamily: string;
+}
+
+export interface EnvironmentAnimationSettings {
+  enabled: boolean;
+  type: string;
+  speed: number;
+  intensity: number;
+  color: string;
+  lowPower: boolean;
+}
+
+export interface EnvironmentPreset {
+  id: string;
+  name: string;
+  schemaVersion: 1;
+  presetType: EnvironmentPresetType;
+  uiTheme: 'light' | 'dark';
+  uiColors: EnvironmentUiColors;
+  backgroundType: BackgroundKind;
+  gradientColors: [string, string, string];
+  background: BackgroundStyle;
+  paper: PaperSettings;
+  immersive: PaperSettings;
+  display: EnvironmentDisplaySettings;
+  animation: EnvironmentAnimationSettings;
+  resourceReferences: string[];
+}
+
 export interface BackgroundStyle {
   presetId: string;
   name: string;
   kind: BackgroundKind;
   color: string;
   gradientFrom: string;
+  gradientMid?: string;
   gradientTo: string;
   gradientAngle: number;
   imageId: string | null;
@@ -63,6 +124,13 @@ export interface ProjectAppearance {
   background: BackgroundStyle;
   readingOpacity: number;
   paper: PaperSettings;
+  immersive: PaperSettings;
+  presetId: string;
+  uiTheme: 'light' | 'dark';
+  uiColorMode: UiColorMode;
+  uiColors: EnvironmentUiColors;
+  display: EnvironmentDisplaySettings;
+  animation: EnvironmentAnimationSettings;
 }
 
 export interface SavedTheme {
@@ -72,6 +140,11 @@ export interface SavedTheme {
   background: BackgroundStyle;
   readingOpacity: number;
   paper: PaperSettings;
+  immersive?: PaperSettings;
+  uiTheme?: 'light' | 'dark';
+  uiColors?: EnvironmentUiColors;
+  display?: EnvironmentDisplaySettings;
+  animation?: EnvironmentAnimationSettings;
 }
 
 export interface WorkspaceSnapshot {

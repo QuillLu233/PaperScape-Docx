@@ -39,6 +39,7 @@ import { useWorkspaceDrop } from './workspace/useWorkspaceDrop';
 import type { RecentItem, WorkspaceNode } from './workspace/types';
 import { usePanels } from './hooks/usePanels';
 import { useTheme } from './hooks/useTheme';
+import { applyEnvironmentCss, clearEnvironmentCss, resolveUiTheme } from './appearance/themeRuntime';
 import { useUiZoom } from './hooks/useUiZoom';
 import { useDocumentZoom } from './hooks/useDocumentZoom';
 import { useWindowState } from './hooks/useWindowState';
@@ -140,7 +141,7 @@ export default function App() {
     clearError,
     projectPath,
   } = projectController;
-  const { mode: themeMode, setMode: setThemeMode } = useTheme();
+  const { mode: themeMode, resolved: themeResolved, setMode: setThemeMode } = useTheme();
   const fonts = useFonts();
   const proofreading = useProofreading();
   const { uiZoom, setUiZoom } = useUiZoom();
@@ -221,16 +222,80 @@ export default function App() {
   const {
     backgroundUrl,
     savedThemes,
+    environmentPresets,
     setMode: setWritingMode,
     updateBackground,
     setReadingOpacity,
     updatePaper,
     applyPreset,
     applySavedTheme,
+    applyEnvironment,
+    saveCurrentEnvironment,
+    renameEnvironment,
+    deleteEnvironment,
+    duplicateEnvironment,
+    exportEnvironment,
+    importEnvironment,
+    restoreDefaultEnvironment,
     saveCurrentTheme,
     deleteSavedTheme,
     setBackgroundFromFile,
   } = appearanceController;
+
+  useEffect(() => {
+    const environmentMode = appearance.uiColorMode === 'environment';
+    const resolved = resolveUiTheme(
+      appearance.uiColorMode,
+      appearance.uiTheme,
+      themeResolved,
+    );
+    document.documentElement.dataset.theme = resolved;
+    document.documentElement.style.colorScheme = resolved;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    meta?.setAttribute(
+      'content',
+      environmentMode ? appearance.uiColors.titlebar : resolved === 'dark' ? '#191b18' : '#f6f4ef',
+    );
+    if (environmentMode) applyEnvironmentCss(appearance.uiColors);
+    else clearEnvironmentCss();
+  }, [
+    appearance.uiColorMode,
+    appearance.uiColors,
+    appearance.uiTheme,
+    themeResolved,
+  ]);
+
+  const changeUiColorMode = useCallback(
+    (mode: ProjectAppearance['uiColorMode']) => {
+      if (mode !== 'environment') setThemeMode(mode);
+      updateAppearanceInMode({ ...appearance, uiColorMode: mode });
+    },
+    [appearance, setThemeMode, updateAppearanceInMode],
+  );
+
+  const changeClassicTheme = useCallback(
+    (mode: 'light' | 'dark' | 'system') => {
+      setThemeMode(mode);
+      updateAppearanceInMode({ ...appearance, uiColorMode: mode });
+    },
+    [appearance, setThemeMode, updateAppearanceInMode],
+  );
+
+  const updateDisplay = useCallback(    (patch: Partial<ProjectAppearance['display']>) => {
+      updateAppearanceInMode({ ...appearance, display: { ...appearance.display, ...patch } });
+    },
+    [appearance, updateAppearanceInMode],
+  );
+
+  const updateAnimation = useCallback(
+    (patch: Partial<ProjectAppearance['animation']>) => {
+      updateAppearanceInMode({
+        ...appearance,
+        animation: { ...appearance.animation, ...patch },
+      });
+    },
+    [appearance, updateAppearanceInMode],
+  );
 
   const isProjectOpen = Boolean(project && activeChapter);
 
@@ -945,8 +1010,20 @@ export default function App() {
       settings={settings}
       appearance={appearance}
       savedThemes={savedThemes}
+      environmentPresets={environmentPresets}
       focusMode={focusMode}
-      onThemeChange={setThemeMode}
+      onThemeChange={changeClassicTheme}
+      onUiColorModeChange={changeUiColorMode}
+      onDisplayChange={updateDisplay}
+      onAnimationChange={updateAnimation}
+      onApplyEnvironment={applyEnvironment}
+      onSaveEnvironment={saveCurrentEnvironment}
+      onRenameEnvironment={renameEnvironment}
+      onDeleteEnvironment={deleteEnvironment}
+      onDuplicateEnvironment={duplicateEnvironment}
+      onExportEnvironment={exportEnvironment}
+      onImportEnvironment={importEnvironment}
+      onRestoreDefaultEnvironment={restoreDefaultEnvironment}
       onSettingsChange={updateSettings}
       onModeChange={changeWritingMode}
       onBackgroundChange={updateBackground}
@@ -1043,7 +1120,7 @@ export default function App() {
           isFullscreen={isFullscreen}
           onToggleFullscreen={() => void toggleFullscreen()}
           onWritingModeChange={changeWritingMode}
-          onThemeChange={setThemeMode}
+          onThemeChange={changeClassicTheme}
           uiZoom={uiZoom}
           onUiZoomChange={setUiZoom}
           openLastSession={openLastSession}

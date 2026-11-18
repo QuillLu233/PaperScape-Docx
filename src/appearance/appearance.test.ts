@@ -55,7 +55,7 @@ describe('appearance settings', () => {
     expect(appearance.paper.pageSize).toBe('Letter');
     expect(appearance.paper.opacity).toBe(0.45);
     expect(appearance.paper.shadow).toBe(100);
-    expect(appearance.paper.color).toBe('#fbf8ef');
+    expect(appearance.paper.color).toBe('#FAF9F0');
     expect(appearance.background.kind).toBe('image');
     expect(appearance.background.brightness).toBe(150);
     expect(appearance.background.blur).toBe(0);

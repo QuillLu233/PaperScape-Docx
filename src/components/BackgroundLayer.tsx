@@ -20,11 +20,12 @@ export const BackgroundLayer = memo(function BackgroundLayer({
   const colorStyle = useMemo(() => {
     if (background.kind === 'solid') return { backgroundColor: background.color };
     return {
-      backgroundImage: `linear-gradient(${background.gradientAngle}deg, ${background.gradientFrom}, ${background.gradientTo})`,
+      backgroundImage: `linear-gradient(${background.gradientAngle}deg, ${background.gradientFrom}, ${background.gradientMid ?? background.gradientFrom} 52%, ${background.gradientTo})`,
     };
   }, [
     background.gradientAngle,
     background.gradientFrom,
+    background.gradientMid,
     background.gradientTo,
     background.kind,
     background.color,

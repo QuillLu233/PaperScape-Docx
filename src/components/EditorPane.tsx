@@ -15,8 +15,9 @@ import type { ChapterFile } from '../project/types';
 import { createEditorExtensions } from '../editor/editorConfig';
 import { proofreadingPluginKey } from '../editor/extensions/Proofreading';
 import { collectProofreadingIssues, type ProofreadingIssue } from '../proofreading/rules';
-import { getPageDimensions, getPaperMargins, colorWithAlpha, paperTextColors } from '../appearance/presets';
+import { getPageDimensions, getPaperMargins, colorWithAlpha, paperTextColors, rgbChannels } from '../appearance/presets';
 import { getCaretFollowDelta, getWritingSpace } from '../editor/writingScroll';
+import { getActivePaper, resolveDisplayColor } from '../appearance/presets';
 import { useTextDrag } from '../editor/useTextDrag';
 import { countCharacters, excerpt, formatCount } from '../lib/text';
 import { EditorToolbar } from './EditorToolbar';
@@ -466,9 +467,11 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
     [blur, editor, focus],
   );
 
+  const activePaper = getActivePaper(appearance);
   const paperDimensions = getPageDimensions(appearance.paper);
   const margins = getPaperMargins(appearance.paper);
-  const paperInk = paperTextColors(appearance.paper.color);
+  const paperInk = paperTextColors(activePaper.color);
+  const displayInk = resolveDisplayColor(appearance, activePaper.color);
   const isPaper = appearance.mode === 'paper';
   const sheetStyle: CSSProperties & Record<`--${string}`, string | number> = isPaper
     ? {
@@ -481,15 +484,33 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
           appearance.paper.shadow > 0
             ? `0 20px 70px rgba(20, 24, 19, ${(appearance.paper.shadow / 100) * 0.36})`
             : 'none',
-        '--paper-ink': paperInk.ink,
+        '--paper-ink': displayInk,
         '--paper-muted': paperInk.muted,
         '--paper-line': paperInk.line,
+        '--editor-ink': displayInk,
         '--reading-opacity': appearance.readingOpacity,
+        fontFamily: appearance.display.fontFamily || undefined,
       }
     : {
-        maxWidth: `${settings.editorWidth}px`,
+        maxWidth: `${
+          appearance.presetId === 'legacy' ? settings.editorWidth : activePaper.customWidth
+        }px`,
         minHeight: 'calc(100% - 48px)',
-        '--reading-opacity': appearance.readingOpacity,
+        padding: `${Math.min(72, Math.max(24, margins.top))}px ${Math.min(
+          72,
+          Math.max(24, margins.right),
+        )}px ${Math.min(72, Math.max(24, margins.bottom))}px ${Math.min(
+          72,
+          Math.max(24, margins.left),
+        )}px`,
+        boxShadow:
+          activePaper.shadow > 0
+            ? `0 18px 60px rgba(8, 12, 9, ${(activePaper.shadow / 100) * 0.32})`
+            : 'none',
+        '--reader-rgb': rgbChannels(activePaper.color),
+        '--reading-opacity': appearance.immersive.opacity,
+        '--editor-ink': displayInk,
+        fontFamily: appearance.display.fontFamily || undefined,
       };
 
   const writingSpace = getWritingSpace(scrollViewportHeight, docZoom / 100);

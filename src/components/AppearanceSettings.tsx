@@ -1,10 +1,14 @@
-import { useRef, useState, type ChangeEvent, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties } from 'react';
 import type {
   BackgroundStyle,
+  EnvironmentAnimationSettings,
+  EnvironmentDisplaySettings,
+  EnvironmentPreset,
   MarginPreset,
   PageSize,
   ProjectAppearance,
   SavedTheme,
+  UiColorMode,
   WritingMode,
 } from '../types';
 import {
@@ -13,20 +17,35 @@ import {
   PAGE_SIZE_LABELS,
   getPageDimensions,
 } from '../appearance/presets';
+import { FONT_FAMILIES } from '../editor/editorConfig';
 import { Icon } from './Icon';
+import { EnvironmentPresetDialog } from './EnvironmentPresetDialog';
+import { OFFICIAL_ENVIRONMENTS, environmentThumbnailStyle } from '../appearance/environmentPresets';
 
 interface AppearanceSettingsProps {
   appearance: ProjectAppearance;
   savedThemes: SavedTheme[];
+  environmentPresets?: EnvironmentPreset[];
   focusMode: boolean;
   onModeChange: (mode: WritingMode) => void;
   onBackgroundChange: (patch: Partial<BackgroundStyle>) => void;
   onReadingOpacityChange: (value: number) => void;
   onPaperChange: (patch: Partial<ProjectAppearance['paper']>) => void;
+  onDisplayChange?: (patch: Partial<EnvironmentDisplaySettings>) => void;
+  onAnimationChange?: (patch: Partial<EnvironmentAnimationSettings>) => void;
+  onUiColorModeChange?: (mode: UiColorMode) => void;
   onApplyPreset: (presetId: string) => void;
   onApplySavedTheme: (theme: SavedTheme) => void;
   onDeleteSavedTheme: (id: string) => void;
   onSaveTheme: (name: string) => void;
+  onApplyEnvironment?: (preset: EnvironmentPreset) => void;
+  onSaveEnvironment?: (name: string) => void;
+  onRenameEnvironment?: (id: string, name: string) => void;
+  onDeleteEnvironment?: (id: string) => void;
+  onDuplicateEnvironment?: (preset: EnvironmentPreset) => void;
+  onExportEnvironment?: (id: string) => string | null;
+  onImportEnvironment?: (text: string) => EnvironmentPreset;
+  onRestoreDefaultEnvironment?: () => void;
   onChooseImage: (file: File) => Promise<void>;
   onToggleFocus: () => void;
 }
@@ -76,7 +95,7 @@ function previewStyle(background: BackgroundStyle): CSSProperties {
   if (background.kind === 'solid') return { backgroundColor: background.color };
   if (background.kind === 'gradient') {
     return {
-      backgroundImage: `linear-gradient(${background.gradientAngle}deg, ${background.gradientFrom}, ${background.gradientTo})`,
+      backgroundImage: `linear-gradient(${background.gradientAngle}deg, ${background.gradientFrom}, ${background.gradientMid ?? background.gradientFrom} 52%, ${background.gradientTo})`,
     };
   }
   return {
@@ -87,22 +106,46 @@ function previewStyle(background: BackgroundStyle): CSSProperties {
 export function AppearanceSettings({
   appearance,
   savedThemes,
+  environmentPresets = [],
   focusMode,
   onModeChange,
   onBackgroundChange,
   onReadingOpacityChange,
   onPaperChange,
+  onDisplayChange,
+  onAnimationChange,
+  onUiColorModeChange,
   onApplyPreset,
   onApplySavedTheme,
   onDeleteSavedTheme,
   onSaveTheme,
+  onApplyEnvironment,
+  onSaveEnvironment,
+  onRenameEnvironment,
+  onDeleteEnvironment,
+  onDuplicateEnvironment,
+  onExportEnvironment,
+  onImportEnvironment,
+  onRestoreDefaultEnvironment,
   onChooseImage,
   onToggleFocus,
 }: AppearanceSettingsProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [themeName, setThemeName] = useState('');
   const [imageError, setImageError] = useState('');
+  const [environmentOpen, setEnvironmentOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(
+    () => window.localStorage.getItem('paperscape.settings.advanced.open') === 'true',
+  );
   const dimensions = getPageDimensions(appearance.paper);
+  const currentEnvironment =
+    [...OFFICIAL_ENVIRONMENTS, ...environmentPresets].find(
+      (preset) => preset.id === appearance.presetId,
+    ) ?? OFFICIAL_ENVIRONMENTS[0];
+
+  useEffect(() => {
+    window.localStorage.setItem('paperscape.settings.advanced.open', String(advancedOpen));
+  }, [advancedOpen]);
 
   const onFilePicked = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -118,6 +161,74 @@ export function AppearanceSettings({
 
   return (
     <div className="appearance-settings">
+      <section className="settings-section environment-entry-section" aria-labelledby="environment-heading">
+        <h3 id="environment-heading" className="settings-label">
+          环境预设
+        </h3>
+        <button
+          type="button"
+          className="environment-entry"
+          onClick={() => setEnvironmentOpen(true)}
+          aria-haspopup="dialog"
+        >
+          <span
+            className="environment-entry-thumb"
+            style={currentEnvironment ? environmentThumbnailStyle(currentEnvironment) : undefined}
+          >
+            <span
+              className="environment-entry-paper"
+              style={{ background: currentEnvironment?.paper.color }}
+            />
+          </span>
+          <span className="environment-entry-copy">
+            <strong>{currentEnvironment?.name ?? '原初'}</strong>
+            <small>点击切换完整写作环境</small>
+          </span>
+          <Icon name="chevron-right" size={14} />
+        </button>
+        <div className="environment-quick-row">
+          <label>
+            <span>界面配色</span>
+            <select
+              className="settings-select"
+              value={appearance.uiColorMode}
+              onChange={(event) =>
+                onUiColorModeChange?.(event.target.value as UiColorMode)
+              }
+            >
+              <option value="environment">跟随环境预设</option>
+              <option value="light">经典浅色</option>
+              <option value="dark">经典深色</option>
+              <option value="system">跟随系统</option>
+            </select>
+          </label>
+          <label className="environment-animation-toggle" title="阶段二接入实际动效渲染">
+            <input
+              type="checkbox"
+              checked={appearance.animation.enabled}
+              disabled
+              onChange={(event) => onAnimationChange?.({ enabled: event.target.checked })}
+            />
+            <span>环境动效</span>
+            <small>阶段二启用</small>
+          </label>
+        </div>
+      </section>
+
+      <EnvironmentPresetDialog
+        open={environmentOpen}
+        currentId={appearance.presetId}
+        presets={environmentPresets}
+        onClose={() => setEnvironmentOpen(false)}
+        onApply={(preset) => onApplyEnvironment?.(preset)}
+        onSaveCurrent={(name) => onSaveEnvironment?.(name)}
+        onRename={(id, name) => onRenameEnvironment?.(id, name)}
+        onDelete={(id) => onDeleteEnvironment?.(id)}
+        onDuplicate={(preset) => onDuplicateEnvironment?.(preset) ?? preset}
+        onExport={(id) => onExportEnvironment?.(id) ?? null}
+        onImport={(text) => onImportEnvironment?.(text) ?? currentEnvironment}
+        onRestoreDefault={() => onRestoreDefaultEnvironment?.()}
+      />
       <section className="settings-section" aria-labelledby="writing-mode-heading">
         <h3 id="writing-mode-heading" className="settings-label">
           写作模式
@@ -154,6 +265,12 @@ export function AppearanceSettings({
         </button>
       </section>
 
+      <details
+        className="settings-advanced"
+        open={advancedOpen}
+        onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}
+      >
+        <summary>高级设置</summary>
       <section className="settings-section" aria-labelledby="background-heading">
         <div className="settings-label-row">
           <h3 id="background-heading" className="settings-label">
@@ -277,12 +394,46 @@ export function AppearanceSettings({
           <RangeControl
             id="reading-opacity"
             label="透明度"
-            value={appearance.readingOpacity}
+            value={appearance.immersive.opacity}
             min={0.2}
             max={1}
             step={0.05}
             onChange={onReadingOpacityChange}
           />
+          <RangeControl
+            id="immersive-width"
+            label="阅读宽度"
+            value={appearance.immersive.customWidth}
+            min={640}
+            max={980}
+            step={2}
+            unit="px"
+            onChange={(customWidth) => onPaperChange({ customWidth: Math.round(customWidth) })}
+          />
+          <RangeControl
+            id="immersive-shadow"
+            label="阴影"
+            value={appearance.immersive.shadow}
+            min={0}
+            max={100}
+            unit="%"
+            onChange={(shadow) => onPaperChange({ shadow })}
+          />
+          <div className="paper-row">
+            <label htmlFor="immersive-margin">页面边距</label>
+            <select
+              id="immersive-margin"
+              className="settings-select"
+              value={appearance.immersive.margin}
+              onChange={(event) => onPaperChange({ margin: event.target.value as MarginPreset })}
+            >
+              {(Object.keys(MARGIN_LABELS) as MarginPreset[]).map((margin) => (
+                <option key={margin} value={margin}>
+                  {MARGIN_LABELS[margin]}
+                </option>
+              ))}
+            </select>
+          </div>
           <p className="settings-note">阅读区域叠加在背景上，不改变正文排版。</p>
         </section>
       ) : (
@@ -395,6 +546,114 @@ export function AppearanceSettings({
         </section>
       )}
 
+      <section className="settings-section" aria-labelledby="display-heading">
+        <h3 id="display-heading" className="settings-label">文字显示</h3>
+        <div className="paper-row">
+          <label htmlFor="display-color-mode">显示颜色</label>
+          <select
+            id="display-color-mode"
+            className="settings-select"
+            value={appearance.display.colorMode}
+            onChange={(event) =>
+              onDisplayChange?.({
+                colorMode: event.target.value as EnvironmentDisplaySettings['colorMode'],
+              })
+            }
+          >
+            <option value="auto">自动适配</option>
+            <option value="dark">深色文字</option>
+            <option value="light">浅色文字</option>
+            <option value="custom">自定义颜色</option>
+          </select>
+        </div>
+        {appearance.display.colorMode === 'custom' ? (
+          <div className="paper-row">
+            <label htmlFor="display-custom-color">自定义颜色</label>
+            <input
+              id="display-custom-color"
+              className="color-input"
+              type="color"
+              value={appearance.display.color}
+              onChange={(event) => onDisplayChange?.({ color: event.target.value })}
+            />
+            <span className="paper-dimension">{appearance.display.color.toUpperCase()}</span>
+          </div>
+        ) : null}
+        <div className="paper-row">
+          <label htmlFor="display-font">显示字体</label>
+          <select
+            id="display-font"
+            className="settings-select"
+            value={appearance.display.fontFamily}
+            onChange={(event) => onDisplayChange?.({ fontFamily: event.target.value })}
+          >
+            <option value="">跟随编辑器</option>
+            {FONT_FAMILIES.filter((font) => font.value).map((font) => (
+              <option key={font.label} value={font.value}>
+                {font.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <p className="settings-note">只改变写作视图，不修改 DOCX 中的字体、字号或颜色。</p>
+      </section>
+
+      <section className="settings-section" aria-labelledby="animation-heading">
+        <div className="settings-label-row">
+          <h3 id="animation-heading" className="settings-label">环境动效</h3>
+          <span className="settings-badge">阶段二</span>
+        </div>
+        <label className="toggle-row">
+          <input
+            type="checkbox"
+            checked={appearance.animation.enabled}
+            onChange={(event) => onAnimationChange?.({ enabled: event.target.checked })}
+          />
+          <span>启用环境动效</span>
+        </label>
+        <div className="paper-row">
+          <label htmlFor="animation-type">动效类型</label>
+          <select
+            id="animation-type"
+            className="settings-select"
+            value={appearance.animation.type}
+            onChange={(event) => onAnimationChange?.({ type: event.target.value })}
+          >
+            <option value="none">无</option>
+            <option value="rain">雨</option>
+            <option value="snow">雪</option>
+            <option value="fireflies">萤火</option>
+            <option value="dust">微尘</option>
+          </select>
+        </div>
+        <RangeControl
+          id="animation-speed"
+          label="速度"
+          value={appearance.animation.speed}
+          min={0.2}
+          max={3}
+          step={0.1}
+          onChange={(speed) => onAnimationChange?.({ speed })}
+        />
+        <RangeControl
+          id="animation-intensity"
+          label="强度"
+          value={appearance.animation.intensity}
+          min={0}
+          max={1}
+          step={0.05}
+          onChange={(intensity) => onAnimationChange?.({ intensity })}
+        />
+        <label className="toggle-row">
+          <input
+            type="checkbox"
+            checked={appearance.animation.lowPower}
+            onChange={(event) => onAnimationChange?.({ lowPower: event.target.checked })}
+          />
+          <span>低功耗模式</span>
+        </label>
+      </section>
+
       <section className="settings-section" aria-labelledby="saved-theme-heading">
         <h3 id="saved-theme-heading" className="settings-label">
           自定义主题
@@ -421,6 +680,7 @@ export function AppearanceSettings({
         </div>
         <p className="settings-note">保存会记录当前背景、沉浸式透明度和纸张设置；主题按项目独立应用。</p>
       </section>
+      </details>
     </div>
   );
 }

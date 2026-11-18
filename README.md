@@ -26,6 +26,9 @@ PaperScape 是一个面向 Windows 的安静写作空间。V1.1 已完成文件�
 - 稳定的 1.1.2 代码：`release/1.1.2` 分支、`v1.1.2` 标签
 - 1.1.2 源码快照：`release/archive/PaperScape-1.1.2-source.zip`
 - 1.1.2 便携版仍可从 GitHub Release 下载
+- Phase 1 新增：11 款官方环境预设、统一主题 Tokens、四类界面配色、自适应正文颜色、纸张/沉浸双模式参数、官方/自定义预设选择器、版本化 JSON 导入导出
+- 开发便携包：`release/PaperScape-v2.0.0-dev.0-Portable.zip`（3,224,431 字节，SHA256 `9F00EB67259A74F1978B3375A7C66088EB07D15EAACCEFAD3CC97BEE4069CED3`）
+- 详细计划与限制见 [V2_DEVELOPMENT_PLAN.md](V2_DEVELOPMENT_PLAN.md)
 
 ## V1.1.2 绿色便携版
 

@@ -5,6 +5,25 @@ import type {
   PaperSettings,
   ProjectAppearance,
 } from '../types';
+import {
+  DEFAULT_ANIMATION,
+  DEFAULT_BACKGROUND,
+  DEFAULT_DISPLAY,
+  DEFAULT_IMMERSIVE,
+  DEFAULT_PAPER,
+  DEFAULT_UI_COLORS,
+  ORIGIN_ENVIRONMENT,
+  contrastRatio,
+} from './environmentPresets';
+
+export {
+  DEFAULT_ANIMATION,
+  DEFAULT_BACKGROUND,
+  DEFAULT_DISPLAY,
+  DEFAULT_IMMERSIVE,
+  DEFAULT_PAPER,
+  DEFAULT_UI_COLORS,
+};
 
 export const PAGE_DIMENSIONS: Record<Exclude<PageSize, 'custom'>, { width: number; height: number }> = {
   A4: { width: 794, height: 1123 },
@@ -28,22 +47,6 @@ export const MARGIN_LABELS: Record<MarginPreset, string> = {
   narrow: '窄',
   wide: '宽',
   custom: '自定义',
-};
-
-export const DEFAULT_BACKGROUND: BackgroundStyle = {
-  presetId: 'still-sage',
-  name: '静绿',
-  kind: 'gradient',
-  color: '#dfe7dc',
-  gradientFrom: '#eef0e5',
-  gradientTo: '#b7c7b5',
-  gradientAngle: 135,
-  imageId: null,
-  brightness: 100,
-  blur: 0,
-  vignette: 16,
-  overlay: 6,
-  overlayColor: '#1f241e',
 };
 
 export const BACKGROUND_PRESETS: Array<{ id: string; name: string; background: BackgroundStyle }> = [
@@ -114,21 +117,18 @@ export const BACKGROUND_PRESETS: Array<{ id: string; name: string; background: B
   },
 ];
 
-export const DEFAULT_PAPER: PaperSettings = {
-  pageSize: 'A4',
-  customWidth: 794,
-  color: '#fbf8ef',
-  opacity: 0.98,
-  shadow: 30,
-  margin: 'normal',
-  customMargins: { top: 96, right: 96, bottom: 96, left: 96 },
-};
-
 export const DEFAULT_APPEARANCE: ProjectAppearance = {
   mode: 'paper',
   background: DEFAULT_BACKGROUND,
   readingOpacity: 0.8,
   paper: DEFAULT_PAPER,
+  immersive: DEFAULT_IMMERSIVE,
+  presetId: ORIGIN_ENVIRONMENT.id,
+  uiTheme: ORIGIN_ENVIRONMENT.uiTheme,
+  uiColorMode: 'environment',
+  uiColors: DEFAULT_UI_COLORS,
+  display: DEFAULT_DISPLAY,
+  animation: DEFAULT_ANIMATION,
 };
 
 export function cloneBackground(background: BackgroundStyle): BackgroundStyle {
@@ -144,7 +144,29 @@ export function cloneAppearance(appearance: ProjectAppearance): ProjectAppearanc
     ...appearance,
     background: cloneBackground(appearance.background),
     paper: clonePaper(appearance.paper),
+    immersive: clonePaper(appearance.immersive),
+    uiColors: { ...appearance.uiColors },
+    display: { ...appearance.display },
+    animation: { ...appearance.animation },
   };
+}
+
+export function getActivePaper(appearance: ProjectAppearance): PaperSettings {
+  return appearance.mode === 'immersive' ? appearance.immersive : appearance.paper;
+}
+
+export function resolveDisplayColor(
+  appearance: ProjectAppearance,
+  effectivePaperColor = getActivePaper(appearance).color,
+): string {
+  if (appearance.display.colorMode === 'custom') return appearance.display.color;
+  if (appearance.display.colorMode === 'dark') return '#252820';
+  if (appearance.display.colorMode === 'light') return '#f2eee4';
+  const preferred = paperTextColors(effectivePaperColor).ink;
+  const fallback = preferred === '#252820' ? '#f2eee4' : '#252820';
+  return contrastRatio(preferred, effectivePaperColor) >= 4.5
+    ? preferred
+    : fallback;
 }
 
 export function getPageDimensions(paper: PaperSettings): { width: number; height: number } {
@@ -161,8 +183,15 @@ export function getPaperMargins(paper: PaperSettings) {
   return { top: value, right: value, bottom: value, left: value };
 }
 
-export function colorWithAlpha(hex: string, alpha: number): string {
+export function rgbChannels(hex: string): string {
   const normalized = /^#[0-9a-f]{6}$/i.test(hex) ? hex.slice(1) : 'fbf8ef';
+  return `${Number.parseInt(normalized.slice(0, 2), 16)}, ${Number.parseInt(
+    normalized.slice(2, 4),
+    16,
+  )}, ${Number.parseInt(normalized.slice(4, 6), 16)}`;
+}
+
+export function colorWithAlpha(hex: string, alpha: number): string {  const normalized = /^#[0-9a-f]{6}$/i.test(hex) ? hex.slice(1) : 'fbf8ef';
   const red = Number.parseInt(normalized.slice(0, 2), 16);
   const green = Number.parseInt(normalized.slice(2, 4), 16);
   const blue = Number.parseInt(normalized.slice(4, 6), 16);

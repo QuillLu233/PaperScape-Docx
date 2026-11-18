@@ -1,9 +1,13 @@
 import { memo } from 'react';
 import type {
   BackgroundStyle,
+  EnvironmentAnimationSettings,
+  EnvironmentDisplaySettings,
+  EnvironmentPreset,
   ProjectAppearance,
   SavedTheme,
   ThemeMode,
+  UiColorMode,
   WritingMode,
   WritingSettings,
   SaveMode,
@@ -18,8 +22,20 @@ interface SettingsPanelProps {
   settings: WritingSettings;
   appearance: ProjectAppearance;
   savedThemes: SavedTheme[];
+  environmentPresets?: EnvironmentPreset[];
   focusMode: boolean;
   onThemeChange: (mode: ThemeMode) => void;
+  onUiColorModeChange?: (mode: UiColorMode) => void;
+  onDisplayChange?: (patch: Partial<EnvironmentDisplaySettings>) => void;
+  onAnimationChange?: (patch: Partial<EnvironmentAnimationSettings>) => void;
+  onApplyEnvironment?: (preset: EnvironmentPreset) => void;
+  onSaveEnvironment?: (name: string) => void;
+  onRenameEnvironment?: (id: string, name: string) => void;
+  onDeleteEnvironment?: (id: string) => void;
+  onDuplicateEnvironment?: (preset: EnvironmentPreset) => void;
+  onExportEnvironment?: (id: string) => string | null;
+  onImportEnvironment?: (text: string) => EnvironmentPreset;
+  onRestoreDefaultEnvironment?: () => void;
   onSettingsChange: (patch: Partial<WritingSettings>) => void;
   onModeChange: (mode: WritingMode) => void;
   onBackgroundChange: (patch: Partial<BackgroundStyle>) => void;
@@ -64,8 +80,20 @@ export const SettingsPanel = memo(function SettingsPanel({
   settings,
   appearance,
   savedThemes,
+  environmentPresets = [],
   focusMode,
   onThemeChange,
+  onUiColorModeChange,
+  onDisplayChange,
+  onAnimationChange,
+  onApplyEnvironment,
+  onSaveEnvironment,
+  onRenameEnvironment,
+  onDeleteEnvironment,
+  onDuplicateEnvironment,
+  onExportEnvironment,
+  onImportEnvironment,
+  onRestoreDefaultEnvironment,
   onSettingsChange,
   onModeChange,
   onBackgroundChange,
@@ -181,15 +209,27 @@ export const SettingsPanel = memo(function SettingsPanel({
         <AppearanceSettings
           appearance={appearance}
           savedThemes={savedThemes}
+          environmentPresets={environmentPresets}
           focusMode={focusMode}
           onModeChange={onModeChange}
           onBackgroundChange={onBackgroundChange}
           onReadingOpacityChange={onReadingOpacityChange}
           onPaperChange={onPaperChange}
+          onDisplayChange={onDisplayChange}
+          onAnimationChange={onAnimationChange}
+          onUiColorModeChange={onUiColorModeChange}
           onApplyPreset={onApplyPreset}
           onApplySavedTheme={onApplySavedTheme}
           onDeleteSavedTheme={onDeleteSavedTheme}
           onSaveTheme={onSaveTheme}
+          onApplyEnvironment={onApplyEnvironment}
+          onSaveEnvironment={onSaveEnvironment}
+          onRenameEnvironment={onRenameEnvironment}
+          onDeleteEnvironment={onDeleteEnvironment}
+          onDuplicateEnvironment={onDuplicateEnvironment}
+          onExportEnvironment={onExportEnvironment}
+          onImportEnvironment={onImportEnvironment}
+          onRestoreDefaultEnvironment={onRestoreDefaultEnvironment}
           onChooseImage={onChooseImage}
           onToggleFocus={onToggleFocus}
         />
