@@ -94,8 +94,11 @@ function RangeControl({
 function previewStyle(background: BackgroundStyle): CSSProperties {
   if (background.kind === 'solid') return { backgroundColor: background.color };
   if (background.kind === 'gradient') {
+    const linear = `linear-gradient(${background.gradientAngle}deg, ${background.gradientFrom}, ${background.gradientMid ?? background.gradientFrom} 52%, ${background.gradientTo})`;
     return {
-      backgroundImage: `linear-gradient(${background.gradientAngle}deg, ${background.gradientFrom}, ${background.gradientMid ?? background.gradientFrom} 52%, ${background.gradientTo})`,
+      backgroundImage: background.gradientAccent
+        ? `radial-gradient(circle at 74% 24%, ${background.gradientAccent}66 0%, transparent 38%), ${linear}`
+        : linear,
     };
   }
   return {

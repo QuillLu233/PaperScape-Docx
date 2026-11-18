@@ -14,12 +14,21 @@ interface EnvironmentSeed {
   uiMain: string;
   sidebar: string;
   panel?: string;
+  toolbar?: string;
+  statusbar?: string;
   accent: string;
   paper: string;
   text: string;
+  displayColor?: string;
   textSoft?: string;
   border?: string;
+  hover?: string;
   selected?: string;
+  caret?: string;
+  selection?: string;
+  titleColor?: string;
+  gradientAccent?: string;
+  effects?: string[];
   group: 'permanent' | 'festival';
   animationType?: string;
   animationColor?: string;
@@ -67,7 +76,7 @@ export function contrastRatio(first: string, second: string): number {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
-export function createUiColors(seed: Pick<EnvironmentSeed, 'uiMain' | 'sidebar' | 'accent' | 'paper' | 'text' | 'uiTheme'> & Partial<Pick<EnvironmentSeed, 'panel' | 'textSoft' | 'border' | 'selected'>>): EnvironmentUiColors {
+export function createUiColors(seed: Pick<EnvironmentSeed, 'uiMain' | 'sidebar' | 'accent' | 'paper' | 'text' | 'uiTheme'> & Partial<Pick<EnvironmentSeed, 'panel' | 'toolbar' | 'statusbar' | 'textSoft' | 'border' | 'hover' | 'selected' | 'caret' | 'selection'>>): EnvironmentUiColors {
   const { uiMain, sidebar, accent, paper, text, uiTheme } = seed;
   const panel = seed.panel ?? uiMain;
   const textSoft = seed.textSoft ?? mixColor(text, paper, 0.2);
@@ -77,10 +86,10 @@ export function createUiColors(seed: Pick<EnvironmentSeed, 'uiMain' | 'sidebar' 
   return {
     titlebar: uiMain,
     menubar: uiMain,
-    toolbar: panel,
+    toolbar: seed.toolbar ?? panel,
     sidebar,
     settings: panel,
-    statusbar: sidebar,
+    statusbar: seed.statusbar ?? sidebar,
     popup: panel,
     button: mixColor(uiMain, accent, 0.08),
     accent,
@@ -90,11 +99,11 @@ export function createUiColors(seed: Pick<EnvironmentSeed, 'uiMain' | 'sidebar' 
     ink: text,
     inkSoft: textSoft,
     muted: mixColor(text, paper, dark ? 0.52 : 0.46),
-    hover: mixColor(uiMain, accent, dark ? 0.2 : 0.1),
+    hover: seed.hover ?? mixColor(uiMain, accent, dark ? 0.2 : 0.1),
     selected,
     scrollbar: mixColor(text, paper, dark ? 0.35 : 0.28),
-    caret: accent,
-    selection: colorAlpha(selected, dark ? 0.42 : 0.28),
+    caret: seed.caret ?? accent,
+    selection: seed.selection ?? colorAlpha(selected, dark ? 0.42 : 0.28),
     proofreading: dark ? '#d9b46a' : '#b07a2e',
   };
 }
@@ -247,19 +256,28 @@ const SEEDS: EnvironmentSeed[] = [
   {
     id: 'christmas-carol',
     name: '圣诞颂歌',
-    background: ['#142F29', '#28634E', '#862F3C'],
-    uiMain: '#203C33',
-    sidebar: '#29483D',
-    panel: '#29483D',
-    accent: '#E9CB8D',
-    paper: '#FFF6E6',
-    text: '#3C483C',
-    textSoft: '#B8C8BB',
-    border: '#577266',
-    selected: '#416652',
+    background: ['#781C2D', '#B24448', '#28594B'],
+    uiMain: '#682D37',
+    sidebar: '#51232C',
+    panel: '#682D37',
+    toolbar: '#51232C',
+    statusbar: '#51232C',
+    accent: '#F1D5A0',
+    paper: '#FFF7E9',
+    text: '#FFF1E0',
+    displayColor: '#533C35',
+    textSoft: '#D8BEC0',
+    border: '#89565E',
+    hover: '#783840',
+    selected: '#8B434B',
+    caret: '#873244',
+    selection: '#EAD0C3',
+    titleColor: '#503038',
+    gradientAccent: '#F1D5A0',
+    effects: ['snow', 'gradient', 'golden-glow'],
     group: 'festival',
     animationType: 'snow',
-    animationColor: '#E9CB8D',
+    animationColor: '#F1D5A0',
     uiTheme: 'dark',
   },
   {
@@ -272,6 +290,7 @@ const SEEDS: EnvironmentSeed[] = [
     accent: '#AD3933',
     paper: '#FFF5E2',
     text: '#59372C',
+    displayColor: '#59372C',
     textSoft: '#88665C',
     border: '#D8B9A5',
     selected: '#ECD1C4',
@@ -292,6 +311,7 @@ function createEnvironment(seed: EnvironmentSeed): EnvironmentPreset {
     gradientFrom: seed.background[0],
     gradientMid: seed.background[1],
     gradientTo: seed.background[2],
+    gradientAccent: seed.gradientAccent,
     gradientAngle: 135,
     imageId: null,
     brightness: 100,
@@ -302,12 +322,14 @@ function createEnvironment(seed: EnvironmentSeed): EnvironmentPreset {
   };
   const display: EnvironmentDisplaySettings = {
     colorMode: 'auto',
-    color: seed.text,
+    color: seed.displayColor ?? seed.text,
+    titleColor: seed.titleColor ?? seed.text,
     fontFamily: '',
   };
   const animation: EnvironmentAnimationSettings = {
     enabled: false,
     type: seed.animationType ?? 'none',
+    effects: seed.effects ?? [],
     speed: 1,
     intensity: 0.5,
     color: seed.animationColor ?? seed.accent,
@@ -352,7 +374,10 @@ export const DEFAULT_DISPLAY = ORIGIN_ENVIRONMENT.display;
 export const DEFAULT_ANIMATION = ORIGIN_ENVIRONMENT.animation;
 
 export function environmentThumbnailStyle(preset: EnvironmentPreset): { backgroundImage: string } {
+  const linear = `linear-gradient(135deg, ${preset.gradientColors[0]} 0%, ${preset.gradientColors[1]} 52%, ${preset.gradientColors[2]} 100%)`;
   return {
-    backgroundImage: `linear-gradient(135deg, ${preset.gradientColors[0]} 0%, ${preset.gradientColors[1]} 52%, ${preset.gradientColors[2]} 100%)`,
+    backgroundImage: preset.background.gradientAccent
+      ? `radial-gradient(circle at 72% 22%, ${colorAlpha(preset.background.gradientAccent, 0.45)} 0%, transparent 40%), ${linear}`
+      : linear,
   };
 }

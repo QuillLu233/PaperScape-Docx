@@ -27,6 +27,7 @@ import {
   DEFAULT_DISPLAY,
   DEFAULT_UI_COLORS,
   OFFICIAL_ENVIRONMENTS,
+  getOfficialEnvironment,
 } from './environmentPresets';
 
 const APPEARANCE_KEY = 'paperscape.project-appearance.v1';
@@ -65,6 +66,10 @@ function sanitizeBackground(value: unknown): BackgroundStyle {
     gradientFrom: safeColor(value.gradientFrom, DEFAULT_BACKGROUND.gradientFrom),
     gradientMid: safeColor(value.gradientMid, DEFAULT_BACKGROUND.gradientMid ?? DEFAULT_BACKGROUND.gradientFrom),
     gradientTo: safeColor(value.gradientTo, DEFAULT_BACKGROUND.gradientTo),
+    gradientAccent:
+      value.gradientAccent === undefined
+        ? undefined
+        : safeColor(value.gradientAccent, DEFAULT_BACKGROUND.gradientFrom),
     gradientAngle: clampNumber(value.gradientAngle, 0, 360, DEFAULT_BACKGROUND.gradientAngle),
     imageId: typeof value.imageId === 'string' && value.imageId ? value.imageId : null,
     brightness: clampNumber(value.brightness, 30, 150, 100),
@@ -149,6 +154,7 @@ function sanitizeDisplay(value: unknown): EnvironmentDisplaySettings {
         ? mode
         : DEFAULT_DISPLAY.colorMode,
     color: safeColor(record.color, DEFAULT_DISPLAY.color),
+    titleColor: safeColor(record.titleColor, safeColor(record.color, DEFAULT_DISPLAY.color)),
     fontFamily:
       typeof record.fontFamily === 'string' ? record.fontFamily.slice(0, 160) : '',
   };
@@ -159,6 +165,9 @@ function sanitizeAnimation(value: unknown): EnvironmentAnimationSettings {
   return {
     enabled: record.enabled === true,
     type: typeof record.type === 'string' ? record.type.slice(0, 40) : 'none',
+    effects: Array.isArray(record.effects)
+      ? record.effects.filter((item): item is string => typeof item === 'string').slice(0, 8)
+      : [],
     speed: clampNumber(record.speed, 0.2, 3, DEFAULT_ANIMATION.speed),
     intensity: clampNumber(record.intensity, 0, 1, DEFAULT_ANIMATION.intensity),
     color: safeColor(record.color, DEFAULT_ANIMATION.color),
@@ -182,7 +191,7 @@ export function sanitizeAppearance(value: unknown): ProjectAppearance {  if (!is
       : paperTextColors(paper.color).ink === '#252820'
         ? 'light'
         : 'dark';
-  return {
+  const result: ProjectAppearance = {
     mode: value.mode === 'immersive' || value.mode === 'paper' ? value.mode : 'paper',
     background: sanitizeBackground(value.background),
     readingOpacity: clampNumber(value.readingOpacity, 0.2, 1, DEFAULT_APPEARANCE.readingOpacity),
@@ -195,6 +204,26 @@ export function sanitizeAppearance(value: unknown): ProjectAppearance {  if (!is
     display: sanitizeDisplay(value.display),
     animation: sanitizeAnimation(value.animation),
   };
+  // V2 Phase 1.1 refreshed the official Christmas palette. Only upgrade the
+  // untouched old official snapshot; personal/customized presets stay intact.
+  const isOldOfficialChristmas =
+    result.presetId === 'christmas-carol' &&
+    result.paper.color === '#FFF6E6' &&
+    result.uiColors.titlebar === '#203C33' &&
+    result.background.gradientFrom === '#142F29';
+  if (isOldOfficialChristmas) {
+    const refreshed = getOfficialEnvironment('christmas-carol');
+    if (refreshed) return applyEnvironmentPreset(result, refreshed);
+  }
+  const isIntermediateChristmas =
+    result.presetId === 'christmas-carol' &&
+    result.paper.color === '#FFF7E9' &&
+    result.uiColors.titlebar === '#682D37' &&
+    result.display.color === '#FFF1E0';
+  if (isIntermediateChristmas) {
+    return { ...result, display: { ...result.display, color: '#533C35' } };
+  }
+  return result;
 }
 
 function readMap(): Record<string, ProjectAppearance> {

@@ -57,12 +57,14 @@ export interface EnvironmentUiColors {
 export interface EnvironmentDisplaySettings {
   colorMode: DisplayColorMode;
   color: string;
+  titleColor: string;
   fontFamily: string;
 }
 
 export interface EnvironmentAnimationSettings {
   enabled: boolean;
   type: string;
+  effects?: string[];
   speed: number;
   intensity: number;
   color: string;
@@ -95,6 +97,7 @@ export interface BackgroundStyle {
   gradientFrom: string;
   gradientMid?: string;
   gradientTo: string;
+  gradientAccent?: string;
   gradientAngle: number;
   imageId: string | null;
   brightness: number;

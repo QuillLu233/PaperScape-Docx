@@ -41,12 +41,23 @@ describe('V2 environment presets', () => {
   it('registers the two festival environments with their reference palettes', () => {
     const christmas = getOfficialEnvironment('christmas-carol')!;
     expect(christmas.group).toBe('festival');
-    expect(christmas.uiColors.titlebar).toBe('#203C33');
-    expect(christmas.uiColors.sidebar).toBe('#29483D');
-    expect(christmas.uiColors.accent).toBe('#E9CB8D');
-    expect(christmas.uiColors.border).toBe('#577266');
-    expect(christmas.uiColors.selected).toBe('#416652');
-    expect(christmas.paper.color).toBe('#FFF6E6');
+    expect(christmas.uiColors.titlebar).toBe('#682D37');
+    expect(christmas.uiColors.sidebar).toBe('#51232C');
+    expect(christmas.uiColors.toolbar).toBe('#51232C');
+    expect(christmas.uiColors.statusbar).toBe('#51232C');
+    expect(christmas.uiColors.popup).toBe('#682D37');
+    expect(christmas.uiColors.inkSoft).toBe('#D8BEC0');
+    expect(christmas.uiColors.accent).toBe('#F1D5A0');
+    expect(christmas.uiColors.border).toBe('#89565E');
+    expect(christmas.uiColors.hover).toBe('#783840');
+    expect(christmas.uiColors.selected).toBe('#8B434B');
+    expect(christmas.uiColors.caret).toBe('#873244');
+    expect(christmas.uiColors.selection).toBe('#EAD0C3');
+    expect(christmas.paper.color).toBe('#FFF7E9');
+    expect(christmas.display.color).toBe('#533C35');
+    expect(christmas.display.titleColor).toBe('#503038');
+    expect(christmas.background.gradientAccent).toBe('#F1D5A0');
+    expect(christmas.animation.effects).toEqual(['snow', 'gradient', 'golden-glow']);
 
     const spring = getOfficialEnvironment('spring-festival')!;
     expect(spring.group).toBe('festival');
@@ -56,6 +67,31 @@ describe('V2 environment presets', () => {
     expect(spring.uiColors.border).toBe('#D8B9A5');
     expect(spring.uiColors.selected).toBe('#ECD1C4');
     expect(spring.paper.color).toBe('#FFF5E2');
+  });
+
+  it('upgrades an untouched old official Christmas snapshot', () => {
+    const migrated = sanitizeAppearance({
+      presetId: 'christmas-carol',
+      paper: { color: '#FFF6E6' },
+      uiColors: { titlebar: '#203C33' },
+      background: { gradientFrom: '#142F29' },
+    });
+    expect(migrated.presetId).toBe('christmas-carol');
+    expect(migrated.uiColors.titlebar).toBe('#682D37');
+    expect(migrated.paper.color).toBe('#FFF7E9');
+    expect(migrated.display.color).toBe('#533C35');
+    expect(migrated.background.gradientAccent).toBe('#F1D5A0');
+  });
+
+  it('repairs an intermediate Christmas snapshot with the old display color', () => {
+    const migrated = sanitizeAppearance({
+      presetId: 'christmas-carol',
+      paper: { color: '#FFF7E9' },
+      uiColors: { titlebar: '#682D37' },
+      display: { color: '#FFF1E0' },
+      background: { gradientFrom: '#781C2D' },
+    });
+    expect(migrated.display.color).toBe('#533C35');
   });
 
   it('preserves the classic environment when migrating old appearance data', () => {

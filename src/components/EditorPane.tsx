@@ -485,6 +485,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
             ? `0 20px 70px rgba(20, 24, 19, ${(appearance.paper.shadow / 100) * 0.36})`
             : 'none',
         '--paper-ink': displayInk,
+        '--paper-title': appearance.display.titleColor || displayInk,
         '--paper-muted': paperInk.muted,
         '--paper-line': paperInk.line,
         '--editor-ink': displayInk,
@@ -510,6 +511,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
         '--reader-rgb': rgbChannels(activePaper.color),
         '--reading-opacity': appearance.immersive.opacity,
         '--editor-ink': displayInk,
+        '--paper-title': appearance.display.titleColor || displayInk,
         fontFamily: appearance.display.fontFamily || undefined,
       };
 

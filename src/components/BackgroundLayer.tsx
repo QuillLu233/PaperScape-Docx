@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react';
 import type { BackgroundStyle } from '../types';
+import { colorWithAlpha } from '../appearance/presets';
 
 interface BackgroundLayerProps {
   background: BackgroundStyle;
@@ -19,11 +20,15 @@ export const BackgroundLayer = memo(function BackgroundLayer({
 
   const colorStyle = useMemo(() => {
     if (background.kind === 'solid') return { backgroundColor: background.color };
+    const linear = `linear-gradient(${background.gradientAngle}deg, ${background.gradientFrom}, ${background.gradientMid ?? background.gradientFrom} 45%, ${background.gradientTo})`;
     return {
-      backgroundImage: `linear-gradient(${background.gradientAngle}deg, ${background.gradientFrom}, ${background.gradientMid ?? background.gradientFrom} 52%, ${background.gradientTo})`,
+      backgroundImage: background.gradientAccent
+        ? `radial-gradient(circle at 74% 24%, ${colorWithAlpha(background.gradientAccent, 0.42)} 0%, transparent 38%), ${linear}`
+        : linear,
     };
   }, [
     background.gradientAngle,
+    background.gradientAccent,
     background.gradientFrom,
     background.gradientMid,
     background.gradientTo,

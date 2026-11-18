@@ -4314,3 +4314,5 @@ body.is-text-dragging .tiptap {
   letter-spacing: 0.04em;
 }
 .environment-group-title-festival { margin-top: 16px; color: var(--accent-strong); }
+
+.editor-sheet .chapter-title-input { color: var(--paper-title, var(--paper-ink, var(--ink))); }
