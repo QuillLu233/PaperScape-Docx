@@ -169,6 +169,7 @@ export default function App() {
   );
   const [dragActive, setDragActive] = useState(false);
   const [notice, setNotice] = useState('');
+  const [projectCreateRequest, setProjectCreateRequest] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<ChapterSummary | null>(null);
   const [historyTarget, setHistoryTarget] = useState<ChapterSummary | null>(null);
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
@@ -604,6 +605,7 @@ export default function App() {
       if (!ok) return;
     }
     setFocusMode(false);
+    setProjectCreateRequest((current) => current + 1);
   }, [closeProject, closeWorkspace, isDocumentMode, project]);
 
   const handleOpenProject = useCallback(async () => {
@@ -1233,7 +1235,12 @@ export default function App() {
             recentItems={recentItems}
             loading={loading}
             error={error || documentError}
-            onCreate={(parent, name) => void createProject(parent, name)}
+            createRequested={projectCreateRequest}
+            onCreate={(parent, name) => {
+              void createProject(parent, name).then((ok) => {
+                if (ok) setProjectCreateRequest(0);
+              });
+            }}
             onOpen={() => void handleOpenProject()}
             onOpenRecent={(path) => void handleOpenRecent(path)}
             onOpenPath={(path) => void handleOpenRecent(path)}

@@ -16,12 +16,20 @@
 - Rust：`cargo check --offline` 通过；`cargo test --offline --lib` **17 个测试通过**，0.51 s。
 - React 正式构建：通过，约 3.6 s。
 - Tauri Windows Release：`pnpm tauri build --no-bundle` 通过，约 24.2 s，保留 Cargo target 缓存。
-- EXE：`src-tauri/target/release/paperscape.exe`，**9,949,184 字节**。
-- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,218,844 字节**。
-- ZIP SHA256：`5B6CA0B1B8B1692B458C542A61A5D1F09A4D8F8DF93EAF3AE7FBF6BB8F0E3B4A`。
-- EXE SHA256：`BFD942C11E8F8623572107398E8809951A0647932BF209917F3EAAA4C3DF8AC3`。
+- EXE：`src-tauri/target/release/paperscape.exe`，**9,949,696 字节**。
+- 发布 ZIP：`release/PaperScape-v1.1-Portable.zip`，**3,219,071 字节**。
+- ZIP SHA256：`C093FFECA2A64E7D7C99211F70F8AF0AC00D417080832BF7C1996879795AFC48`。
+- EXE SHA256：`E71B425EB45DA55F694294C68773F2013C90349CDAE14F50D338C8FB1C77E62A`。
 - ZIP 内只有 `PaperScape-v1.1-Portable/PaperScape.exe` 和 `README.txt`。
 - **未生成 NSIS/MSI**；未引入 Electron、额外大型运行时或后台服务。
+
+### 新建项目与新建文稿自动保存（2026-11-18）
+
+- “文件 → 新建项目”此前只关闭当前工作区并回到欢迎页，创建表单藏在“旧版项目与设置”折叠区里，看起来像创建失败。现在菜单会关闭当前工作区后直接展开欢迎页项目创建表单；欢迎页顶部也新增“新建项目”按钮。
+- 表单创建成功后进入章节模式；实测创建后显示“第一章”，章节菜单可用。
+- 新建文稿原先 `path=null`，自动保存 effect 因缺少路径直接跳过，导致输入内容不落盘。现在自动保存模式在首次输入约 1.5 秒后，用默认文稿目录生成带时间戳的 `.docx`，写入后进入正常原地自动保存；手动保存仍打开另存为对话框。
+- 实测新建文稿输入后生成 `未命名文稿-时间戳.docx`，标题栏显示真实文件名，状态栏显示已保存。
+- 前端测试 **19 个文件、77 个测试通过**。
 
 ### 章节菜单/按钮可用性修复（2026-11-18）
 
@@ -102,8 +110,8 @@
 
 | 指标 | 实测 | 目标/结论 |
 | --- | --- | --- |
-| ZIP 体积 | 3,218,844 B（约 3.06 MiB） | ≤30 MB，达到 |
-| EXE 体积 | 9,949,184 B | 轻量 |
+| ZIP 体积 | 3,219,071 B（约 3.06 MiB） | ≤30 MB，达到 |
+| EXE 体积 | 9,949,696 B | 轻量 |
 | 启动到窗口（热缓存，任务计划口径） | 255 / 84 / 54 ms | ≤2 s 目标达到；**不是严格冷启动** |
 | V1 项目空闲 Working Set（含 7 个进程） | **379.2 MB** | 150 MB 挑战目标**未达到** |
 | V1 项目 Private Memory | **209.3 MB** | 未达到 150 MB |

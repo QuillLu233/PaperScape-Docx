@@ -9,10 +9,10 @@
 - `cargo check --offline`：通过；`cargo test --offline --lib`：17 个通过，0.51 s。
 - React 正式构建：约 3.6 s。
 - Tauri 2 Windows Release（`--no-bundle`）：约 24.2 s。
-- EXE：9,949,184 字节。
-- Portable ZIP：3,218,844 字节（约 3.06 MiB），低于 30 MB 目标。
-- ZIP SHA256：`5B6CA0B1B8B1692B458C542A61A5D1F09A4D8F8DF93EAF3AE7FBF6BB8F0E3B4A`。
-- EXE SHA256：`BFD942C11E8F8623572107398E8809951A0647932BF209917F3EAAA4C3DF8AC3`。
+- EXE：9,949,696 字节。
+- Portable ZIP：3,219,071 字节（约 3.06 MiB），低于 30 MB 目标。
+- ZIP SHA256：`C093FFECA2A64E7D7C99211F70F8AF0AC00D417080832BF7C1996879795AFC48`。
+- EXE SHA256：`E71B425EB45DA55F694294C68773F2013C90349CDAE14F50D338C8FB1C77E62A`。
 - ZIP 内只有 `PaperScape.exe` 和 `README.txt`；无 WebView2 Runtime、无 NSIS/MSI。
 - Cargo target、node_modules 和锁文件全部保留。
 
@@ -60,7 +60,7 @@
 - 构建：`pnpm tauri build --no-bundle`，V1.1.0 release，**未生成 NSIS**。
 - 前端生产构建：388 modules。
 - 初始 JS：960.08 kB（gzip 296.15 kB）；CSS 63.25 kB（gzip 12.70 kB）。
-- release 程序大小：9,949,184 字节（不含安装包）。
+- release 程序大小：9,949,696 字节（不含安装包）。
 - 中文校对是纯 TypeScript 规则模块：无网络请求、无模型文件、无 Python 服务、无独立进程。
 - 只读取当前选区所在段落；输入防抖 650ms，选区变化 300ms，初次检查 120ms。
 - 超过 12,000 个位置的单段直接跳过，避免长段阻塞输入。

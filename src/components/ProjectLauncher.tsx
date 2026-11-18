@@ -12,6 +12,7 @@ interface ProjectLauncherProps {
   recentItems: RecentItem[];
   loading: boolean;
   error: string;
+  createRequested: number;
   onCreate: (parent: string, name: string) => void;
   onOpen: () => void;
   onOpenRecent: (path: string) => void;
@@ -49,6 +50,7 @@ export function ProjectLauncher({
   recentItems,
   loading,
   error,
+  createRequested,
   onCreate,
   onOpen,
   onOpenRecent,
@@ -63,12 +65,20 @@ export function ProjectLauncher({
   onClearError,
 }: ProjectLauncherProps) {
   const [creating, setCreating] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [name, setName] = useState('我的长篇');
   const [parent, setParent] = useState('');
   const [manualPath, setManualPath] = useState('');
   const [localError, setLocalError] = useState('');
   const desktop = isTauriRuntime();
   const legacyAvailable = useMemo(() => hasLegacyWorkspace(), []);
+
+  useEffect(() => {
+    if (createRequested > 0) {
+      setMoreOpen(true);
+      setCreating(true);
+    }
+  }, [createRequested]);
 
   useEffect(() => {
     if (!desktop) return;
@@ -167,6 +177,18 @@ export function ProjectLauncher({
             <Icon name="folder" size={17} />
             <span>打开文件夹</span>
           </button>
+          <button
+            type="button"
+            className="launcher-secondary"
+            disabled={!desktop || loading}
+            onClick={() => {
+              setMoreOpen(true);
+              setCreating(true);
+            }}
+          >
+            <Icon name="project" size={17} />
+            <span>新建项目</span>
+          </button>
         </div>
 
         {error ? (
@@ -225,19 +247,15 @@ export function ProjectLauncher({
 
         <p className="launcher-footnote">不会自动移动、重命名或覆盖你的文稿。</p>
 
-        <details className="launcher-more">
+        <details
+          className="launcher-more"
+          open={moreOpen}
+          onToggle={(event) => setMoreOpen(event.currentTarget.open)}
+        >
           <summary>旧版项目与设置</summary>
           <div className="launcher-more-actions">
             <button type="button" className="secondary-button" onClick={onOpen} disabled={loading}>
               打开项目
-            </button>
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => setCreating((current) => !current)}
-              disabled={loading}
-            >
-              新建项目
             </button>
             {legacyAvailable ? (
               <button type="button" className="secondary-button" onClick={onImportLegacy} disabled={loading}>

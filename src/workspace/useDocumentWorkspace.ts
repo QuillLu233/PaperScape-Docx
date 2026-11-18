@@ -347,8 +347,80 @@ export function useDocumentWorkspace(autoSave = true): DocumentWorkspace {
     }
   }, [buildBytes, defaultDocumentsDir, document, refreshRecent]);
 
-  const save = useCallback(async (): Promise<boolean> => {
-    if (!document) return false;
+  /**
+   * Auto mode must not leave a newly-created document as an unsaved draft:
+   * give it a real DOCX in the configured documents directory after the first
+   * typing pause, then continue normal in-place autosave.
+   */
+  const autoSaveNewDocument = useCallback(async (): Promise<boolean> => {
+    if (!document || document.path || document.readOnly) return false;
+    setSaving(true);
+    setError('');
+    try {
+      const dir = defaultDocumentsDir || (await getDefaultDocumentsDir());
+      if (!dir) throw new Error('无法确定默认文稿目录');
+      const safeTitle =
+        (document.title || '未命名文稿')
+          .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '')
+          .replace(/[. ]+$/g, '')
+          .trim()
+          .slice(0, 48) || '未命名文稿';
+      const stamp = new Date()
+        .toISOString()
+        .replace(/[-:T]/g, '')
+        .slice(0, 14);
+      const filename = `${safeTitle}-${stamp}.docx`;
+      const separator = dir.includes('\\') ? '\\' : '/';
+      const target = `${dir.replace(/[\\/]+$/g, '')}${separator}${filename}`;
+      const bytes = await buildBytes(document);
+      const result = await writeWorkspaceDocxAs(target, bytes);
+      const parent = parentPath(result.path);
+      setDocument((current) =>
+        current
+          ? {
+              ...current,
+              path: result.path,
+              name: baseName(result.path),
+              modified: result.modified,
+              size: result.size,
+              backupPath: result.backupPath ?? '',
+              overwriteAuthorized: false,
+              dirty: false,
+              savedAt: Date.now(),
+              root: parent,
+            }
+          : current,
+      );
+      setRoot(parent);
+      setTree(await listWorkspaceTree(parent));
+      await clearDocxRecovery('untitled');
+      await addRecentItem('docx', result.path);
+      await refreshRecent();
+      return true;
+    } catch (saveError) {
+      const message =
+        saveError instanceof Error ? saveError.message : '新建文稿自动保存失败';
+      setError(message);
+      try {
+        await saveDocxRecovery('untitled', {
+          savedAt: Date.now(),
+          path: null,
+          name: document.name,
+          title: document.title,
+          doc: document.doc,
+          characterCount: document.characterCount,
+          excerpt: document.excerpt,
+        });
+      } catch {
+        // The visible error above is enough; do not recurse into recovery errors.
+      }
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }, [buildBytes, defaultDocumentsDir, document, refreshRecent]);
+
+  const save = useCallback(async (): Promise<boolean> => {    if (!document) return false;
     if (document.readOnly) {
       setError('当前文档为只读模式，请使用“另存为”');
       return false;
@@ -473,7 +545,6 @@ export function useDocumentWorkspace(autoSave = true): DocumentWorkspace {
     if (
       !autoSave ||
       !document?.dirty ||
-      !document.path ||
       document.readOnly ||
       saving ||
       autoSaveFailedDocRef.current === document.doc ||
@@ -483,13 +554,15 @@ export function useDocumentWorkspace(autoSave = true): DocumentWorkspace {
     }
     const documentAtSchedule = document.doc;
     const timer = window.setTimeout(() => {
-      void save().then((ok) => {
+      const saveAction = document.path ? save : autoSaveNewDocument;
+      void saveAction().then((ok) => {
         if (!ok) autoSaveFailedDocRef.current = documentAtSchedule;
       });
     }, 1500);
     return () => window.clearTimeout(timer);
   }, [
     autoSave,
+    autoSaveNewDocument,
     document?.characterCount,
     document?.dirty,
     document?.overwriteAuthorized,
