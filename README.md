@@ -13,9 +13,19 @@ PaperScape 是一个面向 Windows 的安静写作空间。V1.1 已完成文件�
 
 本项目的原创界面、源代码和文档版权归 QuillLulu 所有；本 README 不构成或更改任何软件授权协议。第三方组件继续遵循各自原有许可证与版权声明，详见 [NOTICE.md](NOTICE.md)。版本记录见 [CHANGELOG.md](CHANGELOG.md)。
 
-> 当前发布版本：**1.1.2（V1.1.2 正式绿色版）**
+> 当前开发版本：**2.0.0-dev.0（V2.0 开发分支）**
 >
-> 本阶段**没有生成 NSIS 或 MSI 安装包**。发布物为 `release/PaperScape-v1.1.2-Portable.zip`；Windows 需要已有 WebView2 Runtime。
+> 最近稳定版：**1.1.2**（已冻结，保留 `v1.1.2` 标签与 `release/1.1.2` 分支）
+>
+> 本阶段**没有生成 NSIS 或 MSI 安装包**。稳定版发布物为 `release/PaperScape-v1.1.2-Portable.zip`；Windows 需要已有 WebView2 Runtime。
+
+## V2.0 开发环境
+
+- 当前工作分支：`dev/2.0`
+- 开发版本号：`2.0.0-dev.0`
+- 稳定的 1.1.2 代码：`release/1.1.2` 分支、`v1.1.2` 标签
+- 1.1.2 源码快照：`release/archive/PaperScape-1.1.2-source.zip`
+- 1.1.2 便携版仍可从 GitHub Release 下载
 
 ## V1.1.2 绿色便携版
 
