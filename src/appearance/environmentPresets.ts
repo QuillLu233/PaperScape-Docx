@@ -31,7 +31,6 @@ interface EnvironmentSeed {
   effects?: string[];
   group: 'permanent' | 'festival';
   animationType?: string;
-  animationEnabled?: boolean;
   animationColor?: string;
   uiTheme: 'light' | 'dark';
 }
@@ -308,7 +307,6 @@ function createEnvironment(seed: EnvironmentSeed): EnvironmentPreset {
     presetId: `environment-${seed.id}`,
     name: seed.name,
     kind: 'gradient',
-    source: 'environment',
     color: seed.background[0],
     gradientFrom: seed.background[0],
     gradientMid: seed.background[1],
@@ -330,23 +328,12 @@ function createEnvironment(seed: EnvironmentSeed): EnvironmentPreset {
   };
   const animation: EnvironmentAnimationSettings = {
     enabled: false,
-    paused: false,
-    type: 'none',
-    effects: [],
+    type: seed.animationType ?? 'none',
+    effects: seed.effects ?? [],
     speed: 1,
-    intensity: 0.55,
+    intensity: 0.5,
     color: seed.animationColor ?? seed.accent,
-    lowPower: false,
-    rainDensity: 0.55,
-    rainFallSpeed: 0.7,
-    trafficDensity: 0.5,
-    trafficSpeed: 0.55,
-    lightBrightness: 0.7,
-    backgroundBrightness: 0.9,
-    blurAmount: 8,
-    snowDensity: 0.6,
-    snowWind: 0.18,
-    snowNight: seed.uiTheme === 'dark',
+    lowPower: true,
   };
   const paper = createPaper(seed.paper, 0.98);
   const immersive = createPaper(seed.paper, 0.8, 790);

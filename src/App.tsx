@@ -221,7 +221,6 @@ export default function App() {
   const appearanceController = useProjectAppearance(appearance, updateAppearanceInMode);
   const {
     backgroundUrl,
-    backgroundVideoUrl,
     savedThemes,
     environmentPresets,
     setMode: setWritingMode,
@@ -231,8 +230,6 @@ export default function App() {
     applyPreset,
     applySavedTheme,
     applyEnvironment,
-    applyScene,
-    restoreThemeBackground,
     saveCurrentEnvironment,
     renameEnvironment,
     deleteEnvironment,
@@ -243,8 +240,6 @@ export default function App() {
     saveCurrentTheme,
     deleteSavedTheme,
     setBackgroundFromFile,
-    setBackgroundFromVideo,
-    toggleBackgroundVideo,
   } = appearanceController;
 
   useEffect(() => {
@@ -1030,8 +1025,6 @@ export default function App() {
       onDisplayChange={updateDisplay}
       onAnimationChange={updateAnimation}
       onApplyEnvironment={applyEnvironment}
-      onApplyScene={applyScene}
-      onRestoreThemeBackground={restoreThemeBackground}
       onSaveEnvironment={saveCurrentEnvironment}
       onRenameEnvironment={renameEnvironment}
       onDeleteEnvironment={deleteEnvironment}
@@ -1049,9 +1042,6 @@ export default function App() {
       onDeleteSavedTheme={deleteSavedTheme}
       onSaveTheme={saveCurrentTheme}
       onChooseImage={handleAddBackground}
-      backgroundVideoUrl={backgroundVideoUrl}
-      onChooseVideo={setBackgroundFromVideo}
-      onToggleVideo={toggleBackgroundVideo}
       defaultDocumentsDir={defaultDocumentsDir}
       onChooseDefaultDocumentsDir={() => void handleChooseDefaultDocumentsDir()}
       uiZoom={uiZoom}
@@ -1184,9 +1174,7 @@ export default function App() {
       >
         <BackgroundLayer
           background={effectiveBackground}
-          animation={effectiveAppearance.animation}
           imageUrl={backgroundUrl}
-          videoUrl={backgroundVideoUrl}
           focusMode={focusMode}
         />
 

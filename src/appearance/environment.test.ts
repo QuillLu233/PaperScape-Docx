@@ -38,12 +38,6 @@ describe('V2 environment presets', () => {
     }
   });
 
-  it('keeps official environments static until a dynamic scene is chosen', () => {
-    for (const preset of OFFICIAL_ENVIRONMENTS) {
-      expect(preset.animation.enabled).toBe(false);
-      expect(preset.animation.type).toBe('none');
-    }
-  });
   it('registers the two festival environments with their reference palettes', () => {
     const christmas = getOfficialEnvironment('christmas-carol')!;
     expect(christmas.group).toBe('festival');
@@ -63,7 +57,7 @@ describe('V2 environment presets', () => {
     expect(christmas.display.color).toBe('#533C35');
     expect(christmas.display.titleColor).toBe('#503038');
     expect(christmas.background.gradientAccent).toBe('#F1D5A0');
-    expect(christmas.animation.enabled).toBe(false);
+    expect(christmas.animation.effects).toEqual(['snow', 'gradient', 'golden-glow']);
 
     const spring = getOfficialEnvironment('spring-festival')!;
     expect(spring.group).toBe('festival');
@@ -73,43 +67,6 @@ describe('V2 environment presets', () => {
     expect(spring.uiColors.border).toBe('#D8B9A5');
     expect(spring.uiColors.selected).toBe('#ECD1C4');
     expect(spring.paper.color).toBe('#FFF5E2');
-  });
-
-  it('sanitizes procedural and video background settings', () => {
-    const appearance = sanitizeAppearance({
-      background: {
-        kind: 'video',
-        videoId: 'video-1',
-        videoName: 'night.mp4',
-        videoFit: 'contain',
-        videoMode: 'copy',
-        videoPaused: true,
-      },
-      animation: {
-        enabled: true,
-        type: 'rain-traffic',
-        rainDensity: 0.7,
-        rainFallSpeed: 1.1,
-        trafficDensity: 0.4,
-        trafficSpeed: 0.9,
-        lightBrightness: 0.8,
-        backgroundBrightness: 1,
-        snowDensity: 0.2,
-        snowWind: -0.3,
-        snowNight: true,
-      },
-    });
-    expect(appearance.background.kind).toBe('video');
-    expect(appearance.background.videoId).toBe('video-1');
-    expect(appearance.background.videoFit).toBe('contain');
-    expect(appearance.background.videoPaused).toBe(true);
-    expect(appearance.animation.type).toBe('rain-traffic');
-    expect(appearance.animation.rainDensity).toBe(0.7);
-    expect(appearance.animation.rainFallSpeed).toBe(1.1);
-    expect(appearance.animation.lightBrightness).toBe(0.8);
-    expect(appearance.animation.backgroundBrightness).toBe(1);
-    expect(appearance.animation.trafficDensity).toBe(0.4);
-    expect(appearance.animation.snowWind).toBe(-0.3);
   });
 
   it('upgrades an untouched old official Christmas snapshot', () => {
@@ -137,56 +94,24 @@ describe('V2 environment presets', () => {
     expect(migrated.display.color).toBe('#533C35');
   });
 
-  it('restores full official environments but keeps scenes in custom presets', () => {
-    const appearance = cloneAppearance(DEFAULT_APPEARANCE);
-    appearance.background = { ...appearance.background, source: 'procedural' };
-    appearance.animation = {
-      ...appearance.animation,
-      enabled: true,
-      type: 'rain-traffic',
-      sceneId: 'rain-traffic',
-      rainDensity: 0.7,
-    };
-    const official = applyEnvironmentPreset(
-      appearance,
-      getOfficialEnvironment('aurora')!,
-    );
-    expect(official.background.source).toBe('environment');
-    expect(official.animation.enabled).toBe(false);
-    expect(official.animation.type).toBe('none');
-
-    const custom = {
-      ...getOfficialEnvironment('aurora')!,
-      presetType: 'custom' as const,
-      background: { ...getOfficialEnvironment('aurora')!.background, source: 'procedural' as const },
-      animation: { ...appearance.animation },
-    };
-    const restored = applyEnvironmentPreset(appearance, custom);
-    expect(restored.background.source).toBe('procedural');
-    expect(restored.animation.type).toBe('rain-traffic');
-    expect(restored.animation.rainDensity).toBe(0.7);
-  });
-
-  it('follows the preset by default while custom snapshots can keep the chosen UI mode', () => {
+  it('defaults to following the preset but preserves an explicit UI color choice', () => {
     const automatic = cloneAppearance(DEFAULT_APPEARANCE);
     automatic.uiColorMode = 'dark';
-    automatic.uiColorModeExplicit = true;
-    const appliedOfficial = applyEnvironmentPreset(
+    automatic.uiColorModeExplicit = false;
+    const appliedAutomatic = applyEnvironmentPreset(
       automatic,
       getOfficialEnvironment('spring-festival')!,
     );
-    expect(appliedOfficial.uiColorMode).toBe('environment');
-    expect(appliedOfficial.uiColorModeExplicit).toBe(false);
+    expect(appliedAutomatic.uiColorMode).toBe('environment');
 
-    const custom = {
-      ...getOfficialEnvironment('spring-festival')!,
-      presetType: 'custom' as const,
-    };
     const explicit = cloneAppearance(DEFAULT_APPEARANCE);
     explicit.uiColorMode = 'dark';
     explicit.uiColorModeExplicit = true;
-    const appliedCustom = applyEnvironmentPreset(explicit, custom);
-    expect(appliedCustom.uiColorMode).toBe('dark');
+    const appliedExplicit = applyEnvironmentPreset(
+      explicit,
+      getOfficialEnvironment('spring-festival')!,
+    );
+    expect(appliedExplicit.uiColorMode).toBe('dark');
   });
 
   it('preserves the classic environment when migrating old appearance data', () => {

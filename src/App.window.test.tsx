@@ -60,11 +60,7 @@ describe('desktop window controls', () => {
     expect(windowApi.minimize).toHaveBeenCalledTimes(1);
 
     await user.click(screen.getByRole('button', { name: '最大化窗口' }));
-    await waitFor(() =>
-      expect(windowApi.setSize).toHaveBeenCalledWith(
-        expect.objectContaining({ width: 1600, height: 900 }),
-      ),
-    );
+    await waitFor(() => expect(windowApi.setSize).toHaveBeenCalledWith({ width: 1600, height: 900 }));
     await waitFor(() => expect(windowApi.setPosition).toHaveBeenCalledWith({ x: 0, y: 0 }));
     await waitFor(() =>
       expect(screen.getByRole('button', { name: '还原窗口' })).toBeInTheDocument(),

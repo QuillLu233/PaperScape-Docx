@@ -35,8 +35,7 @@ const SAVED_THEMES_KEY = 'paperscape.saved-themes.v1';
 const ENVIRONMENT_PRESETS_KEY = 'paperscape.environment-presets.v1';
 const MEDIA_DB = 'paperscape-media';
 const MEDIA_STORE = 'backgrounds';
-const VIDEO_STORE = 'background-videos';
-const MEDIA_DB_VERSION = 2;
+const MEDIA_DB_VERSION = 1;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object';
@@ -55,29 +54,14 @@ function clampNumber(value: unknown, min: number, max: number, fallback: number)
 function sanitizeBackground(value: unknown): BackgroundStyle {
   if (!isRecord(value)) return cloneBackground(DEFAULT_BACKGROUND);
   const kind: BackgroundKind =
-    value.kind === 'solid' ||
-    value.kind === 'gradient' ||
-    value.kind === 'image' ||
-    value.kind === 'video'
+    value.kind === 'solid' || value.kind === 'gradient' || value.kind === 'image'
       ? value.kind
       : DEFAULT_BACKGROUND.kind;
   const presetId = typeof value.presetId === 'string' ? value.presetId : 'custom';
-  const source =
-    value.source === 'environment' ||
-    value.source === 'custom' ||
-    value.source === 'procedural' ||
-    value.source === 'video'
-      ? value.source
-      : value.kind === 'video'
-        ? 'video'
-        : value.kind === 'image'
-          ? 'custom'
-          : 'environment';
   return {
     presetId,
     name: typeof value.name === 'string' && value.name.trim() ? value.name : '自定义背景',
     kind,
-    source,
     color: safeColor(value.color, DEFAULT_BACKGROUND.color),
     gradientFrom: safeColor(value.gradientFrom, DEFAULT_BACKGROUND.gradientFrom),
     gradientMid: safeColor(value.gradientMid, DEFAULT_BACKGROUND.gradientMid ?? DEFAULT_BACKGROUND.gradientFrom),
@@ -88,11 +72,6 @@ function sanitizeBackground(value: unknown): BackgroundStyle {
         : safeColor(value.gradientAccent, DEFAULT_BACKGROUND.gradientFrom),
     gradientAngle: clampNumber(value.gradientAngle, 0, 360, DEFAULT_BACKGROUND.gradientAngle),
     imageId: typeof value.imageId === 'string' && value.imageId ? value.imageId : null,
-    videoId: typeof value.videoId === 'string' && value.videoId ? value.videoId : null,
-    videoName: typeof value.videoName === 'string' ? value.videoName.slice(0, 240) : '',
-    videoFit: value.videoFit === 'contain' ? 'contain' : 'cover',
-    videoMode: value.videoMode === 'reference' ? 'reference' : 'copy',
-    videoPaused: value.videoPaused === true,
     brightness: clampNumber(value.brightness, 30, 150, 100),
     blur: clampNumber(value.blur, 0, 24, 0),
     vignette: clampNumber(value.vignette, 0, 100, 20),
@@ -183,20 +162,9 @@ function sanitizeDisplay(value: unknown): EnvironmentDisplaySettings {
 
 function sanitizeAnimation(value: unknown): EnvironmentAnimationSettings {
   const record = isRecord(value) ? value : {};
-  const rawType = typeof record.type === 'string' ? record.type.slice(0, 40) : 'none';
-  const type =
-    rawType === 'gradient'
-      ? 'flow'
-      : rawType === 'rain'
-        ? 'rain-traffic'
-        : rawType === 'fireflies' || rawType === 'dust'
-          ? 'orbs'
-          : rawType;
   return {
     enabled: record.enabled === true,
-    paused: record.paused === true,
-    sceneId: typeof record.sceneId === 'string' ? record.sceneId.slice(0, 80) : undefined,
-    type,
+    type: typeof record.type === 'string' ? record.type.slice(0, 40) : 'none',
     effects: Array.isArray(record.effects)
       ? record.effects.filter((item): item is string => typeof item === 'string').slice(0, 8)
       : [],
@@ -204,16 +172,6 @@ function sanitizeAnimation(value: unknown): EnvironmentAnimationSettings {
     intensity: clampNumber(record.intensity, 0, 1, DEFAULT_ANIMATION.intensity),
     color: safeColor(record.color, DEFAULT_ANIMATION.color),
     lowPower: record.lowPower !== false,
-    rainDensity: clampNumber(record.rainDensity, 0, 1, DEFAULT_ANIMATION.rainDensity ?? 0.55),
-    rainFallSpeed: clampNumber(record.rainFallSpeed, 0.1, 2, DEFAULT_ANIMATION.rainFallSpeed ?? 0.7),
-    trafficDensity: clampNumber(record.trafficDensity, 0, 1, DEFAULT_ANIMATION.trafficDensity ?? 0.5),
-    trafficSpeed: clampNumber(record.trafficSpeed, 0.1, 2, DEFAULT_ANIMATION.trafficSpeed ?? 0.55),
-    lightBrightness: clampNumber(record.lightBrightness, 0.1, 1.5, DEFAULT_ANIMATION.lightBrightness ?? 0.7),
-    backgroundBrightness: clampNumber(record.backgroundBrightness, 0.4, 1.2, DEFAULT_ANIMATION.backgroundBrightness ?? 0.9),
-    blurAmount: clampNumber(record.blurAmount, 0, 24, DEFAULT_ANIMATION.blurAmount ?? 8),
-    snowDensity: clampNumber(record.snowDensity, 0, 1, DEFAULT_ANIMATION.snowDensity ?? 0.55),
-    snowWind: clampNumber(record.snowWind, -1, 1, DEFAULT_ANIMATION.snowWind ?? 0.18),
-    snowNight: record.snowNight === true,
   };
 }
 
@@ -487,30 +445,14 @@ export function applyEnvironmentPreset(
     ...appearance,
     presetId: preset.id,
     uiTheme: preset.uiTheme,
-    uiColorMode: preset.presetType === 'official' ? 'environment' : appearance.uiColorMode,
-    uiColorModeExplicit: preset.presetType === 'official' ? false : appearance.uiColorModeExplicit,
+    uiColorMode: appearance.uiColorModeExplicit ? appearance.uiColorMode : 'environment',
     uiColors: { ...preset.uiColors },
+    background: cloneBackground(preset.background),
     paper: clonePaper(preset.paper),
     immersive: clonePaper(preset.immersive),
     readingOpacity: preset.immersive.opacity,
     display: { ...preset.display },
-    background: {
-      ...cloneBackground(preset.background),
-      source:
-        preset.presetType === 'official'
-          ? 'environment'
-          : preset.background.source ?? 'environment',
-    },
-    animation:
-      preset.presetType === 'official'
-        ? {
-            ...preset.animation,
-            enabled: false,
-            paused: false,
-            sceneId: undefined,
-            type: 'none',
-          }
-        : { ...preset.animation },
+    animation: { ...preset.animation },
   };
 }
 
@@ -585,7 +527,6 @@ function openMediaDb(): Promise<IDBDatabase> {
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains(MEDIA_STORE)) db.createObjectStore(MEDIA_STORE);
-      if (!db.objectStoreNames.contains(VIDEO_STORE)) db.createObjectStore(VIDEO_STORE);
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error ?? new Error('无法打开图片存储'));
@@ -624,50 +565,6 @@ export async function deleteBackgroundImage(id: string): Promise<void> {
     transaction.onerror = () => reject(transaction.error ?? new Error('图片删除失败'));
   });
   db.close();
-}
-
-export async function putBackgroundVideo(id: string, blob: Blob): Promise<void> {
-  const db = await openMediaDb();
-  await new Promise<void>((resolve, reject) => {
-    const transaction = db.transaction(VIDEO_STORE, 'readwrite');
-    transaction.objectStore(VIDEO_STORE).put(blob, id);
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error ?? new Error('视频保存失败'));
-  });
-  db.close();
-}
-
-export async function getBackgroundVideo(id: string): Promise<Blob | undefined> {
-  const db = await openMediaDb();
-  const blob = await new Promise<Blob | undefined>((resolve, reject) => {
-    const transaction = db.transaction(VIDEO_STORE, 'readonly');
-    const request = transaction.objectStore(VIDEO_STORE).get(id);
-    request.onsuccess = () => resolve(request.result instanceof Blob ? request.result : undefined);
-    request.onerror = () => reject(request.error ?? new Error('视频读取失败'));
-  });
-  db.close();
-  return blob;
-}
-
-export async function deleteBackgroundVideo(id: string): Promise<void> {
-  const db = await openMediaDb();
-  await new Promise<void>((resolve, reject) => {
-    const transaction = db.transaction(VIDEO_STORE, 'readwrite');
-    transaction.objectStore(VIDEO_STORE).delete(id);
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error ?? new Error('视频删除失败'));
-  });
-  db.close();
-}
-
-const MAX_VIDEO_BYTES = 300 * 1024 * 1024;
-
-export async function prepareBackgroundVideo(file: File): Promise<Blob> {
-  if (!['video/mp4', 'video/webm'].includes(file.type)) {
-    throw new Error('仅支持 MP4 或 WebM 背景视频');
-  }
-  if (file.size > MAX_VIDEO_BYTES) throw new Error('背景视频不能超过 300 MB');
-  return file;
 }
 
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
