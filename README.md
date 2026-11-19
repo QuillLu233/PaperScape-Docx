@@ -13,7 +13,7 @@ PaperScape 是一个面向 Windows 的安静写作空间。V1.1 已完成文件�
 
 本项目的原创界面、源代码和文档版权归 QuillLulu 所有；本 README 不构成或更改任何软件授权协议。第三方组件继续遵循各自原有许可证与版权声明，详见 [NOTICE.md](NOTICE.md)。版本记录见 [CHANGELOG.md](CHANGELOG.md)。
 
-> 当前开发版本：**2.0.0-dev.2（V2.0 开发分支）**
+> 当前开发版本：**2.0.0-dev.3（V2.0 开发分支）**
 >
 > 最近稳定版：**1.1.2**（已冻结，保留 `v1.1.2` 标签与 `release/1.1.2` 分支）
 >
@@ -21,16 +21,17 @@ PaperScape 是一个面向 Windows 的安静写作空间。V1.1 已完成文件�
 
 ## V2.0 开发环境
 - Phase 3 新增：DOCX 双文稿分屏、右侧只读参考、解锁双编辑、共享工具栏和独立自动保存。
+- Phase 4 新增：Windows GSMTC 系统音乐控制台、状态栏/专注入口和音乐浮层。
 
 - 当前工作分支：`dev/2.0`
-- 开发版本号：`2.0.0-dev.2`
+- 开发版本号：`2.0.0-dev.3`
 - 稳定的 1.1.2 代码：`release/1.1.2` 分支、`v1.1.2` 标签
 - 1.1.2 源码快照：`release/archive/PaperScape-1.1.2-source.zip`
 - 1.1.2 便携版仍可从 GitHub Release 下载
 - Phase 1.1 新增：13 款官方环境预设（含节日主题）、统一主题 Tokens、四类界面配色、自适应正文颜色、纸张/沉浸双模式参数、官方/自定义预设选择器、版本化 JSON 导入导出
 - 应用预设时界面配色默认跟随环境；显式选择经典配色后，切换主题保留用户选择。
 - 修复最大化/还原后窗口尺寸增长，并确保 WebView2 视口无需点击边框即可刷新。
-- 开发便携包：`release/PaperScape-v2.0.0-dev.2-Portable.zip`（3,226,262 字节，SHA256 `A16A502346D50D49A96FF7E3273D85330B8FC7F019422A2D9CF17A7EA925F6B4`）
+- 开发便携包：`release/PaperScape-v2.0.0-dev.3-Portable.zip`（3,257,462 字节，SHA256 `7277C7115FA1C101E4C7C07651B66A8E75DB9FB50C52B618C0E52072B46C8C74`）
 - 详细计划与限制见 [V2_DEVELOPMENT_PLAN.md](V2_DEVELOPMENT_PLAN.md)
 
 ## V1.1.2 绿色便携版

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Icon } from './Icon';
 
 interface StatusBarProps {
@@ -15,6 +16,7 @@ interface StatusBarProps {
   saveError?: string;
   zoom: number;
   onZoomChange: (value: number) => void;
+  music?: ReactNode;
 }
 
 const ZOOM_OPTIONS = Array.from({ length: 16 }, (_, index) => 50 + index * 10);
@@ -45,6 +47,7 @@ export function StatusBar({
   saveError = '',
   zoom,
   onZoomChange,
+  music,
 }: StatusBarProps) {
   const saveLabel = saveError
     ? '保存失败'
@@ -94,6 +97,8 @@ export function StatusBar({
         {dirty || saveError ? null : <Icon name="check" size={12} />}
         <span>{saveLabel}</span>
       </div>
+
+      {music}
 
       <div className="status-group status-shortcuts" aria-label="缩放和快捷键">
         <div className="status-zoom" aria-label="文稿缩放">

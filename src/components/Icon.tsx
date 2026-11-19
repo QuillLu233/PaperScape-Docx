@@ -42,7 +42,12 @@ export type IconName =
   | 'folder'
   | 'file'
   | 'refresh'
-  | 'external';
+  | 'external'
+  | 'music'
+  | 'play'
+  | 'pause'
+  | 'previous'
+  | 'next';
 
 const ICONS: Record<IconName, ReactNode> = {
   plus: <path d="M8 3.5v9M3.5 8h9" />,
@@ -224,6 +229,32 @@ const ICONS: Record<IconName, ReactNode> = {
       <path d="M9.2 3.1h3.7v3.7" />
       <path d="M12.9 3.1 7.7 8.3" />
       <path d="M11.2 9.4v3.2H3.4V4.8h3.2" />
+    </>
+  ),
+  music: (
+    <>
+      <path d="M6.1 12.2V4.1l6.1-1.2v8.2" />
+      <circle cx="4.4" cy="12.2" r="1.7" />
+      <circle cx="10.5" cy="11.1" r="1.7" />
+    </>
+  ),
+  play: <path d="M5 3.2 12.6 8 5 12.8Z" />,
+  pause: (
+    <>
+      <path d="M5 3.2h2.1v9.6H5z" />
+      <path d="M8.9 3.2H11v9.6H8.9z" />
+    </>
+  ),
+  previous: (
+    <>
+      <path d="M4 3.2v9.6" />
+      <path d="M12 3.5 5.8 8l6.2 4.5Z" />
+    </>
+  ),
+  next: (
+    <>
+      <path d="M12 3.2v9.6" />
+      <path d="M4 3.5 10.2 8 4 12.5Z" />
     </>
   ),
 };

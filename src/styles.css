@@ -4440,3 +4440,99 @@ body.is-text-dragging .tiptap {
   border-color: var(--line-strong);
   color: var(--ink);
 }
+
+.music-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 180px;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+.music-mini:hover { background: var(--accent-soft); color: var(--accent); }
+.music-mini-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.music-mini-state { font-size: 8px; color: var(--accent); }
+.music-mini-state.state-paused { color: var(--muted); }
+.music-mini.is-focus {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 75;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+  color: var(--ink);
+  opacity: var(--music-opacity, 0.6);
+  transition: opacity 150ms ease, background 150ms ease;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.18);
+}
+.music-mini.is-focus:hover { opacity: 1; background: var(--panel); }
+.music-mini.is-focus .music-mini-state { display: none; }
+.music-panel {
+  position: fixed;
+  right: 12px;
+  bottom: 42px;
+  z-index: 76;
+  width: min(284px, calc(100vw - 24px));
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.24);
+  animation: music-panel-in 170ms ease-out;
+}
+.music-panel.is-focus { right: 16px; bottom: 58px; }
+@keyframes music-panel-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.music-panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.music-panel-kicker { color: var(--muted); font-size: 8px; letter-spacing: 0.12em; }
+.music-panel-close {
+  border: 0; background: transparent; color: var(--muted);
+  width: 22px; height: 22px; border-radius: 5px; cursor: pointer;
+}
+.music-panel-close:hover { background: var(--accent-soft); color: var(--accent); }
+.music-track { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.music-cover { width: 52px; height: 52px; border-radius: 7px; object-fit: cover; flex: 0 0 auto; }
+.music-cover-empty { display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+.music-track-copy { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.music-track-copy strong { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.music-track-copy span { font-size: 10px; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.music-track-copy small { font-size: 9px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.music-progress { display: grid; grid-template-columns: 28px 1fr 28px; align-items: center; gap: 4px; margin: 10px 0 4px; color: var(--muted); font-size: 9px; }
+.music-progress input { width: 100%; accent-color: var(--accent); }
+.music-controls { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 4px 0 8px; }
+.music-control {
+  width: 28px; height: 28px; border: 0; border-radius: 50%;
+  background: transparent; color: var(--ink-soft); display: grid; place-items: center; cursor: pointer;
+}
+.music-control:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent); }
+.music-control:disabled { opacity: 0.3; cursor: default; }
+.music-play {
+  width: 34px; height: 34px; background: var(--accent); color: var(--panel);
+}
+.music-play:hover:not(:disabled) { background: var(--accent-strong); color: var(--panel); }
+.music-source-row { display: flex; align-items: center; gap: 6px; padding-top: 7px; border-top: 1px solid var(--line); }
+.music-source-row label { color: var(--muted); font-size: 9px; white-space: nowrap; }
+.music-source-row select { min-width: 0; flex: 1; }
+.music-error, .music-note { margin: 6px 0 0; color: var(--muted); font-size: 9px; line-height: 1.4; }
+.music-error { color: var(--proofreading); }
+.music-toggle-button {
+  width: 100%; margin-top: 7px; padding: 5px; border: 1px solid var(--line);
+  border-radius: 6px; background: transparent; color: var(--ink-soft); font: inherit; font-size: 10px; cursor: pointer;
+}
+.music-toggle-button:hover { background: var(--accent-soft); }
+.music-settings summary { cursor: pointer; }

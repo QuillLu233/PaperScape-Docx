@@ -16,6 +16,8 @@ import { AboutDialog, ShortcutsDialog } from './components/Dialogs';
 import { EditorPane, type EditorPaneHandle } from './components/EditorPane';
 import { EditorToolbar } from './components/EditorToolbar';
 import { SplitPaneHeader } from './components/SplitPaneHeader';
+import { MusicMini, MusicPanel } from './components/MusicConsole';
+import { useSystemMedia } from './media/useSystemMedia';
 import { FocusOverlay } from './components/FocusOverlay';
 import { HistoryDialog } from './components/HistoryDialog';
 import { Icon } from './components/Icon';
@@ -160,6 +162,8 @@ export default function App() {
   const { mode: themeMode, resolved: themeResolved, setMode: setThemeMode } = useTheme();
   const fonts = useFonts();
   const proofreading = useProofreading();
+  const [musicPanelOpen, setMusicPanelOpen] = useState(false);
+  const media = useSystemMedia(musicPanelOpen);
   const { uiZoom, setUiZoom } = useUiZoom();
   const { docZoom, setDocZoom, resetDocZoom } = useDocumentZoom();
   const { leftOpen, rightOpen, toggleLeft, toggleRight, setLeftOpen } = usePanels();
@@ -173,6 +177,10 @@ export default function App() {
   const [focusMode, setFocusMode] = useState(false);
   const focusAutoFullscreenRef = useRef(false);
   const previousFocusModeRef = useRef(false);
+
+  useEffect(() => {
+    if (!focusMode) setMusicPanelOpen(false);
+  }, [focusMode]);
   const [documentBarCollapsed, setDocumentBarCollapsed] = useState(
     () => window.localStorage.getItem('paperscape.documentBarCollapsed') === 'true',
   );
@@ -1181,6 +1189,9 @@ export default function App() {
       onProofreadingEnabledChange={proofreading.setEnabled}
       onClearProofreadingDictionary={proofreading.clearDictionary}
       onClearProofreadingIgnored={proofreading.clearIgnored}
+      mediaSettings={media.settings}
+      mediaSessions={media.sessions}
+      onMediaSettingsChange={media.updateSettings}
       onToggleFocus={toggleFocusMode}
       onClose={toggleRight}
       saveMode={saveMode}
@@ -1639,18 +1650,43 @@ export default function App() {
       </div>
 
       {focusMode ? (
-        <FocusOverlay
-          paperOpacity={focusPaperOpacity}
-          brightness={focusBrightness}
-          blur={focusBlur}
-          overlay={focusOverlay}
-          onPaperOpacityChange={setFocusPaperOpacity}
-          onBrightnessChange={setFocusBrightness}
-          onBlurChange={setFocusBlur}
-          onOverlayChange={setFocusOverlay}
-          onExit={() => setFocusMode(false)}
-        />
+        <>
+          <FocusOverlay
+            paperOpacity={focusPaperOpacity}
+            brightness={focusBrightness}
+            blur={focusBlur}
+            overlay={focusOverlay}
+            onPaperOpacityChange={setFocusPaperOpacity}
+            onBrightnessChange={setFocusBrightness}
+            onBlurChange={setFocusBlur}
+            onOverlayChange={setFocusOverlay}
+            onExit={() => setFocusMode(false)}
+          />
+          <MusicMini
+            media={media.media}
+            available={media.available && Boolean(media.media)}
+            settings={media.settings}
+            focusMode
+            onToggle={() => setMusicPanelOpen((open) => !open)}
+          />
+        </>
       ) : null}
+
+      <MusicPanel
+        open={musicPanelOpen}
+        focusMode={focusMode}
+        media={media.media}
+        sessions={media.sessions}
+        settings={media.settings}
+        error={media.error}
+        loading={media.loading}
+        onClose={() => setMusicPanelOpen(false)}
+        onToggle={() => setMusicPanelOpen((open) => !open)}
+        onControl={(action) => void media.control(action)}
+        onSeek={(position) => void media.seek(position)}
+        onSelectSession={media.selectSession}
+        onFollowAuto={media.followAuto}
+      />
 
       {isProjectOpen ? (
         <StatusBar
@@ -1665,7 +1701,15 @@ export default function App() {
           onToggleFocus={toggleFocusMode}
           zoom={docZoom}
           onZoomChange={setDocZoom}
-          saveError={error && /保存|写入/.test(error) ? error : ''}
+          music={
+            <MusicMini
+              media={media.media}
+              available={media.available && Boolean(media.media)}
+              settings={media.settings}
+              focusMode={false}
+              onToggle={() => setMusicPanelOpen((open) => !open)}
+            />
+          }
         />
       ) : null}
 
@@ -1678,13 +1722,26 @@ export default function App() {
           savedAt={activeDocumentView?.savedAt ?? 0}
           saving={activeSaving}
           dirty={activeDocumentView?.dirty ?? false}
+          saveError={
+            activeDocumentError && /保存|写入/.test(activeDocumentError)
+              ? activeDocumentError
+              : ''
+          }
           focusMode={false}
           onToggleFocus={() => undefined}
           standalone
           documentName={activeDocumentView?.name}
           zoom={activeZoom}
           onZoomChange={activeZoomChange}
-          saveError={activeDocumentError && /保存|写入/.test(activeDocumentError) ? activeDocumentError : ''}
+          music={
+            <MusicMini
+              media={media.media}
+              available={media.available && Boolean(media.media)}
+              settings={media.settings}
+              focusMode={false}
+              onToggle={() => setMusicPanelOpen((open) => !open)}
+            />
+          }
         />
       ) : null}
 

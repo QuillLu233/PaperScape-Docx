@@ -14,6 +14,9 @@ import type {
 } from '../types';
 import { DEFAULT_SETTINGS, EDITOR_WIDTH_MAX, EDITOR_WIDTH_MIN, THEME_LABELS } from '../types';
 import { AppearanceSettings } from './AppearanceSettings';
+import { MusicConsoleSettings } from './MusicConsoleSettings';
+import type { MediaSessionSummary } from '../media/mediaApi';
+import type { MediaSettings } from '../media/useSystemMedia';
 import { Icon, type IconName } from './Icon';
 
 interface SettingsPanelProps {
@@ -66,6 +69,9 @@ interface SettingsPanelProps {
   onSaveModeChange: (mode: SaveMode) => void;
   documentBarAutoCollapse: boolean;
   onDocumentBarAutoCollapseChange: (value: boolean) => void;
+  mediaSettings?: MediaSettings;
+  mediaSessions?: MediaSessionSummary[];
+  onMediaSettingsChange?: (patch: Partial<MediaSettings>) => void;
 }
 
 const THEME_OPTIONS: Array<{ mode: ThemeMode; icon: IconName }> = [
@@ -120,6 +126,9 @@ export const SettingsPanel = memo(function SettingsPanel({
   onToggleFocus,
   onClose,
   documentMode = false,
+  mediaSettings,
+  mediaSessions = [],
+  onMediaSettingsChange,
   saveMode,
   onSaveModeChange,
   documentBarAutoCollapse,
@@ -398,6 +407,14 @@ export const SettingsPanel = memo(function SettingsPanel({
           </div>
         </section>
 
+        {mediaSettings && onMediaSettingsChange ? (
+          <MusicConsoleSettings
+            settings={mediaSettings}
+            sessions={mediaSessions}
+            onChange={onMediaSettingsChange}
+          />
+        ) : null}
+
         <section className="settings-section" aria-labelledby="data-heading">
           <h3 id="data-heading" className="settings-label">
             本地存储
@@ -432,7 +449,7 @@ export const SettingsPanel = memo(function SettingsPanel({
         </section>
 
         <div className="settings-version">
-          <span>V1.1.0</span>
+          <span>2.0.0-dev.3</span>
           <span>正式版</span>
         </div>
       </div>

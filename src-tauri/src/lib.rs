@@ -3,6 +3,7 @@
 // Created by QuillLulu
 mod focus_hook;
 mod font;
+mod media;
 mod project;
 mod workspace;
 
@@ -638,6 +639,31 @@ fn install_focus_accelerator(app: &AppHandle) {
 fn install_focus_accelerator(_app: &AppHandle) {}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+#[tauri::command]
+fn media_available() -> bool {
+    media::available()
+}
+
+#[tauri::command]
+fn media_sessions() -> Result<Vec<media::MediaSessionSummary>, String> {
+    media::list_sessions()
+}
+
+#[tauri::command]
+fn media_state(session_id: String) -> Result<media::MediaState, String> {
+    media::state(&session_id)
+}
+
+#[tauri::command]
+fn media_control(session_id: String, action: String) -> Result<bool, String> {
+    media::control(&session_id, &action)
+}
+
+#[tauri::command]
+fn media_seek(session_id: String, position_ms: i64) -> Result<bool, String> {
+    media::seek(&session_id, position_ms)
+}
+
 pub fn run() {
     tauri::Builder::default()
         .manage(workspace::WorkspaceAccess::default())
@@ -652,6 +678,11 @@ pub fn run() {
             project_rename_chapter,
             project_reorder_chapters,
             project_delete_chapter,
+            media_available,
+            media_sessions,
+            media_state,
+            media_control,
+            media_seek,
             project_close,
             project_list_history,
             project_restore_history,
