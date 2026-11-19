@@ -98,9 +98,8 @@ export function StatusBar({
         <span>{saveLabel}</span>
       </div>
 
-      {music}
-
       <div className="status-group status-shortcuts" aria-label="缩放和快捷键">
+        {music}
         <div className="status-zoom" aria-label="文稿缩放">
           <button
             type="button"
