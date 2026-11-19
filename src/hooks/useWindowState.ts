@@ -138,7 +138,7 @@ export function useWindowState() {
 
     savedBoundsRef.current = {
       position: await windowApi.outerPosition(),
-      size: await windowApi.outerSize(),
+      size: await windowApi.innerSize(),
     };
     customMaximizedRef.current = true;
     await windowApi.setPosition(monitor.workArea.position);
