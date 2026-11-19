@@ -28,13 +28,20 @@ export function MusicMini({ media, available, settings, focusMode, onToggle }: M
           ? ({ '--music-opacity': settings.focusIconOpacity } as CSSProperties)
           : undefined
       }
-      aria-label={media ? `音乐：${media.title || media.sourceName}` : '系统音乐'}
-      title={media ? `${media.title || '未知曲目'} · ${media.artist || media.sourceName}` : '系统音乐'}
+      aria-label={media ? `音乐：${media.title || media.sourceName}` : '打开系统音乐控制台'}
+      title={
+        media
+          ? `${media.title || '未知曲目'} · ${media.artist || media.sourceName}`
+          : '系统音乐 · 点击查看媒体会话'
+      }
       onClick={onToggle}
     >
       <Icon name="music" size={14} />
       {!focusMode && settings.showTitle && media ? (
         <span className="music-mini-title">{media.title || media.sourceName}</span>
+      ) : null}
+      {!focusMode && settings.showTitle && !media ? (
+        <span className="music-mini-title music-mini-empty">系统音乐</span>
       ) : null}
       {media ? (
         <span className={`music-mini-state state-${media.status}`} aria-hidden="true">
@@ -59,6 +66,7 @@ interface MusicPanelProps {
   onSeek: (positionMs: number) => void;
   onSelectSession: (sessionId: string) => void;
   onFollowAuto: () => void;
+  onRefresh: () => void;
 }
 
 export function MusicPanel({
@@ -75,6 +83,7 @@ export function MusicPanel({
   onSeek,
   onSelectSession,
   onFollowAuto,
+  onRefresh,
 }: MusicPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -112,9 +121,20 @@ export function MusicPanel({
     >
       <div className="music-panel-header">
         <span className="music-panel-kicker">NOW PLAYING</span>
-        <button type="button" className="music-panel-close" aria-label="收起音乐控制台" onClick={onClose}>
-          <Icon name="close" size={12} />
-        </button>
+        <div className="music-panel-head-actions">
+          <button
+            type="button"
+            className="music-panel-refresh"
+            aria-label="重新检测媒体会话"
+            title="重新检测"
+            onClick={onRefresh}
+          >
+            <Icon name="refresh" size={12} />
+          </button>
+          <button type="button" className="music-panel-close" aria-label="收起音乐控制台" onClick={onClose}>
+            <Icon name="close" size={12} />
+          </button>
+        </div>
       </div>
 
       <div className="music-track">
@@ -200,7 +220,11 @@ export function MusicPanel({
         </select>
       </div>
       {error ? <p className="music-error">{error}</p> : null}
-      {!media && !loading ? <p className="music-note">打开外部播放器播放音乐后，这里会自动显示。</p> : null}
+      {!media && !loading ? (
+        <p className="music-note">
+          系统媒体接口可用，但未检测到播放会话。请确认播放器正在播放音频，并支持 Windows 系统媒体控制；也可点击右上角刷新。
+        </p>
+      ) : null}
       <button type="button" className="music-toggle-button" onClick={onToggle}>
         收起音乐控制台
       </button>

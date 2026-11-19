@@ -1664,7 +1664,7 @@ export default function App() {
           />
           <MusicMini
             media={media.media}
-            available={media.available && Boolean(media.media)}
+            available={media.available}
             settings={media.settings}
             focusMode
             onToggle={() => setMusicPanelOpen((open) => !open)}
@@ -1686,6 +1686,7 @@ export default function App() {
         onSeek={(position) => void media.seek(position)}
         onSelectSession={media.selectSession}
         onFollowAuto={media.followAuto}
+        onRefresh={() => void media.refresh()}
       />
 
       {isProjectOpen ? (
@@ -1704,7 +1705,7 @@ export default function App() {
           music={
             <MusicMini
               media={media.media}
-              available={media.available && Boolean(media.media)}
+              available={media.available}
               settings={media.settings}
               focusMode={false}
               onToggle={() => setMusicPanelOpen((open) => !open)}
@@ -1736,7 +1737,7 @@ export default function App() {
           music={
             <MusicMini
               media={media.media}
-              available={media.available && Boolean(media.media)}
+              available={media.available}
               settings={media.settings}
               focusMode={false}
               onToggle={() => setMusicPanelOpen((open) => !open)}

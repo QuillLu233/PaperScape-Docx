@@ -58,6 +58,7 @@ describe('music console', () => {
         onSeek={vi.fn()}
         onSelectSession={vi.fn()}
         onFollowAuto={vi.fn()}
+        onRefresh={vi.fn()}
       />,
     );
     expect(screen.getByText('Test Song')).toBeInTheDocument();

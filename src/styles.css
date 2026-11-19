@@ -4536,3 +4536,11 @@ body.is-text-dragging .tiptap {
 }
 .music-toggle-button:hover { background: var(--accent-soft); }
 .music-settings summary { cursor: pointer; }
+
+.music-panel-head-actions { display: flex; align-items: center; gap: 2px; }
+.music-panel-refresh {
+  width: 22px; height: 22px; border: 0; border-radius: 5px;
+  background: transparent; color: var(--muted); cursor: pointer;
+}
+.music-panel-refresh:hover { background: var(--accent-soft); color: var(--accent); }
+.music-mini-empty { color: var(--muted); }
