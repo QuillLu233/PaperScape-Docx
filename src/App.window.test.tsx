@@ -13,6 +13,7 @@ const windowApi = vi.hoisted(() => ({
   setShadow: vi.fn(async () => undefined),
   outerPosition: vi.fn(async () => ({ x: 40, y: 40 })),
   outerSize: vi.fn(async () => ({ width: 1200, height: 800 })),
+  innerSize: vi.fn(async () => ({ width: 1200, height: 800 })),
   setPosition: vi.fn(async () => undefined),
   setSize: vi.fn(async () => undefined),
   setFocus: vi.fn(async () => undefined),

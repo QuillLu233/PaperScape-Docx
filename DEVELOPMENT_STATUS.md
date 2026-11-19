@@ -1,13 +1,21 @@
 # PaperScape 开发状态
 
 - 更新时间：2026-11-13
-- 版本：**1.1.2（V1.1.2 正式绿色版）**
+- 版本：**1.1.3（V1.1.3 窗口尺寸热修复版）**
 - 阶段：最终验收、性能核对与 Portable ZIP 发布
 - 结论：**已完成无安装包 Windows Release 构建、绿色便携 ZIP 制作与当前环境可执行的功能回归；未生成 NSIS/MSI。设置面板在文件模式缺失和重启后文件树隐藏的问题已修复。内存挑战目标未达到，部分 GUI/字体/DPI 项目仍需人工验收。**
 - 前置文件：工作区没有 `AGENTS.md`、`V1.1_UPGRADE_PLAN.md` 或项目专属 Skill；本轮按用户任务消息和现有文档执行。没有重新初始化项目。
 - 本轮新增创作者署名、关于纸境页面和 Windows EXE 版本资源；未改变文件管理、编辑器、保存或导出逻辑。版本更新日志见 [CHANGELOG.md](CHANGELOG.md)。
 
-## V1.1.2 发布与便携版
+## V1.1.3 发布与便携版
+
+### 窗口尺寸热修复（2026-11-18）
+
+- 修复自定义最大化还原后窗口逐渐变大的问题：保存和恢复都使用内框尺寸，不再混用外框尺寸。
+- 窗口程序化改变尺寸后增加 1 px 微调并重新聚焦，保证 WebView2 无需点击边框即可重排。
+- 实测：普通 1280×820 → 最大化 1722×1028 → 还原 1280×820。
+- 前端测试 19 个文件、77 个测试通过。
+
 
 ### 构建结果
 
@@ -16,11 +24,11 @@
 - Rust：`cargo check --offline` 通过；`cargo test --offline --lib` **17 个测试通过**，0.51 s。
 - React 正式构建：通过，约 3.6 s。
 - Tauri Windows Release：`pnpm tauri build --no-bundle` 通过，约 24.2 s，保留 Cargo target 缓存。
-- EXE：`src-tauri/target/release/paperscape.exe`，**9,949,696 字节**。
-- 发布 ZIP：`release/PaperScape-v1.1.2-Portable.zip`，**3,219,349 字节**。
-- ZIP SHA256：`9899D6C1E4B9A8323ACD9FA683D0473C835F204321CD3227AEE685EC1039F1E8`。
-- EXE SHA256：`518A5E87B1BD2F077DE318B141A6F1C37F9FFFC689A77A11F94536F471E28681`。
-- ZIP 内只有 `PaperScape-v1.1.2-Portable/PaperScape.exe` 和 `README.txt`。
+- EXE：`src-tauri/target/release/paperscape.exe`，**9,950,720 字节**。
+- 发布 ZIP：`release/PaperScape-v1.1.3-Portable.zip`，**3,219,338 字节**。
+- ZIP SHA256：`9DC7ECCBE74187BE35E48093149B2ED4B2EE9791062BFD48E9458FE66F92F62B`。
+- EXE SHA256：`3D6F5FCD951930FE13E43C68161B0E5071320DA8382E2FA3D4C5E8FEA7A3B5A8`。
+- ZIP 内只有 `PaperScape-v1.1.3-Portable/PaperScape.exe` 和 `README.txt`。
 - **未生成 NSIS/MSI**；未引入 Electron、额外大型运行时或后台服务。
 
 ### 文件模式视图切换修复（2026-11-18）
@@ -116,8 +124,8 @@
 
 | 指标 | 实测 | 目标/结论 |
 | --- | --- | --- |
-| ZIP 体积 | 3,219,349 B（约 3.06 MiB） | ≤30 MB，达到 |
-| EXE 体积 | 9,949,696 B | 轻量 |
+| ZIP 体积 | 3,219,338 B（约 3.06 MiB） | ≤30 MB，达到 |
+| EXE 体积 | 9,950,720 B | 轻量 |
 | 启动到窗口（热缓存，任务计划口径） | 255 / 84 / 54 ms | ≤2 s 目标达到；**不是严格冷启动** |
 | V1 项目空闲 Working Set（含 7 个进程） | **379.2 MB** | 150 MB 挑战目标**未达到** |
 | V1 项目 Private Memory | **209.3 MB** | 未达到 150 MB |
