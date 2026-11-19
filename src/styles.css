@@ -4357,3 +4357,22 @@ body.is-text-dragging .tiptap {
   font-size: 10px;
   white-space: nowrap;
 }
+
+.background-source-select { margin-top: 4px; }
+.scene-preset-row {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 8px;
+}
+.scene-preset-button {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel-alt);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.scene-preset-button:hover { border-color: var(--accent-line); color: var(--accent); }

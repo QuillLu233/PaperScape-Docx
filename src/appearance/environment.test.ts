@@ -157,24 +157,26 @@ describe('V2 environment presets', () => {
     expect(migrated.display.color).toBe('#533C35');
   });
 
-  it('defaults to following the preset but preserves an explicit UI color choice', () => {
+  it('follows the preset by default while custom snapshots can keep the chosen UI mode', () => {
     const automatic = cloneAppearance(DEFAULT_APPEARANCE);
     automatic.uiColorMode = 'dark';
-    automatic.uiColorModeExplicit = false;
-    const appliedAutomatic = applyEnvironmentPreset(
+    automatic.uiColorModeExplicit = true;
+    const appliedOfficial = applyEnvironmentPreset(
       automatic,
       getOfficialEnvironment('spring-festival')!,
     );
-    expect(appliedAutomatic.uiColorMode).toBe('environment');
+    expect(appliedOfficial.uiColorMode).toBe('environment');
+    expect(appliedOfficial.uiColorModeExplicit).toBe(false);
 
+    const custom = {
+      ...getOfficialEnvironment('spring-festival')!,
+      presetType: 'custom' as const,
+    };
     const explicit = cloneAppearance(DEFAULT_APPEARANCE);
     explicit.uiColorMode = 'dark';
     explicit.uiColorModeExplicit = true;
-    const appliedExplicit = applyEnvironmentPreset(
-      explicit,
-      getOfficialEnvironment('spring-festival')!,
-    );
-    expect(appliedExplicit.uiColorMode).toBe('dark');
+    const appliedCustom = applyEnvironmentPreset(explicit, custom);
+    expect(appliedCustom.uiColorMode).toBe('dark');
   });
 
   it('preserves the classic environment when migrating old appearance data', () => {

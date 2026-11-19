@@ -389,6 +389,75 @@ export function AppearanceSettings({
           </div>
         ) : null}
 
+        <div className="paper-row background-source-select">
+          <label htmlFor="background-source">背景来源</label>
+          <select
+            id="background-source"
+            className="settings-select"
+            value={
+              appearance.background.kind === 'video'
+                ? 'video'
+                : appearance.animation.enabled
+                  ? 'procedural'
+                  : 'static'
+            }
+            onChange={(event) => {
+              const value = event.target.value;
+              if (value === 'video') {
+                videoInputRef.current?.click();
+                return;
+              }
+              if (value === 'static') {
+                onAnimationChange?.({ enabled: false });
+                if (appearance.background.kind === 'video') {
+                  onBackgroundChange({ kind: 'gradient' });
+                }
+                return;
+              }
+              if (appearance.background.kind === 'video') {
+                onBackgroundChange({ kind: 'gradient' });
+              }
+              onAnimationChange?.({
+                enabled: true,
+                type:
+                  appearance.animation.type === 'none'
+                    ? 'flow'
+                    : appearance.animation.type,
+              });
+            }}
+          >
+            <option value="static">静态背景</option>
+            <option value="procedural">程序化动态</option>
+            <option value="video">外部视频</option>
+          </select>
+        </div>
+        <div className="scene-preset-row">
+          <button
+            type="button"
+            className="scene-preset-button"
+            onClick={() => {
+              if (appearance.background.kind === 'video') {
+                onBackgroundChange({ kind: 'gradient' });
+              }
+              onAnimationChange?.({ enabled: true, type: 'rain-traffic' });
+            }}
+          >
+            雨夜车流
+          </button>
+          <button
+            type="button"
+            className="scene-preset-button"
+            onClick={() => {
+              if (appearance.background.kind === 'video') {
+                onBackgroundChange({ kind: 'gradient' });
+              }
+              onAnimationChange?.({ enabled: true, type: 'snow' });
+            }}
+          >
+            冬雪
+          </button>
+        </div>
+
         <div className="theme-picker" aria-label="背景主题">
           {BACKGROUND_PRESETS.map((preset) => (
             <button

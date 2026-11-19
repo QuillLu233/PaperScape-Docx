@@ -59,7 +59,7 @@ function drawFlow(
   spans.forEach((span, index) => {
     const x = span.x + Math.sin(time * 0.12 + index * 1.7) * width * 0.12;
     const y = span.y + Math.cos(time * 0.09 + index) * height * 0.1;
-    blob(ctx, x, y, span.r, colors[index % colors.length], 0.2 * intensity);
+    blob(ctx, x, y, span.r, colors[index % colors.length], 0.58 * intensity);
   });
 }
 
@@ -78,10 +78,10 @@ function drawBreathe(
     height * 0.4,
     Math.min(width, height) * 0.65 * pulse,
     colors[0],
-    0.26 * intensity,
+    0.68 * intensity,
   );
   ctx.globalCompositeOperation = 'lighter';
-  blob(ctx, width * 0.35, height * 0.65, width * 0.3, colors[1], 0.12 * intensity);
+  blob(ctx, width * 0.35, height * 0.65, width * 0.3, colors[1], 0.36 * intensity);
 }
 
 function drawOrbs(
@@ -102,7 +102,7 @@ function drawOrbs(
       height * (0.18 + ((index * 0.213) % 0.64)) +
       Math.cos(time * 0.12 + phase) * height * 0.08;
     const radius = (34 + (index % 4) * 26) * (0.8 + smooth(time * 0.3, phase) * 0.35);
-    blob(ctx, x, y, radius, colors[index % colors.length], 0.16 * intensity);
+    blob(ctx, x, y, radius, colors[index % colors.length], 0.55 * intensity);
   }
   ctx.globalCompositeOperation = 'source-over';
 }
@@ -124,7 +124,7 @@ function drawAurora(
     ctx.translate(x, y);
     ctx.rotate(-0.28 + Math.sin(time * 0.08 + index) * 0.12);
     ctx.scale(1.8, 0.55);
-    blob(ctx, 0, 0, width * 0.32, color, 0.18 * intensity);
+    blob(ctx, 0, 0, width * 0.32, color, 0.58 * intensity);
     ctx.restore();
   });
   ctx.globalCompositeOperation = 'source-over';
@@ -223,7 +223,7 @@ function drawSnow(
       height * (0.24 + (index % 3) * 0.2),
       10 + (index % 3) * 8,
       colors[index % colors.length],
-      0.12 * intensity,
+      0.36 * intensity,
     );
   }
   const density = animation.snowDensity ?? 0.55;
@@ -231,10 +231,10 @@ function drawSnow(
   const wind = (animation.snowWind ?? 0.18) * 24;
   for (let index = 0; index < count; index += 1) {
     const seed = (index * 7919 + 104729) % 233280;
-    const random = seed / 233280;
     const radius = 0.8 + (index % 5) * 0.55;
     const speed = 12 + (index % 7) * 5;
-    const y = (random * height + time * speed) % height;
+    const spawnOffset = -((seed * 13) % 100) - (index % 5) * 6;
+    const y = (spawnOffset + time * speed) % (height + 120);
     const x = (seed / 233280 * width + time * wind * (0.4 + radius / 4)) % width;
     ctx.fillStyle = rgba('#F7FBFF', 0.18 + (index % 5) * 0.08);
     ctx.beginPath();
