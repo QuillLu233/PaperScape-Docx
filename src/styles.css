@@ -4422,3 +4422,21 @@ body.is-text-dragging .tiptap {
 @media (max-width: 900px) {
   .document-editor-pane { min-width: 200px; }
 }
+
+/* Split reference placeholder: place it on the current UI panel so text
+   remains legible over every environment background. */
+.split-empty .document-empty-card {
+  width: min(420px, calc(100% - 40px));
+  padding: 28px 32px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.2);
+  color: var(--ink-soft);
+}
+.split-empty .document-empty-card h2 { color: var(--ink); }
+.split-empty .document-empty-card p { color: var(--ink-soft); }
+.split-empty .document-empty-card .secondary-button {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
