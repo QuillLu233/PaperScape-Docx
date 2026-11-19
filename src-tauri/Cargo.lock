@@ -2143,7 +2143,7 @@ dependencies = [
 
 [[package]]
 name = "paperscape"
-version = "2.0.0-dev.0"
+version = "2.0.0-dev.1"
 dependencies = [
  "serde",
  "serde_json",

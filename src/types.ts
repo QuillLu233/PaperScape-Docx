@@ -21,7 +21,22 @@ export interface WritingSettings {
 export type SaveMode = 'auto' | 'manual';
 
 export type WritingMode = 'immersive' | 'paper';
-export type BackgroundKind = 'solid' | 'gradient' | 'image';
+export type BackgroundKind = 'solid' | 'gradient' | 'image' | 'video';
+export type BackgroundSource = 'static' | 'procedural' | 'video';
+export type VideoFit = 'cover' | 'contain';
+export type VideoSourceMode = 'reference' | 'copy';
+export type EnvironmentAnimationType =
+  | 'none'
+  | 'flow'
+  | 'breathe'
+  | 'orbs'
+  | 'aurora'
+  | 'rain-traffic'
+  | 'snow'
+  | 'rain'
+  | 'fireflies'
+  | 'dust'
+  | 'gradient';
 export type PageSize = 'A4' | 'Letter' | 'custom';
 export type MarginPreset = 'normal' | 'narrow' | 'wide' | 'custom';
 
@@ -69,6 +84,13 @@ export interface EnvironmentAnimationSettings {
   intensity: number;
   color: string;
   lowPower: boolean;
+  rainDensity?: number;
+  trafficDensity?: number;
+  trafficSpeed?: number;
+  blurAmount?: number;
+  snowDensity?: number;
+  snowWind?: number;
+  snowNight?: boolean;
 }
 
 export interface EnvironmentPreset {
@@ -93,6 +115,7 @@ export interface BackgroundStyle {
   presetId: string;
   name: string;
   kind: BackgroundKind;
+  source?: BackgroundSource;
   color: string;
   gradientFrom: string;
   gradientMid?: string;
@@ -100,6 +123,11 @@ export interface BackgroundStyle {
   gradientAccent?: string;
   gradientAngle: number;
   imageId: string | null;
+  videoId?: string | null;
+  videoName?: string;
+  videoFit?: VideoFit;
+  videoMode?: VideoSourceMode;
+  videoPaused?: boolean;
   brightness: number;
   blur: number;
   vignette: number;

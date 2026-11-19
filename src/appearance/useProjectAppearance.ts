@@ -17,12 +17,20 @@ import {
   loadEnvironmentPresets,
   loadSavedThemes,
   prepareBackgroundImage,
+  prepareBackgroundVideo,
   putBackgroundImage,
+  putBackgroundVideo,
   saveEnvironmentPresets,
   saveSavedThemes,
+  deleteBackgroundVideo,
 } from './storage';
 import { OFFICIAL_ENVIRONMENTS } from './environmentPresets';
 import { releaseBackgroundUrl, useBackgroundImageUrl } from './useBackgroundImage';
+import {
+  registerVideoObjectUrl,
+  releaseVideoUrl,
+  useBackgroundVideoUrl,
+} from './useBackgroundVideo';
 
 /**
  * Project appearance is persisted in project.json. This controller only owns
@@ -54,9 +62,22 @@ export function useProjectAppearance(
   }, [environmentPresets]);
 
   const backgroundUrl = useBackgroundImageUrl(appearance.background.imageId);
+  const backgroundVideoUrl = useBackgroundVideoUrl(appearance.background.videoId);
+
+  const discardVideo = useCallback((videoId: string | null | undefined) => {
+    if (!videoId) return;
+    releaseVideoUrl(videoId);
+    void deleteBackgroundVideo(videoId).catch(() => undefined);
+  }, []);
 
   const updateBackground = useCallback(
     (patch: Partial<BackgroundStyle>) => {
+      const previousVideo =
+        appearance.background.kind === 'video' ? appearance.background.videoId : null;
+      if (patch.kind && patch.kind !== 'video' && previousVideo) {
+        releaseVideoUrl(previousVideo);
+        void deleteBackgroundVideo(previousVideo).catch(() => undefined);
+      }
       onChange({ ...appearance, background: { ...appearance.background, ...patch } });
     },
     [appearance, onChange],
@@ -90,13 +111,19 @@ export function useProjectAppearance(
 
   const applyPreset = useCallback(
     (presetId: string) => {
+      if (appearance.background.kind === 'video') {
+        discardVideo(appearance.background.videoId);
+      }
       onChange({ ...appearance, background: createBackgroundPreset(presetId) });
     },
-    [appearance, onChange],
+    [appearance, discardVideo, onChange],
   );
 
   const applySavedTheme = useCallback(
     (theme: SavedTheme) => {
+      if (appearance.background.kind === 'video' && theme.background.kind !== 'video') {
+        discardVideo(appearance.background.videoId);
+      }
       onChange({
         ...appearance,
         background: { ...theme.background, presetId: theme.id, name: theme.name },
@@ -111,7 +138,7 @@ export function useProjectAppearance(
         animation: theme.animation ? { ...theme.animation } : appearance.animation,
       });
     },
-    [appearance, onChange],
+    [appearance, discardVideo, onChange],
   );
 
   const saveCurrentTheme = useCallback((name: string): SavedTheme => {    const theme = createSavedTheme(name, appearanceRef.current);
@@ -150,9 +177,12 @@ export function useProjectAppearance(
 
   const applyEnvironment = useCallback(
     (preset: EnvironmentPreset) => {
+      if (appearanceRef.current.background.kind === 'video' && preset.background.kind !== 'video') {
+        discardVideo(appearanceRef.current.background.videoId);
+      }
       onChange(applyEnvironmentPreset(appearanceRef.current, preset));
     },
-    [onChange],
+    [discardVideo, onChange],
   );
 
   const saveCurrentEnvironment = useCallback(
@@ -220,16 +250,26 @@ export function useProjectAppearance(
       const imageId = createThemeId();
       await putBackgroundImage(imageId, blob);
       const previousImage = appearanceRef.current.background.imageId;
+      const previousVideo =
+        appearanceRef.current.background.kind === 'video'
+          ? appearanceRef.current.background.videoId
+          : null;
       onChange({
         ...appearanceRef.current,
         background: {
           ...appearanceRef.current.background,
           kind: 'image',
+          source: 'static',
           imageId,
+          videoId: null,
           presetId: 'custom-image',
           name: file.name.replace(/\.[^.]+$/, '') || '自定义图片',
         },
       });
+      if (previousVideo) {
+        releaseVideoUrl(previousVideo);
+        void deleteBackgroundVideo(previousVideo).catch(() => undefined);
+      }
       if (
         previousImage &&
         previousImage !== imageId &&
@@ -242,10 +282,53 @@ export function useProjectAppearance(
     [onChange],
   );
 
+  const setBackgroundFromVideo = useCallback(
+    async (file: File, mode: 'reference' | 'copy') => {
+      const blob = await prepareBackgroundVideo(file);
+      const videoId = createThemeId();
+      const previousVideo = appearanceRef.current.background.videoId;
+      if (mode === 'copy') {
+        await putBackgroundVideo(videoId, blob);
+      } else {
+        registerVideoObjectUrl(videoId, URL.createObjectURL(blob));
+      }
+      onChange({
+        ...appearanceRef.current,
+        background: {
+          ...appearanceRef.current.background,
+          kind: 'video',
+          source: 'video',
+          videoId,
+          videoName: file.name,
+          videoFit: 'cover',
+          videoMode: mode,
+          videoPaused: false,
+          presetId: 'custom-video',
+          name: file.name.replace(/\.[^.]+$/, '') || '外部视频背景',
+        },
+      });
+      if (previousVideo && previousVideo !== videoId) {
+        releaseVideoUrl(previousVideo);
+        void deleteBackgroundVideo(previousVideo).catch(() => undefined);
+      }
+    },
+    [onChange],
+  );
+
+  const toggleBackgroundVideo = useCallback(() => {
+    const background = appearanceRef.current.background;
+    if (background.kind !== 'video') return;
+    onChange({
+      ...appearanceRef.current,
+      background: { ...background, videoPaused: !background.videoPaused },
+    });
+  }, [onChange]);
+
   return {
     savedThemes,
     environmentPresets,
     backgroundUrl,
+    backgroundVideoUrl,
     setMode,
     updateBackground,
     setReadingOpacity,
@@ -263,5 +346,7 @@ export function useProjectAppearance(
     saveCurrentTheme,
     deleteSavedTheme,
     setBackgroundFromFile,
+    setBackgroundFromVideo,
+    toggleBackgroundVideo,
   };
 }

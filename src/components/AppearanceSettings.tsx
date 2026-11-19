@@ -47,6 +47,9 @@ interface AppearanceSettingsProps {
   onImportEnvironment?: (text: string) => EnvironmentPreset;
   onRestoreDefaultEnvironment?: () => void;
   onChooseImage: (file: File) => Promise<void>;
+  backgroundVideoUrl?: string | null;
+  onChooseVideo?: (file: File, mode: 'reference' | 'copy') => Promise<void>;
+  onToggleVideo?: () => void;
   onToggleFocus: () => void;
 }
 
@@ -131,11 +134,17 @@ export function AppearanceSettings({
   onImportEnvironment,
   onRestoreDefaultEnvironment,
   onChooseImage,
+  backgroundVideoUrl,
+  onChooseVideo,
+  onToggleVideo,
   onToggleFocus,
 }: AppearanceSettingsProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const [videoMode, setVideoMode] = useState<'reference' | 'copy'>('copy');
   const [themeName, setThemeName] = useState('');
   const [imageError, setImageError] = useState('');
+  const [videoError, setVideoError] = useState('');
   const [environmentOpen, setEnvironmentOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(
     () => window.localStorage.getItem('paperscape.settings.advanced.open') === 'true',
@@ -159,6 +168,18 @@ export function AppearanceSettings({
       await onChooseImage(file);
     } catch (error) {
       setImageError(error instanceof Error ? error.message : '背景图片读取失败');
+    }
+  };
+
+  const onVideoPicked = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || !onChooseVideo) return;
+    setVideoError('');
+    try {
+      await onChooseVideo(file, videoMode);
+    } catch (error) {
+      setVideoError(error instanceof Error ? error.message : '背景视频读取失败');
     }
   };
 
@@ -205,16 +226,22 @@ export function AppearanceSettings({
               <option value="system">跟随系统</option>
             </select>
           </label>
-          <label className="environment-animation-toggle" title="阶段二接入实际动效渲染">
+          <label className="environment-animation-toggle" title="启用或暂停程序化环境动效">
             <input
               type="checkbox"
               checked={appearance.animation.enabled}
-              disabled
               onChange={(event) => onAnimationChange?.({ enabled: event.target.checked })}
             />
             <span>环境动效</span>
-            <small>阶段二启用</small>
+            <small>{appearance.animation.enabled ? '动态' : '静态'}</small>
           </label>
+          <span className="environment-source">
+            {appearance.background.kind === 'video'
+              ? '视频背景'
+              : appearance.animation.enabled && appearance.animation.type !== 'none'
+                ? '程序化动态'
+                : '静态背景'}
+          </span>
         </div>
       </section>
 
@@ -302,6 +329,65 @@ export function AppearanceSettings({
           </p>
         ) : null}
         <p className="appearance-hint">拖入 JPG / PNG / WebP 到编辑窗口也可更换背景。</p>
+
+        <input
+          ref={videoInputRef}
+          className="visually-hidden"
+          type="file"
+          accept="video/mp4,video/webm"
+          aria-label="选择背景视频"
+          onChange={(event) => void onVideoPicked(event)}
+        />
+        <div className="background-source-row">
+          <button
+            type="button"
+            className="text-button"
+            onClick={() => videoInputRef.current?.click()}
+            disabled={!onChooseVideo}
+          >
+            <Icon name="image" size={13} />
+            选择 MP4 / WebM
+          </button>
+          <select
+            className="settings-select"
+            aria-label="视频来源方式"
+            value={videoMode}
+            onChange={(event) => setVideoMode(event.target.value as 'reference' | 'copy')}
+          >
+            <option value="copy">复制到资源库</option>
+            <option value="reference">引用（本次会话）</option>
+          </select>
+        </div>
+        {videoError ? (
+          <p className="appearance-error" role="alert">
+            {videoError}
+          </p>
+        ) : null}
+        {appearance.background.kind === 'video' ? (
+          <div className="video-controls">
+            <p className="appearance-hint">
+              {appearance.background.videoName || '外部视频背景'}
+              {backgroundVideoUrl ? ' · 已加载' : ' · 资源不可用，请重新选择'}
+            </p>
+            <div className="paper-row">
+              <label htmlFor="video-fit">显示方式</label>
+              <select
+                id="video-fit"
+                className="settings-select"
+                value={appearance.background.videoFit ?? 'cover'}
+                onChange={(event) =>
+                  onBackgroundChange({ videoFit: event.target.value as 'cover' | 'contain' })
+                }
+              >
+                <option value="cover">填充</option>
+                <option value="contain">适应</option>
+              </select>
+              <button type="button" className="text-button" onClick={onToggleVideo}>
+                {appearance.background.videoPaused ? '继续播放' : '暂停播放'}
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         <div className="theme-picker" aria-label="背景主题">
           {BACKGROUND_PRESETS.map((preset) => (
@@ -604,7 +690,7 @@ export function AppearanceSettings({
       <section className="settings-section" aria-labelledby="animation-heading">
         <div className="settings-label-row">
           <h3 id="animation-heading" className="settings-label">环境动效</h3>
-          <span className="settings-badge">阶段二</span>
+          <span className="settings-badge">30 FPS</span>
         </div>
         <label className="toggle-row">
           <input
@@ -622,41 +708,49 @@ export function AppearanceSettings({
             value={appearance.animation.type}
             onChange={(event) => onAnimationChange?.({ type: event.target.value })}
           >
-            <option value="none">无</option>
-            <option value="rain">雨</option>
-            <option value="snow">雪</option>
-            <option value="fireflies">萤火</option>
-            <option value="dust">微尘</option>
+            <option value="none">静态</option>
+            <option value="flow">流动渐变</option>
+            <option value="breathe">呼吸光</option>
+            <option value="orbs">浮动光斑</option>
+            <option value="aurora">极光渐变</option>
+            <option value="rain-traffic">雨夜车流</option>
+            <option value="snow">冬雪</option>
           </select>
         </div>
-        <RangeControl
-          id="animation-speed"
-          label="速度"
-          value={appearance.animation.speed}
-          min={0.2}
-          max={3}
-          step={0.1}
-          onChange={(speed) => onAnimationChange?.({ speed })}
-        />
-        <RangeControl
-          id="animation-intensity"
-          label="强度"
-          value={appearance.animation.intensity}
-          min={0}
-          max={1}
-          step={0.05}
-          onChange={(intensity) => onAnimationChange?.({ intensity })}
-        />
+        {appearance.animation.type === 'rain-traffic' || appearance.animation.type === 'rain' ? (
+          <>
+            <RangeControl id="rain-density" label="雨滴密度" value={appearance.animation.rainDensity ?? 0.55} min={0} max={1} step={0.05} onChange={(rainDensity) => onAnimationChange?.({ rainDensity })} />
+            <RangeControl id="traffic-density" label="车流密度" value={appearance.animation.trafficDensity ?? 0.5} min={0} max={1} step={0.05} onChange={(trafficDensity) => onAnimationChange?.({ trafficDensity })} />
+            <RangeControl id="traffic-speed" label="车流速度" value={appearance.animation.trafficSpeed ?? 0.55} min={0.1} max={2} step={0.05} onChange={(trafficSpeed) => onAnimationChange?.({ trafficSpeed })} />
+            <RangeControl id="scene-blur" label="光影虚化" value={appearance.animation.blurAmount ?? 8} min={0} max={24} step={1} unit="px" onChange={(blurAmount) => onAnimationChange?.({ blurAmount })} />
+          </>
+        ) : null}
+        {appearance.animation.type === 'snow' ? (
+          <>
+            <RangeControl id="snow-density" label="降雪密度" value={appearance.animation.snowDensity ?? 0.55} min={0} max={1} step={0.05} onChange={(snowDensity) => onAnimationChange?.({ snowDensity })} />
+            <RangeControl id="snow-wind" label="风力与方向" value={appearance.animation.snowWind ?? 0.18} min={-1} max={1} step={0.05} onChange={(snowWind) => onAnimationChange?.({ snowWind })} />
+            <label className="toggle-row">
+              <input
+                type="checkbox"
+                checked={appearance.animation.snowNight === true}
+                onChange={(event) => onAnimationChange?.({ snowNight: event.target.checked })}
+              />
+              <span>冬夜配色</span>
+            </label>
+          </>
+        ) : null}
+        <RangeControl id="animation-speed" label="速度" value={appearance.animation.speed} min={0} max={3} step={0.1} onChange={(speed) => onAnimationChange?.({ speed })} />
+        <RangeControl id="animation-intensity" label="强度" value={appearance.animation.intensity} min={0} max={1} step={0.05} onChange={(intensity) => onAnimationChange?.({ intensity })} />
         <label className="toggle-row">
           <input
             type="checkbox"
             checked={appearance.animation.lowPower}
             onChange={(event) => onAnimationChange?.({ lowPower: event.target.checked })}
           />
-          <span>低功耗模式</span>
+          <span>低功耗模式（15 FPS）</span>
         </label>
+        <p className="settings-note">系统减少动态效果时自动转为静态；窗口最小化或后台时暂停。</p>
       </section>
-
       <section className="settings-section" aria-labelledby="saved-theme-heading">
         <h3 id="saved-theme-heading" className="settings-label">
           自定义主题

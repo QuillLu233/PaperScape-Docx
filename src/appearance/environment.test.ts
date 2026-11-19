@@ -38,6 +38,38 @@ describe('V2 environment presets', () => {
     }
   });
 
+  it('assigns static defaults and theme-driven procedural defaults', () => {
+    expect(getOfficialEnvironment('origin')!.animation).toMatchObject({
+      enabled: false,
+      type: 'none',
+    });
+    expect(getOfficialEnvironment('pure')!.animation).toMatchObject({
+      enabled: false,
+      type: 'none',
+    });
+    expect(getOfficialEnvironment('midnight')!.animation).toMatchObject({
+      enabled: false,
+      type: 'none',
+    });
+    expect(getOfficialEnvironment('aurora')!.animation).toMatchObject({
+      enabled: true,
+      type: 'aurora',
+    });
+    expect(getOfficialEnvironment('deep-ocean')!.animation.type).toBe('flow');
+    expect(getOfficialEnvironment('violet-night')!.animation.type).toBe('orbs');
+    expect(getOfficialEnvironment('winter')!.animation.type).toBe('snow');
+    expect(getOfficialEnvironment('christmas-carol')!.animation.type).toBe('snow');
+    for (const preset of OFFICIAL_ENVIRONMENTS) {
+      if (preset.id === 'origin' || preset.id === 'pure' || preset.id === 'midnight') {
+        expect(preset.animation.enabled).toBe(false);
+        expect(preset.animation.type).toBe('none');
+      } else {
+        expect(preset.animation.enabled).toBe(true);
+        expect(preset.animation.type).not.toBe('none');
+      }
+    }
+  });
+
   it('registers the two festival environments with their reference palettes', () => {
     const christmas = getOfficialEnvironment('christmas-carol')!;
     expect(christmas.group).toBe('festival');
@@ -67,6 +99,37 @@ describe('V2 environment presets', () => {
     expect(spring.uiColors.border).toBe('#D8B9A5');
     expect(spring.uiColors.selected).toBe('#ECD1C4');
     expect(spring.paper.color).toBe('#FFF5E2');
+  });
+
+  it('sanitizes procedural and video background settings', () => {
+    const appearance = sanitizeAppearance({
+      background: {
+        kind: 'video',
+        videoId: 'video-1',
+        videoName: 'night.mp4',
+        videoFit: 'contain',
+        videoMode: 'copy',
+        videoPaused: true,
+      },
+      animation: {
+        enabled: true,
+        type: 'rain-traffic',
+        rainDensity: 0.7,
+        trafficDensity: 0.4,
+        trafficSpeed: 0.9,
+        snowDensity: 0.2,
+        snowWind: -0.3,
+        snowNight: true,
+      },
+    });
+    expect(appearance.background.kind).toBe('video');
+    expect(appearance.background.videoId).toBe('video-1');
+    expect(appearance.background.videoFit).toBe('contain');
+    expect(appearance.background.videoPaused).toBe(true);
+    expect(appearance.animation.type).toBe('rain-traffic');
+    expect(appearance.animation.rainDensity).toBe(0.7);
+    expect(appearance.animation.trafficDensity).toBe(0.4);
+    expect(appearance.animation.snowWind).toBe(-0.3);
   });
 
   it('upgrades an untouched old official Christmas snapshot', () => {
