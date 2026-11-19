@@ -3,8 +3,8 @@ import {
   currentMonitor,
   getCurrentWindow,
   type PhysicalPosition,
-  type PhysicalSize,
 } from '@tauri-apps/api/window';
+import { PhysicalSize } from '@tauri-apps/api/dpi';
 import {
   closeWindow,
   isTauriEnvironment,
@@ -16,6 +16,26 @@ import {
 interface SavedBounds {
   position: PhysicalPosition;
   size: PhysicalSize;
+}
+
+const wait = (milliseconds: number) =>
+  new Promise<void>((resolve) => window.setTimeout(resolve, milliseconds));
+
+async function forceWebViewResize(
+  windowApi: ReturnType<typeof getCurrentWindow>,
+  size: PhysicalSize,
+): Promise<void> {
+  await windowApi.setSize(size);
+  // WebView2 can keep its old surface after a single programmatic resize,
+  // especially while the window is inactive. A one-pixel nudge guarantees a
+  // second WM_SIZE without a visible layout jump.
+  await wait(50);
+  if (size.width > 2) {
+    await windowApi.setSize(new PhysicalSize(size.width - 1, size.height));
+    await wait(24);
+    await windowApi.setSize(size);
+  }
+  await windowApi.setFocus().catch(() => undefined);
 }
 
 export function useWindowState() {
@@ -95,13 +115,10 @@ export function useWindowState() {
       savedBoundsRef.current = null;
       if (saved) {
         await windowApi.setPosition(saved.position);
-        await windowApi.setSize(saved.size);
+        await forceWebViewResize(windowApi, saved.size);
       } else if (await windowApi.isMaximized()) {
         await windowApi.unmaximize();
       }
-      // WebView2 can keep the previous surface size until the window is
-      // activated after a programmatic resize.
-      await windowApi.setFocus().catch(() => undefined);
       setIsMaximized(false);
       return;
     }
@@ -125,9 +142,7 @@ export function useWindowState() {
     };
     customMaximizedRef.current = true;
     await windowApi.setPosition(monitor.workArea.position);
-    await windowApi.setSize(monitor.workArea.size);
-    // Activate after resizing so WebView2 immediately adopts the new viewport.
-    await windowApi.setFocus().catch(() => undefined);
+    await forceWebViewResize(windowApi, monitor.workArea.size);
     setIsMaximized(true);
   }, []);
 
