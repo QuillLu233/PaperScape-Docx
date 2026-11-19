@@ -10,6 +10,7 @@ interface FileTreeProps {
   open: boolean;
   loading: boolean;
   onOpenFile: (node: WorkspaceNode) => void;
+  onOpenRight: (node: WorkspaceNode) => void;
   onOpenProject: (path: string) => void;
   onRefresh: () => void;
   onReveal: () => void;
@@ -23,6 +24,7 @@ interface TreeRowProps {
   expanded: Set<string>;
   onToggle: (path: string) => void;
   onOpenFile: (node: WorkspaceNode) => void;
+  onContextRequest: (node: WorkspaceNode, x: number, y: number) => void;
   onOpenProject: (path: string) => void;
 }
 
@@ -52,6 +54,7 @@ function TreeRow({
   expanded,
   onToggle,
   onOpenFile,
+  onContextRequest,
   onOpenProject,
 }: TreeRowProps) {
   const isOpen = expanded.has(node.path);
@@ -65,6 +68,11 @@ function TreeRow({
         style={{ paddingLeft: `${10 + depth * 14}px` }}
         title={node.path}
         aria-expanded={node.isDir ? isOpen : undefined}
+        onContextMenu={(event) => {
+          if (!isDocx) return;
+          event.preventDefault();
+          onContextRequest(node, event.clientX, event.clientY);
+        }}
         onClick={() => {
           if (node.isProject) {
             onOpenProject(node.path);
@@ -99,6 +107,7 @@ function TreeRow({
               expanded={expanded}
               onToggle={onToggle}
               onOpenFile={onOpenFile}
+              onContextRequest={onContextRequest}
               onOpenProject={onOpenProject}
             />
           ))}
@@ -115,13 +124,33 @@ export function FileTree({
   open,
   loading,
   onOpenFile,
+  onOpenRight,
   onOpenProject,
   onRefresh,
   onReveal,
   onClose,
 }: FileTreeProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [contextMenu, setContextMenu] = useState<{
+    node: WorkspaceNode;
+    x: number;
+    y: number;
+  } | null>(null);
   const sortedTree = useMemo(() => sortWorkspaceNodes(tree), [tree]);
+
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setContextMenu(null);
+    };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [contextMenu]);
 
   useEffect(() => {
     setExpanded(new Set());
@@ -198,12 +227,33 @@ export function FileTree({
                 expanded={expanded}
                 onToggle={toggle}
                 onOpenFile={onOpenFile}
+                onContextRequest={(node, x, y) => setContextMenu({ node, x, y })}
                 onOpenProject={onOpenProject}
               />
             ))}
           </ul>
         )}
       </nav>
+
+      {contextMenu ? (
+        <div
+          className="file-context-menu"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          role="menu"
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              onOpenRight(contextMenu.node);
+              setContextMenu(null);
+            }}
+          >
+            在右侧打开
+          </button>
+        </div>
+      ) : null}
 
       <div className="sidebar-footer">
         <span className="status-dot" aria-hidden="true" />

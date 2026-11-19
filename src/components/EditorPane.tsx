@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
+import type { Editor } from '@tiptap/core';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import type { ProjectAppearance, WritingSettings } from '../types';
 import type { ChapterFile } from '../project/types';
@@ -42,8 +43,11 @@ interface EditorPaneProps {
   focusMode: boolean;
   readOnly?: boolean;
   standalone?: boolean;
+  hideToolbar?: boolean;
   docZoom?: number;
   header?: ReactNode;
+  onEditorReady?: (editor: Editor | null) => void;
+  onActivate?: () => void;
   proofreadingEnabled?: boolean;
   proofreadingDictionary?: string[];
   proofreadingIgnored?: string[];
@@ -65,8 +69,11 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
     focusMode,
     readOnly = false,
     standalone = false,
+    hideToolbar = false,
     docZoom = 100,
     header,
+    onEditorReady,
+    onActivate,
     proofreadingEnabled = false,
     proofreadingDictionary = [],
     proofreadingIgnored = [],
@@ -135,6 +142,11 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
       scheduleProofreadingRef.current(650);
     },
   });
+
+  useEffect(() => {
+    onEditorReady?.(editor ?? null);
+    return () => onEditorReady?.(null);
+  }, [editor, onEditorReady]);
 
   useTextDrag(editor, paneRef, dropIndicatorRef);
 
@@ -523,9 +535,10 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
       className={`editor-pane mode-${appearance.mode}${focusMode ? ' is-focus-writing' : ''}`}
       aria-label="编辑区"
       data-writing-mode={appearance.mode}
+      onPointerDownCapture={onActivate}
     >
       <div className="editor-top">
-        {!readOnly ? <EditorToolbar editor={editor} onFind={() => setSearchOpen(true)} /> : null}
+        {!readOnly && !hideToolbar ? <EditorToolbar editor={editor} onFind={() => setSearchOpen(true)} /> : null}
         {searchOpen && editor ? (
           <FindReplaceBar editor={editor} onClose={() => setSearchOpen(false)} />
         ) : null}

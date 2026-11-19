@@ -3,7 +3,7 @@
  * Copyright © 2026 QuillLulu
  * Created by QuillLulu
  */
-import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type DragEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { BackgroundLayer } from './components/BackgroundLayer';
 import { ChapterSidebar } from './components/ChapterSidebar';
@@ -14,6 +14,8 @@ import { FileTree } from './components/FileTree';
 import { ImportDocxDialog } from './components/ImportDocxDialog';
 import { AboutDialog, ShortcutsDialog } from './components/Dialogs';
 import { EditorPane, type EditorPaneHandle } from './components/EditorPane';
+import { EditorToolbar } from './components/EditorToolbar';
+import { SplitPaneHeader } from './components/SplitPaneHeader';
 import { FocusOverlay } from './components/FocusOverlay';
 import { HistoryDialog } from './components/HistoryDialog';
 import { Icon } from './components/Icon';
@@ -48,6 +50,7 @@ import { useFonts } from './fonts/useFonts';
 import { FontManagerDialog } from './components/FontManagerDialog';
 import { useProofreading } from './proofreading/useProofreading';
 import type { ChapterSummary, HistoryEntry, RecoveryCandidate } from './project/types';
+import type { Editor } from '@tiptap/core';
 
 type DialogName = 'shortcuts' | 'about' | null;
 
@@ -103,6 +106,19 @@ export default function App() {
     setDefaultDocumentsDir,
     isOpen: isDocumentMode,
   } = documentController;
+  const rightDocumentController = useDocumentWorkspace(saveMode === 'auto');
+  const {
+    document: rightDocument,
+    saving: rightDocumentSaving,
+    error: rightDocumentError,
+    openDocx: openRightDocx,
+    openPath: openRightPath,
+    closeDocument: closeRightDocument,
+    updateDocument: updateRightDocument,
+    save: saveRightDocument,
+    saveAs: saveRightDocumentAs,
+    editorChapter: rightEditorChapter,
+  } = rightDocumentController;
   const {
     recent,
     project,
@@ -184,6 +200,15 @@ export default function App() {
   const [exportBusy, setExportBusy] = useState(false);
   const dragDepth = useRef(0);
   const editorRef = useRef<EditorPaneHandle>(null);
+  const rightEditorRef = useRef<EditorPaneHandle>(null);
+  const [splitOpen, setSplitOpen] = useState(false);
+  const [splitRatio, setSplitRatio] = useState(50);
+  const [rightEditable, setRightEditable] = useState(false);
+  const [activePane, setActivePane] = useState<'left' | 'right'>('left');
+  const [rightZoom, setRightZoom] = useState(100);
+  const [leftTiptapEditor, setLeftTiptapEditor] = useState<Editor | null>(null);
+  const [rightTiptapEditor, setRightTiptapEditor] = useState<Editor | null>(null);
+  const splitAreaRef = useRef<HTMLDivElement>(null);
   const startupAttempted = useRef(false);
   const sessionActiveRef = useRef(false);
   sessionActiveRef.current = Boolean(project || documentRoot || activeDocument);
@@ -625,6 +650,105 @@ export default function App() {
     if (ok) showNotice('Word 文档已保存');
   }, [saveDocument, showNotice]);
 
+  const openRightFromPath = useCallback(
+    async (path: string) => {
+      const normalize = (value: string | null | undefined) =>
+        (value ?? '').replace(/\//g, '\\').toLocaleLowerCase();
+      if (normalize(activeDocument?.path) === normalize(path)) {
+        setNotice('该文稿已在左侧打开');
+        setSplitOpen(true);
+        setActivePane('left');
+        return;
+      }
+      if (normalize(rightDocument?.path) === normalize(path)) {
+        setSplitOpen(true);
+        setActivePane('right');
+        return;
+      }
+      const ok = await openRightPath(path);
+      if (ok) {
+        setSplitOpen(true);
+        setRightEditable(false);
+        setActivePane('right');
+      }
+    },
+    [activeDocument?.path, openRightPath, rightDocument?.path],
+  );
+
+  const chooseRightDocument = useCallback(async () => {
+    const ok = await openRightDocx();
+    if (ok) {
+      setSplitOpen(true);
+      setRightEditable(false);
+      setActivePane('right');
+    }
+  }, [openRightDocx]);
+
+  const closeSplit = useCallback(async () => {
+    if (rightEditable) {
+      const ok = await saveRightDocument();
+      if (!ok) {
+        setNotice('右侧文稿保存失败，分屏保持打开');
+        return;
+      }
+    }
+    await closeRightDocument();
+    setSplitOpen(false);
+    setRightEditable(false);
+    setActivePane('left');
+  }, [closeRightDocument, rightEditable, saveRightDocument]);
+
+  const toggleRightLock = useCallback(async () => {
+    if (!rightDocument) return;
+    if (rightEditable) {
+      const ok = await saveRightDocument();
+      if (!ok) {
+        setNotice('右侧文稿保存失败，仍保持可编辑');
+        return;
+      }
+      setRightEditable(false);
+      setActivePane('right');
+      return;
+    }
+    if (rightDocument.readOnly) {
+      setNotice('该文件为只读文件，无法解锁编辑');
+      return;
+    }
+    setRightEditable(true);
+    setActivePane('right');
+  }, [rightDocument, rightEditable, saveRightDocument]);
+
+  const activeEditorHandle = activePane === 'right' ? rightEditorRef : editorRef;
+  const activeTiptapEditor = activePane === 'right' ? rightTiptapEditor : leftTiptapEditor;
+  const activeDocumentView =
+    splitOpen && activePane === 'right' && rightDocument ? rightDocument : activeDocument;
+  const activeSaving = splitOpen && activePane === 'right' ? rightDocumentSaving : documentSaving;
+  const activeDocumentError =
+    splitOpen && activePane === 'right' ? rightDocumentError : documentError;
+  const activeZoom = splitOpen && activePane === 'right' ? rightZoom : docZoom;
+  const activeZoomChange = splitOpen && activePane === 'right' ? setRightZoom : setDocZoom;
+  const activePaneReadOnly =
+    activePane === 'right'
+      ? !rightEditable || Boolean(rightDocument?.readOnly)
+      : Boolean(activeDocument?.readOnly);
+
+  const startSplitDrag = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const host = splitAreaRef.current;
+    if (!host) return;
+    const rect = host.getBoundingClientRect();
+    const move = (moveEvent: PointerEvent) => {
+      const ratio = ((moveEvent.clientX - rect.left) / Math.max(1, rect.width)) * 100;
+      setSplitRatio(Math.min(72, Math.max(28, ratio)));
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up, { once: true });
+  }, []);
+
   const handleSaveDocumentAsNow = useCallback(async () => {
     const ok = await saveDocumentAs();
     if (ok) showNotice('Word 文档已另存为');
@@ -921,25 +1045,27 @@ export default function App() {
       } else if (key === '=' || key === '+') {
         if (!isProjectOpen && !isDocumentMode) return;
         event.preventDefault();
-        setDocZoom(docZoom + 10);
+        activeZoomChange(activeZoom + 10);
       } else if (key === '-') {
         if (!isProjectOpen && !isDocumentMode) return;
         event.preventDefault();
-        setDocZoom(docZoom - 10);
+        activeZoomChange(activeZoom - 10);
       } else if (key === '0') {
         if (!isProjectOpen && !isDocumentMode) return;
         event.preventDefault();
-        resetDocZoom();
+        activeZoomChange(100);
       } else if (key === 'w') {
         event.preventDefault();
         if (isDocumentMode) void handleCloseDocument();
         else if (isProjectOpen) void handleCloseProject();
       } else if (key === 's' && event.shiftKey) {
         event.preventDefault();
-        if (isDocumentMode && activeDocument) void handleSaveDocumentAsNow();
+        if (isDocumentMode && splitOpen && activePane === 'right') void saveRightDocumentAs();
+        else if (isDocumentMode && activeDocument) void handleSaveDocumentAsNow();
       } else if (key === 's') {
         event.preventDefault();
-        if (isDocumentMode) void handleSaveDocumentNow();
+        if (isDocumentMode && splitOpen && activePane === 'right') void saveRightDocument();
+        else if (isDocumentMode) void handleSaveDocumentNow();
         else if (isProjectOpen) void handleSaveProject();
       } else if (key === 'f' && event.shiftKey) {
         event.preventDefault();
@@ -954,7 +1080,7 @@ export default function App() {
         if (isProjectOpen) toggleRight();
       } else if (key === 'f') {
         event.preventDefault();
-        if (isProjectOpen || isDocumentMode) editorRef.current?.openFind();
+        if (isProjectOpen || isDocumentMode) activeEditorHandle.current?.openFind();
       }
     };
 
@@ -1088,6 +1214,11 @@ export default function App() {
           documentPath={activeDocument?.path ?? documentRoot ?? ''}
           leftOpen={leftOpen}
           rightOpen={rightOpen}
+          splitOpen={splitOpen}
+          onToggleSplit={() => {
+            if (splitOpen) void closeSplit();
+            else setSplitOpen(true);
+          }}
           theme={themeMode}
           writingMode={appearance.mode}
           focusMode={focusMode}
@@ -1118,10 +1249,10 @@ export default function App() {
           }}
           onSave={() => void handleSaveProject()}
           onExit={() => void handleWindowClose()}
-          onUndo={() => editorRef.current?.undo()}
-          onRedo={() => editorRef.current?.redo()}
-          onSelectAll={() => editorRef.current?.selectAll()}
-          onFind={() => editorRef.current?.openFind()}
+          onUndo={() => activeEditorHandle.current?.undo()}
+          onRedo={() => activeEditorHandle.current?.redo()}
+          onSelectAll={() => activeEditorHandle.current?.selectAll()}
+          onFind={() => activeEditorHandle.current?.openFind()}
           onToggleLeft={toggleLeft}
           onToggleRight={toggleRight}
           onToggleFocus={toggleFocusMode}
@@ -1188,6 +1319,7 @@ export default function App() {
                 open={leftOpen && !focusMode}
                 loading={documentLoading}
                 onOpenFile={(node: WorkspaceNode) => void handleOpenDocxPath(node.path)}
+                onOpenRight={(node: WorkspaceNode) => void openRightFromPath(node.path)}
                 onOpenProject={(path) => void handleOpenProjectPath(path)}
                 onRefresh={() => void refreshTree()}
                 onReveal={() => void handleRevealDocument()}
@@ -1196,62 +1328,152 @@ export default function App() {
             ) : null}
 
             {activeDocument && editorChapter ? (
-              <EditorPane
-                key={activeDocument.path ?? 'untitled-docx'}
-                ref={editorRef}
-                chapter={editorChapter}
-                index={0}
-                total={1}
-                settings={settings}
-                appearance={effectiveAppearance}
-                focusMode={focusMode}
-                readOnly={activeDocument.readOnly}
-                standalone
-                docZoom={docZoom}
-                onDocZoomChange={setDocZoom}
-                proofreadingEnabled={proofreading.enabled}
-                proofreadingDictionary={proofreading.dictionary}
-                proofreadingIgnored={proofreading.ignored}
-                onAddProofreadingWord={proofreading.addDictionary}
-                onIgnoreProofreading={proofreading.ignore}
-                header={
-                  <div className="document-bar-shell">
-                    <div className="document-bar-toggle-row">
-                      <button
-                        type="button"
-                        className="document-bar-toggle"
-                        aria-label={documentBarCollapsed ? '展开文稿信息栏' : '收起文稿信息栏'}
-                        aria-expanded={!documentBarCollapsed}
-                        title={documentBarCollapsed ? '展开文稿信息栏' : '收起文稿信息栏'}
-                        onClick={toggleDocumentBar}
-                      >
-                        <Icon name={documentBarCollapsed ? 'chevron-down' : 'chevron-up'} size={11} />
-                      </button>
-                    </div>
-                    {!documentBarCollapsed ? (
-                      <DocumentBar
-                        document={activeDocument}
-                        folder={documentRoot}
-                        saving={documentSaving}
-                        error={documentError}
-                        recovery={documentRecovery}
-                        recoveryError={documentRecoveryError}
-                        autoSave={saveMode === 'auto'}
-                        onSave={() => void handleSaveDocumentNow()}
-                        onSaveAs={() => void handleSaveDocumentAsNow()}
-                        onReveal={() => void handleRevealDocument()}
-                        onAuthorizeOverwrite={authorizeOverwrite}
-                        onToggleReadOnly={toggleReadOnly}
-                        onRestoreRecovery={restoreDocumentRecovery}
-                        onDiscardRecovery={discardDocumentRecovery}
-                        onClearError={clearDocumentError}
-                        onCloseWorkspace={() => void closeWorkspace()}
-                      />
-                    ) : null}
+              <div className="document-split-shell">
+                {splitOpen ? (
+                  <div
+                    className={`split-shared-toolbar${activePaneReadOnly ? ' is-readonly' : ''}`}
+                    aria-disabled={activePaneReadOnly}
+                  >
+                    <EditorToolbar
+                      editor={activeTiptapEditor}
+                      onFind={() => activeEditorHandle.current?.openFind()}
+                    />
                   </div>
-                }
-                onUpdate={updateDocument}
-              />
+                ) : null}
+                <div
+                  className={`document-editors${splitOpen ? ' is-split' : ''}`}
+                  ref={splitAreaRef}
+                >
+                  <div
+                    className={`document-editor-pane${activePane === 'left' ? ' is-active-pane' : ''}`}
+                    style={splitOpen ? { flexBasis: `${100 - splitRatio}%` } : undefined}
+                    onPointerDown={() => setActivePane('left')}
+                  >
+                    <EditorPane
+                      key={activeDocument.path ?? 'untitled-docx'}
+                      ref={editorRef}
+                      chapter={editorChapter}
+                      index={0}
+                      total={1}
+                      settings={settings}
+                      appearance={effectiveAppearance}
+                      focusMode={focusMode}
+                      readOnly={activeDocument.readOnly}
+                      standalone
+                      hideToolbar={splitOpen}
+                      docZoom={docZoom}
+                      onDocZoomChange={setDocZoom}
+                      onEditorReady={setLeftTiptapEditor}
+                      onActivate={() => setActivePane('left')}
+                      proofreadingEnabled={proofreading.enabled}
+                      proofreadingDictionary={proofreading.dictionary}
+                      proofreadingIgnored={proofreading.ignored}
+                      onAddProofreadingWord={proofreading.addDictionary}
+                      onIgnoreProofreading={proofreading.ignore}
+                      header={
+                        <div className="document-bar-shell">
+                          <div className="document-bar-toggle-row">
+                            <button
+                              type="button"
+                              className="document-bar-toggle"
+                              aria-label={documentBarCollapsed ? '展开文稿信息栏' : '收起文稿信息栏'}
+                              aria-expanded={!documentBarCollapsed}
+                              title={documentBarCollapsed ? '展开文稿信息栏' : '收起文稿信息栏'}
+                              onClick={toggleDocumentBar}
+                            >
+                              <Icon name={documentBarCollapsed ? 'chevron-down' : 'chevron-up'} size={11} />
+                            </button>
+                          </div>
+                          {!documentBarCollapsed ? (
+                            <DocumentBar
+                              document={activeDocument}
+                              folder={documentRoot}
+                              saving={documentSaving}
+                              error={documentError}
+                              recovery={documentRecovery}
+                              recoveryError={documentRecoveryError}
+                              autoSave={saveMode === 'auto'}
+                              onSave={() => void handleSaveDocumentNow()}
+                              onSaveAs={() => void handleSaveDocumentAsNow()}
+                              onReveal={() => void handleRevealDocument()}
+                              onAuthorizeOverwrite={authorizeOverwrite}
+                              onToggleReadOnly={toggleReadOnly}
+                              onRestoreRecovery={restoreDocumentRecovery}
+                              onDiscardRecovery={discardDocumentRecovery}
+                              onClearError={clearDocumentError}
+                              onCloseWorkspace={() => void closeWorkspace()}
+                            />
+                          ) : null}
+                        </div>
+                      }
+                      onUpdate={updateDocument}
+                    />
+                  </div>
+                  {splitOpen ? (
+                    <>
+                      <div
+                        className="document-split-divider"
+                        role="separator"
+                        aria-orientation="vertical"
+                        aria-label="调整双文稿分屏比例"
+                        onPointerDown={startSplitDrag}
+                      />
+                      <div
+                        className={`document-editor-pane split-right${activePane === 'right' ? ' is-active-pane' : ''}`}
+                        style={{ flexBasis: `${splitRatio}%` }}
+                        onPointerDown={() => setActivePane('right')}
+                      >
+                        {rightDocument && rightEditorChapter ? (
+                          <EditorPane
+                            key={rightDocument.path ?? 'right-untitled'}
+                            ref={rightEditorRef}
+                            chapter={rightEditorChapter}
+                            index={0}
+                            total={1}
+                            settings={settings}
+                            appearance={effectiveAppearance}
+                            focusMode={focusMode}
+                            readOnly={!rightEditable || rightDocument.readOnly}
+                            standalone
+                            hideToolbar={splitOpen}
+                            docZoom={rightZoom}
+                            onDocZoomChange={setRightZoom}
+                            onEditorReady={setRightTiptapEditor}
+                            onActivate={() => setActivePane('right')}
+                            header={
+                              <SplitPaneHeader
+                                document={rightDocument}
+                                editable={rightEditable && !rightDocument.readOnly}
+                                saving={rightDocumentSaving}
+                                onToggleLock={() => void toggleRightLock()}
+                                onClose={() => void closeSplit()}
+                                onChoose={() => void chooseRightDocument()}
+                              />
+                            }
+                            onUpdate={updateRightDocument}
+                          />
+                        ) : (
+                          <main className="editor-pane document-empty split-empty" aria-label="右侧参考文稿">
+                            <div className="document-empty-card">
+                              <Icon name="file" size={24} />
+                              <h2>右侧参考文稿</h2>
+                              <p>从文件树右键“在右侧打开”，或在这里选择文稿。</p>
+                              <div className="document-empty-actions">
+                                <button type="button" className="primary-button" onClick={() => void chooseRightDocument()}>
+                                  选择文稿
+                                </button>
+                                <button type="button" className="secondary-button" onClick={() => void closeSplit()}>
+                                  关闭分屏
+                                </button>
+                              </div>
+                            </div>
+                          </main>
+                        )}
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              </div>
             ) : (
               <main className="editor-pane document-empty" aria-label="未选择文稿">
                 <div className="document-empty-card">
@@ -1451,18 +1673,18 @@ export default function App() {
         <StatusBar
           chapterIndex={0}
           chapterCount={1}
-          characterCount={activeDocument.characterCount}
-          fullCharacterCount={activeDocument.characterCount}
-          savedAt={activeDocument.savedAt}
-          saving={documentSaving}
-          dirty={activeDocument.dirty}
+          characterCount={activeDocumentView?.characterCount ?? 0}
+          fullCharacterCount={activeDocumentView?.characterCount ?? 0}
+          savedAt={activeDocumentView?.savedAt ?? 0}
+          saving={activeSaving}
+          dirty={activeDocumentView?.dirty ?? false}
           focusMode={false}
           onToggleFocus={() => undefined}
           standalone
-          documentName={activeDocument.name}
-          zoom={docZoom}
-          onZoomChange={setDocZoom}
-          saveError={documentError && /保存|写入/.test(documentError) ? documentError : ''}
+          documentName={activeDocumentView?.name}
+          zoom={activeZoom}
+          onZoomChange={activeZoomChange}
+          saveError={activeDocumentError && /保存|写入/.test(activeDocumentError) ? activeDocumentError : ''}
         />
       ) : null}
 

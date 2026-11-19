@@ -25,6 +25,7 @@ interface MenuBarProps {
   documentPath: string;
   leftOpen: boolean;
   rightOpen: boolean;
+  splitOpen: boolean;
   theme: ThemeMode;
   writingMode: WritingMode;
   focusMode: boolean;
@@ -53,6 +54,7 @@ interface MenuBarProps {
   onFind: () => void;
   onToggleLeft: () => void;
   onToggleRight: () => void;
+  onToggleSplit: () => void;
   onToggleFocus: () => void;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
@@ -78,6 +80,7 @@ export function MenuBar({
   documentPath,
   leftOpen,
   rightOpen,
+  splitOpen,
   theme,
   writingMode,
   focusMode,
@@ -106,6 +109,7 @@ export function MenuBar({
   onFind,
   onToggleLeft,
   onToggleRight,
+  onToggleSplit,
   onToggleFocus,
   isFullscreen,
   onToggleFullscreen,
@@ -265,6 +269,12 @@ export function MenuBar({
       label: '视图',
       items: [
         { label: '文件树', shortcut: 'Ctrl+B', checked: leftOpen, disabled: !hasProject && !hasDocument, onSelect: onToggleLeft },
+        {
+          label: '双文稿分屏',
+          checked: splitOpen,
+          disabled: !hasDocument,
+          onSelect: onToggleSplit,
+        },
         {
           label: '设置面板',
           shortcut: 'Ctrl+Shift+B',
