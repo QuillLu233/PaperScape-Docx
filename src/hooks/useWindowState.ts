@@ -140,9 +140,19 @@ export function useWindowState() {
       position: await windowApi.outerPosition(),
       size: await windowApi.innerSize(),
     };
+    const [outerSize, innerSize] = await Promise.all([
+      windowApi.outerSize(),
+      windowApi.innerSize(),
+    ]);
+    const frameWidth = Math.max(0, outerSize.width - innerSize.width);
+    const frameHeight = Math.max(0, outerSize.height - innerSize.height);
+    const targetSize = new PhysicalSize(
+      Math.max(320, monitor.workArea.size.width - frameWidth),
+      Math.max(240, monitor.workArea.size.height - frameHeight),
+    );
     customMaximizedRef.current = true;
     await windowApi.setPosition(monitor.workArea.position);
-    await forceWebViewResize(windowApi, monitor.workArea.size);
+    await forceWebViewResize(windowApi, targetSize);
     setIsMaximized(true);
   }, []);
 

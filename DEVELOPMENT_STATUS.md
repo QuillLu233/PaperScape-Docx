@@ -12,7 +12,7 @@
 ### 窗口尺寸热修复（2026-11-18）
 
 - 修复自定义最大化还原后窗口逐渐变大的问题：保存和恢复都使用内框尺寸，不再混用外框尺寸。
-- 窗口程序化改变尺寸后增加 1 px 微调并重新聚焦，保证 WebView2 无需点击边框即可重排。
+- 最大化时按当前外框/内框差计算目标内框，使窗口外框精确贴合显示器工作区；尺寸改变后增加 1 px 微调并重新聚焦，保证 WebView2 无需点击边框即可重排。
 - 实测：普通 1280×820 → 最大化 1722×1028 → 还原 1280×820。
 - 前端测试 19 个文件、77 个测试通过。
 
@@ -24,10 +24,10 @@
 - Rust：`cargo check --offline` 通过；`cargo test --offline --lib` **17 个测试通过**，0.51 s。
 - React 正式构建：通过，约 3.6 s。
 - Tauri Windows Release：`pnpm tauri build --no-bundle` 通过，约 24.2 s，保留 Cargo target 缓存。
-- EXE：`src-tauri/target/release/paperscape.exe`，**9,950,720 字节**。
-- 发布 ZIP：`release/PaperScape-v1.1.3-Portable.zip`，**3,219,338 字节**。
-- ZIP SHA256：`9DC7ECCBE74187BE35E48093149B2ED4B2EE9791062BFD48E9458FE66F92F62B`。
-- EXE SHA256：`3D6F5FCD951930FE13E43C68161B0E5071320DA8382E2FA3D4C5E8FEA7A3B5A8`。
+- EXE：`src-tauri/target/release/paperscape.exe`，**9,951,232 字节**。
+- 发布 ZIP：`release/PaperScape-v1.1.3-Portable.zip`，**3,219,153 字节**。
+- ZIP SHA256：`DAE5139FA3B1C7E21CBA0828465819D197A89CE37064ED09722988B1A34B7076`。
+- EXE SHA256：`24E5256CA17E1D56907FA3BF678EC51EFAA9C12E74D444DADE17D2D0D7E2BC4F`。
 - ZIP 内只有 `PaperScape-v1.1.3-Portable/PaperScape.exe` 和 `README.txt`。
 - **未生成 NSIS/MSI**；未引入 Electron、额外大型运行时或后台服务。
 
@@ -124,8 +124,8 @@
 
 | 指标 | 实测 | 目标/结论 |
 | --- | --- | --- |
-| ZIP 体积 | 3,219,338 B（约 3.06 MiB） | ≤30 MB，达到 |
-| EXE 体积 | 9,950,720 B | 轻量 |
+| ZIP 体积 | 3,219,153 B（约 3.06 MiB） | ≤30 MB，达到 |
+| EXE 体积 | 9,951,232 B | 轻量 |
 | 启动到窗口（热缓存，任务计划口径） | 255 / 84 / 54 ms | ≤2 s 目标达到；**不是严格冷启动** |
 | V1 项目空闲 Working Set（含 7 个进程） | **379.2 MB** | 150 MB 挑战目标**未达到** |
 | V1 项目 Private Memory | **209.3 MB** | 未达到 150 MB |
