@@ -87,8 +87,11 @@ export interface EnvironmentAnimationSettings {
   color: string;
   lowPower: boolean;
   rainDensity?: number;
+  rainFallSpeed?: number;
   trafficDensity?: number;
   trafficSpeed?: number;
+  lightBrightness?: number;
+  backgroundBrightness?: number;
   blurAmount?: number;
   snowDensity?: number;
   snowWind?: number;

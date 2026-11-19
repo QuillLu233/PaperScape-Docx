@@ -89,8 +89,11 @@ describe('V2 environment presets', () => {
         enabled: true,
         type: 'rain-traffic',
         rainDensity: 0.7,
+        rainFallSpeed: 1.1,
         trafficDensity: 0.4,
         trafficSpeed: 0.9,
+        lightBrightness: 0.8,
+        backgroundBrightness: 1,
         snowDensity: 0.2,
         snowWind: -0.3,
         snowNight: true,
@@ -102,6 +105,9 @@ describe('V2 environment presets', () => {
     expect(appearance.background.videoPaused).toBe(true);
     expect(appearance.animation.type).toBe('rain-traffic');
     expect(appearance.animation.rainDensity).toBe(0.7);
+    expect(appearance.animation.rainFallSpeed).toBe(1.1);
+    expect(appearance.animation.lightBrightness).toBe(0.8);
+    expect(appearance.animation.backgroundBrightness).toBe(1);
     expect(appearance.animation.trafficDensity).toBe(0.4);
     expect(appearance.animation.snowWind).toBe(-0.3);
   });

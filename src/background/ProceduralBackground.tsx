@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { BackgroundStyle, EnvironmentAnimationSettings } from '../types';
+import { RainTrafficScene } from './rainTraffic';
 
 interface ProceduralBackgroundProps {
   background: BackgroundStyle;
@@ -251,6 +252,7 @@ export function drawProceduralFrame(
   time: number,
   background: BackgroundStyle,
   animation: EnvironmentAnimationSettings,
+  rainScene?: RainTrafficScene,
 ): void {
   const ctx = context;
   ctx.clearRect(0, 0, width, height);
@@ -277,8 +279,12 @@ export function drawProceduralFrame(
       drawAurora(ctx, width, height, time, colors, intensity);
       break;
     case 'rain-traffic':
+      if (rainScene) rainScene.draw(ctx, width, height, time, animation);
+      else drawRain(ctx, width, height, time, animation, intensity);
+      break;
     case 'rain':
-      drawRain(ctx, width, height, time, animation, intensity);
+      if (rainScene) rainScene.draw(ctx, width, height, time, animation);
+      else drawRain(ctx, width, height, time, animation, intensity);
       break;
     case 'snow':
       drawSnow(ctx, width, height, time, animation, colors, intensity);
@@ -294,6 +300,7 @@ export function drawProceduralFrame(
 export function ProceduralBackground({ background, animation }: ProceduralBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef<number>(0);
+  const rainSceneRef = useRef<RainTrafficScene>(new RainTrafficScene());
   const pausedRef = useRef(animation.paused === true);
   pausedRef.current = animation.paused === true;
   const animationKey = JSON.stringify({ ...animation, paused: false }, (key, value) =>
@@ -356,14 +363,14 @@ export function ProceduralBackground({ background, animation }: ProceduralBackgr
       if (!active) return;
       if (pausedRef.current) return;
       if (animation.speed <= 0) {
-        drawProceduralFrame(ctx, width, height, 0, background, animation);
+        drawProceduralFrame(ctx, width, height, 0, background, animation, rainSceneRef.current);
         cancelAnimationFrame(frameRef.current);
         return;
       }
       if (now - lastFrame < frameInterval) return;
       lastFrame = now;
       if (!reduced) elapsed = ((now - startedAt) / 1000) * Math.max(0, animation.speed);
-      drawProceduralFrame(ctx, width, height, elapsed, background, animation);
+      drawProceduralFrame(ctx, width, height, elapsed, background, animation, rainSceneRef.current);
       if (reduced) {
         cancelAnimationFrame(frameRef.current);
       }
@@ -377,6 +384,7 @@ export function ProceduralBackground({ background, animation }: ProceduralBackgr
       window.removeEventListener('blur', onBlur);
       window.removeEventListener('focus', onFocus);
       ctx.clearRect(0, 0, width, height);
+      rainSceneRef.current.reset();
     };
   }, [animationKey, background]);
 

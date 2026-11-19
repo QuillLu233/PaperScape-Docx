@@ -812,8 +812,11 @@ export function AppearanceSettings({
         {appearance.animation.type === 'rain-traffic' || appearance.animation.type === 'rain' ? (
           <>
             <RangeControl id="rain-density" label="雨滴密度" value={appearance.animation.rainDensity ?? 0.55} min={0} max={1} step={0.05} onChange={(rainDensity) => onAnimationChange?.({ rainDensity })} />
+            <RangeControl id="rain-fall-speed" label="雨滴滑落速度" value={appearance.animation.rainFallSpeed ?? 0.7} min={0.1} max={2} step={0.05} onChange={(rainFallSpeed) => onAnimationChange?.({ rainFallSpeed })} />
             <RangeControl id="traffic-density" label="车流密度" value={appearance.animation.trafficDensity ?? 0.5} min={0} max={1} step={0.05} onChange={(trafficDensity) => onAnimationChange?.({ trafficDensity })} />
             <RangeControl id="traffic-speed" label="车流速度" value={appearance.animation.trafficSpeed ?? 0.55} min={0.1} max={2} step={0.05} onChange={(trafficSpeed) => onAnimationChange?.({ trafficSpeed })} />
+            <RangeControl id="light-brightness" label="灯光亮度" value={appearance.animation.lightBrightness ?? 0.7} min={0.1} max={1.4} step={0.05} onChange={(lightBrightness) => onAnimationChange?.({ lightBrightness })} />
+            <RangeControl id="background-brightness" label="背景亮度" value={appearance.animation.backgroundBrightness ?? 0.9} min={0.4} max={1.2} step={0.05} onChange={(backgroundBrightness) => onAnimationChange?.({ backgroundBrightness })} />
             <RangeControl id="scene-blur" label="光影虚化" value={appearance.animation.blurAmount ?? 8} min={0} max={24} step={1} unit="px" onChange={(blurAmount) => onAnimationChange?.({ blurAmount })} />
           </>
         ) : null}
