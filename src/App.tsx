@@ -268,7 +268,11 @@ export default function App() {
   const changeUiColorMode = useCallback(
     (mode: ProjectAppearance['uiColorMode']) => {
       if (mode !== 'environment') setThemeMode(mode);
-      updateAppearanceInMode({ ...appearance, uiColorMode: mode });
+      updateAppearanceInMode({
+        ...appearance,
+        uiColorMode: mode,
+        uiColorModeExplicit: mode !== 'environment',
+      });
     },
     [appearance, setThemeMode, updateAppearanceInMode],
   );
@@ -276,7 +280,11 @@ export default function App() {
   const changeClassicTheme = useCallback(
     (mode: 'light' | 'dark' | 'system') => {
       setThemeMode(mode);
-      updateAppearanceInMode({ ...appearance, uiColorMode: mode });
+      updateAppearanceInMode({
+        ...appearance,
+        uiColorMode: mode,
+        uiColorModeExplicit: true,
+      });
     },
     [appearance, setThemeMode, updateAppearanceInMode],
   );

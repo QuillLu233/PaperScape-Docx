@@ -133,6 +133,7 @@ export interface ProjectAppearance {
   presetId: string;
   uiTheme: 'light' | 'dark';
   uiColorMode: UiColorMode;
+  uiColorModeExplicit?: boolean;
   uiColors: EnvironmentUiColors;
   display: EnvironmentDisplaySettings;
   animation: EnvironmentAnimationSettings;

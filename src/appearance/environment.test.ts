@@ -94,6 +94,26 @@ describe('V2 environment presets', () => {
     expect(migrated.display.color).toBe('#533C35');
   });
 
+  it('defaults to following the preset but preserves an explicit UI color choice', () => {
+    const automatic = cloneAppearance(DEFAULT_APPEARANCE);
+    automatic.uiColorMode = 'dark';
+    automatic.uiColorModeExplicit = false;
+    const appliedAutomatic = applyEnvironmentPreset(
+      automatic,
+      getOfficialEnvironment('spring-festival')!,
+    );
+    expect(appliedAutomatic.uiColorMode).toBe('environment');
+
+    const explicit = cloneAppearance(DEFAULT_APPEARANCE);
+    explicit.uiColorMode = 'dark';
+    explicit.uiColorModeExplicit = true;
+    const appliedExplicit = applyEnvironmentPreset(
+      explicit,
+      getOfficialEnvironment('spring-festival')!,
+    );
+    expect(appliedExplicit.uiColorMode).toBe('dark');
+  });
+
   it('preserves the classic environment when migrating old appearance data', () => {
     const migrated = sanitizeAppearance({
       mode: 'immersive',
@@ -102,6 +122,7 @@ describe('V2 environment presets', () => {
       paper: { color: '#1b1d1a' },
     });
     expect(migrated.uiColorMode).toBe('system');
+    expect(migrated.uiColorModeExplicit).toBe(true);
     expect(migrated.presetId).toBe('legacy');
     expect(migrated.mode).toBe('immersive');
     expect(migrated.readingOpacity).toBe(0.62);

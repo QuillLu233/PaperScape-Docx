@@ -185,6 +185,10 @@ export function sanitizeAppearance(value: unknown): ProjectAppearance {  if (!is
     legacyMode === 'system'
       ? legacyMode
       : 'system';
+  const uiColorModeExplicit =
+    typeof value.uiColorModeExplicit === 'boolean'
+      ? value.uiColorModeExplicit
+      : uiColorMode !== 'environment';
   const uiTheme: 'light' | 'dark' =
     value.uiTheme === 'dark' || value.uiTheme === 'light'
       ? value.uiTheme
@@ -200,6 +204,7 @@ export function sanitizeAppearance(value: unknown): ProjectAppearance {  if (!is
     presetId: typeof value.presetId === 'string' && value.presetId ? value.presetId : 'legacy',
     uiTheme,
     uiColorMode,
+    uiColorModeExplicit,
     uiColors: sanitizeUiColors(value.uiColors),
     display: sanitizeDisplay(value.display),
     animation: sanitizeAnimation(value.animation),
@@ -440,6 +445,7 @@ export function applyEnvironmentPreset(
     ...appearance,
     presetId: preset.id,
     uiTheme: preset.uiTheme,
+    uiColorMode: appearance.uiColorModeExplicit ? appearance.uiColorMode : 'environment',
     uiColors: { ...preset.uiColors },
     background: cloneBackground(preset.background),
     paper: clonePaper(preset.paper),

@@ -126,6 +126,7 @@ export const DEFAULT_APPEARANCE: ProjectAppearance = {
   presetId: ORIGIN_ENVIRONMENT.id,
   uiTheme: ORIGIN_ENVIRONMENT.uiTheme,
   uiColorMode: 'environment',
+  uiColorModeExplicit: false,
   uiColors: DEFAULT_UI_COLORS,
   display: DEFAULT_DISPLAY,
   animation: DEFAULT_ANIMATION,
