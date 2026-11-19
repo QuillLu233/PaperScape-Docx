@@ -135,7 +135,7 @@ export function useProjectAppearance(
         uiTheme: theme.uiTheme ?? appearance.uiTheme,
         uiColors: theme.uiColors ? { ...theme.uiColors } : appearance.uiColors,
         display: theme.display ? { ...theme.display } : appearance.display,
-        animation: theme.animation ? { ...theme.animation } : appearance.animation,
+        animation: appearance.animation,
       });
     },
     [appearance, discardVideo, onChange],

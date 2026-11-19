@@ -462,7 +462,7 @@ export function createEnvironmentFromAppearance(
     paper: clonePaper(appearance.paper),
     immersive: clonePaper(appearance.immersive),
     display: { ...appearance.display },
-    animation: { ...appearance.animation },
+    animation: { ...DEFAULT_ANIMATION },
     resourceReferences: appearance.background.imageId ? [appearance.background.imageId] : [],
   };
 }
@@ -483,7 +483,6 @@ export function applyEnvironmentPreset(
     immersive: clonePaper(preset.immersive),
     readingOpacity: preset.immersive.opacity,
     display: { ...preset.display },
-    animation: { ...preset.animation },
   };
 }
 

@@ -4376,3 +4376,60 @@ body.is-text-dragging .tiptap {
   cursor: pointer;
 }
 .scene-preset-button:hover { border-color: var(--accent-line); color: var(--accent); }
+
+.animation-scene-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+.animation-scene-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-alt);
+  color: var(--ink-soft);
+  text-align: left;
+  cursor: pointer;
+}
+.animation-scene-card:hover { border-color: var(--accent-line); }
+.animation-scene-card.is-active {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  background: var(--accent-soft);
+}
+.animation-scene-preview {
+  height: 34px;
+  border-radius: 5px;
+  background:
+    radial-gradient(circle at 28% 35%, rgba(255, 236, 190, 0.65), transparent 45%),
+    linear-gradient(135deg, #293c39, #6f8c78);
+}
+.animation-scene-preview[data-scene='breathe'] {
+  background: radial-gradient(circle at 50% 55%, rgba(255, 225, 170, 0.9), transparent 62%), #5b5142;
+}
+.animation-scene-preview[data-scene='flow'] {
+  background: linear-gradient(120deg, #1b3552, #2b7f8d 45%, #b5d39f);
+}
+.animation-scene-preview[data-scene='rain-traffic'] {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 215, 160, 0.7), transparent 26%),
+    radial-gradient(circle at 72% 66%, rgba(255, 90, 100, 0.55), transparent 24%),
+    linear-gradient(145deg, #0a1420, #243746);
+}
+.animation-scene-preview[data-scene='snow-day'] {
+  background:
+    radial-gradient(circle at 25% 30%, rgba(255, 247, 220, 0.85), transparent 20%),
+    linear-gradient(145deg, #b8d6e6, #eef7fb);
+}
+.animation-scene-preview[data-scene='snow-night'] {
+  background:
+    radial-gradient(circle at 75% 30%, rgba(255, 214, 150, 0.55), transparent 20%),
+    linear-gradient(145deg, #101d31, #35506b);
+}
+.animation-scene-label { display: flex; flex-direction: column; gap: 1px; }
+.animation-scene-label strong { color: var(--ink); font-size: 11px; }
+.animation-scene-label small { color: var(--muted); font-size: 9px; line-height: 1.3; }

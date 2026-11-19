@@ -157,6 +157,23 @@ describe('V2 environment presets', () => {
     expect(migrated.display.color).toBe('#533C35');
   });
 
+  it('keeps animation scenes separate from environment preset changes', () => {
+    const appearance = cloneAppearance(DEFAULT_APPEARANCE);
+    appearance.animation = {
+      ...appearance.animation,
+      enabled: true,
+      type: 'rain-traffic',
+      rainDensity: 0.7,
+    };
+    const applied = applyEnvironmentPreset(
+      appearance,
+      getOfficialEnvironment('aurora')!,
+    );
+    expect(applied.animation.type).toBe('rain-traffic');
+    expect(applied.animation.rainDensity).toBe(0.7);
+    expect(applied.animation.enabled).toBe(true);
+  });
+
   it('follows the preset by default while custom snapshots can keep the chosen UI mode', () => {
     const automatic = cloneAppearance(DEFAULT_APPEARANCE);
     automatic.uiColorMode = 'dark';

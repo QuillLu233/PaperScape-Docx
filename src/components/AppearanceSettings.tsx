@@ -21,6 +21,11 @@ import { FONT_FAMILIES } from '../editor/editorConfig';
 import { Icon } from './Icon';
 import { EnvironmentPresetDialog } from './EnvironmentPresetDialog';
 import { OFFICIAL_ENVIRONMENTS, environmentThumbnailStyle } from '../appearance/environmentPresets';
+import {
+  ANIMATION_SCENE_PRESETS,
+  applyAnimationScene,
+  scenePresetMatches,
+} from '../appearance/scenePresets';
 
 interface AppearanceSettingsProps {
   appearance: ProjectAppearance;
@@ -431,33 +436,6 @@ export function AppearanceSettings({
             <option value="video">外部视频</option>
           </select>
         </div>
-        <div className="scene-preset-row">
-          <button
-            type="button"
-            className="scene-preset-button"
-            onClick={() => {
-              if (appearance.background.kind === 'video') {
-                onBackgroundChange({ kind: 'gradient' });
-              }
-              onAnimationChange?.({ enabled: true, type: 'rain-traffic' });
-            }}
-          >
-            雨夜车流
-          </button>
-          <button
-            type="button"
-            className="scene-preset-button"
-            onClick={() => {
-              if (appearance.background.kind === 'video') {
-                onBackgroundChange({ kind: 'gradient' });
-              }
-              onAnimationChange?.({ enabled: true, type: 'snow' });
-            }}
-          >
-            冬雪
-          </button>
-        </div>
-
         <div className="theme-picker" aria-label="背景主题">
           {BACKGROUND_PRESETS.map((preset) => (
             <button
@@ -760,6 +738,24 @@ export function AppearanceSettings({
         <div className="settings-label-row">
           <h3 id="animation-heading" className="settings-label">环境动效</h3>
           <span className="settings-badge">30 FPS</span>
+        </div>
+        <div className="animation-scene-grid" role="group" aria-label="动效场景预设">
+          {ANIMATION_SCENE_PRESETS.map((scene) => (
+            <button
+              key={scene.id}
+              type="button"
+              className={`animation-scene-card${scenePresetMatches(appearance.animation, scene) ? ' is-active' : ''}`}
+              aria-pressed={scenePresetMatches(appearance.animation, scene)}
+              title={scene.description}
+              onClick={() => onAnimationChange?.(applyAnimationScene(appearance.animation, scene))}
+            >
+              <span className="animation-scene-preview" data-scene={scene.id} />
+              <span className="animation-scene-label">
+                <strong>{scene.name}</strong>
+                <small>{scene.description}</small>
+              </span>
+            </button>
+          ))}
         </div>
         <label className="toggle-row">
           <input
