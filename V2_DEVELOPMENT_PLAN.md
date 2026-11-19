@@ -141,7 +141,7 @@ V1.1.2 已冻结在 `release/1.1.2` 分支、`v1.1.2` 标签和
 | 进程树 Working Set | 约 395.6 MB |
 | Windows GPU 计数器总和 | 约 3.6% |
 | JSHeapUsedSize | 约 5.8 MB |
-| 雨夜车流 4 秒 TaskDuration | 约 0.088 s |
+| 雨夜车流 5 秒 TaskDuration | 0.166 s |
 | 冬雪 4 秒 TaskDuration | 约 0.085 s |
 
 自然场景性能满足内部开发使用，发布状态：**可发布为开发构建**，正式发布前仍需更长时间的热稳定性与低端 GPU 验证。

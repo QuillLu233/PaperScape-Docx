@@ -38,7 +38,7 @@
 - `pnpm check` 通过；`pnpm test` **21 个测试文件，102 个测试通过**。
 - Tauri Release 构建通过，版本 `2.0.0-dev.1`。
 - 极光 30 FPS：5 秒 TaskDuration **0.116 s**，ScriptDuration **0.022 s**；进程树 CPU 5 秒 **0.281 s**，Working Set 约 **395.6 MB**，GPU 计数器约 **3.6%**，JSHeap 约 **5.8 MB**。
-- 雨夜车流 4 秒 TaskDuration 约 **0.088 s**；冬雪约 **0.085 s**。
+- 雨夜车流 30 FPS 5 秒 TaskDuration **0.166 s**、ScriptDuration **0.059 s**、进程树 CPU **1.31 s / 5 s**、GPU **7.3%**、Working Set **411.3 MB**；冬雪 4 秒约 0.085 s。
 - 本地 WebM 视频实测：加载成功、`readyState=4`、循环播放、暂停/继续正常。
 - 自然场景发布状态：开发构建可用；正式发布前继续观察低端 GPU 和长时间运行。
 
