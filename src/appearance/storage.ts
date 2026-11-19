@@ -63,9 +63,16 @@ function sanitizeBackground(value: unknown): BackgroundStyle {
       : DEFAULT_BACKGROUND.kind;
   const presetId = typeof value.presetId === 'string' ? value.presetId : 'custom';
   const source =
-    value.source === 'video' || value.source === 'procedural' || value.source === 'static'
+    value.source === 'environment' ||
+    value.source === 'custom' ||
+    value.source === 'procedural' ||
+    value.source === 'video'
       ? value.source
-      : undefined;
+      : value.kind === 'video'
+        ? 'video'
+        : value.kind === 'image'
+          ? 'custom'
+          : 'environment';
   return {
     presetId,
     name: typeof value.name === 'string' && value.name.trim() ? value.name : '自定义背景',
@@ -187,6 +194,8 @@ function sanitizeAnimation(value: unknown): EnvironmentAnimationSettings {
           : rawType;
   return {
     enabled: record.enabled === true,
+    paused: record.paused === true,
+    sceneId: typeof record.sceneId === 'string' ? record.sceneId.slice(0, 80) : undefined,
     type,
     effects: Array.isArray(record.effects)
       ? record.effects.filter((item): item is string => typeof item === 'string').slice(0, 8)
@@ -462,7 +471,7 @@ export function createEnvironmentFromAppearance(
     paper: clonePaper(appearance.paper),
     immersive: clonePaper(appearance.immersive),
     display: { ...appearance.display },
-    animation: { ...DEFAULT_ANIMATION },
+    animation: { ...appearance.animation },
     resourceReferences: appearance.background.imageId ? [appearance.background.imageId] : [],
   };
 }
@@ -478,11 +487,27 @@ export function applyEnvironmentPreset(
     uiColorMode: preset.presetType === 'official' ? 'environment' : appearance.uiColorMode,
     uiColorModeExplicit: preset.presetType === 'official' ? false : appearance.uiColorModeExplicit,
     uiColors: { ...preset.uiColors },
-    background: cloneBackground(preset.background),
     paper: clonePaper(preset.paper),
     immersive: clonePaper(preset.immersive),
     readingOpacity: preset.immersive.opacity,
     display: { ...preset.display },
+    background: {
+      ...cloneBackground(preset.background),
+      source:
+        preset.presetType === 'official'
+          ? 'environment'
+          : preset.background.source ?? 'environment',
+    },
+    animation:
+      preset.presetType === 'official'
+        ? {
+            ...preset.animation,
+            enabled: false,
+            paused: false,
+            sceneId: undefined,
+            type: 'none',
+          }
+        : { ...preset.animation },
   };
 }
 

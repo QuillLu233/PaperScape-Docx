@@ -25,6 +25,11 @@ import {
   deleteBackgroundVideo,
 } from './storage';
 import { OFFICIAL_ENVIRONMENTS } from './environmentPresets';
+import { cloneBackground } from './presets';
+import {
+  applyAnimationScene,
+  type AnimationScenePreset,
+} from './scenePresets';
 import { releaseBackgroundUrl, useBackgroundImageUrl } from './useBackgroundImage';
 import {
   registerVideoObjectUrl,
@@ -114,7 +119,17 @@ export function useProjectAppearance(
       if (appearance.background.kind === 'video') {
         discardVideo(appearance.background.videoId);
       }
-      onChange({ ...appearance, background: createBackgroundPreset(presetId) });
+      onChange({
+        ...appearance,
+        background: { ...createBackgroundPreset(presetId), source: 'custom' },
+        animation: {
+          ...appearance.animation,
+          enabled: false,
+          paused: false,
+          sceneId: undefined,
+          type: 'none',
+        },
+      });
     },
     [appearance, discardVideo, onChange],
   );
@@ -126,7 +141,7 @@ export function useProjectAppearance(
       }
       onChange({
         ...appearance,
-        background: { ...theme.background, presetId: theme.id, name: theme.name },
+        background: { ...theme.background, source: 'custom', presetId: theme.id, name: theme.name },
         readingOpacity: theme.readingOpacity,
         paper: { ...theme.paper, customMargins: { ...theme.paper.customMargins } },
         immersive: theme.immersive
@@ -135,7 +150,7 @@ export function useProjectAppearance(
         uiTheme: theme.uiTheme ?? appearance.uiTheme,
         uiColors: theme.uiColors ? { ...theme.uiColors } : appearance.uiColors,
         display: theme.display ? { ...theme.display } : appearance.display,
-        animation: appearance.animation,
+        animation: { ...appearance.animation, enabled: false, paused: false, sceneId: undefined, type: 'none' },
       });
     },
     [appearance, discardVideo, onChange],
@@ -184,6 +199,67 @@ export function useProjectAppearance(
     },
     [discardVideo, onChange],
   );
+
+  const applyScene = useCallback(
+    (scene: AnimationScenePreset) => {
+      const current = appearanceRef.current;
+      if (current.background.kind === 'video') {
+        discardVideo(current.background.videoId);
+      }
+      onChange({
+        ...current,
+        background: {
+          ...current.background,
+          kind: 'gradient',
+          source: 'procedural',
+          presetId: `scene-${scene.id}`,
+          name: scene.name,
+          color: scene.colors[0],
+          gradientFrom: scene.colors[0],
+          gradientMid: scene.colors[1],
+          gradientTo: scene.colors[2],
+          gradientAccent: scene.accent,
+          gradientAngle: 135,
+          imageId: null,
+          videoId: null,
+          videoName: '',
+          brightness: 100,
+          blur: 0,
+          vignette: 18,
+          overlay: 6,
+        },
+        animation: {
+          ...applyAnimationScene(current.animation, scene),
+          enabled: true,
+          paused: false,
+        },
+      });
+    },
+    [discardVideo, onChange],
+  );
+
+  const restoreThemeBackground = useCallback(() => {
+    const current = appearanceRef.current;
+    const preset = [...OFFICIAL_ENVIRONMENTS, ...environmentsRef.current].find(
+      (item) => item.id === current.presetId,
+    );
+    if (!preset) return;
+    if (current.background.kind === 'video') discardVideo(current.background.videoId);
+    onChange({
+      ...current,
+      background: {
+        ...cloneBackground(preset.background),
+        source: 'environment',
+      },
+      animation: {
+        ...current.animation,
+        enabled: false,
+        paused: false,
+        sceneId: undefined,
+        type: 'none',
+      },
+    });
+  }, [discardVideo, onChange]);
 
   const saveCurrentEnvironment = useCallback(
     (name: string): EnvironmentPreset => {
@@ -259,7 +335,7 @@ export function useProjectAppearance(
         background: {
           ...appearanceRef.current.background,
           kind: 'image',
-          source: 'static',
+          source: 'custom',
           imageId,
           videoId: null,
           presetId: 'custom-image',
@@ -336,6 +412,8 @@ export function useProjectAppearance(
     applyPreset,
     applySavedTheme,
     applyEnvironment,
+    applyScene,
+    restoreThemeBackground,
     saveCurrentEnvironment,
     renameEnvironment,
     deleteEnvironment,

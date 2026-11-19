@@ -294,6 +294,15 @@ export function drawProceduralFrame(
 export function ProceduralBackground({ background, animation }: ProceduralBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef<number>(0);
+  const pausedRef = useRef(animation.paused === true);
+  pausedRef.current = animation.paused === true;
+  const animationKey = JSON.stringify({ ...animation, paused: false }, (key, value) =>
+    key === 'paused' ? undefined : value,
+  );
+
+  useEffect(() => {
+    pausedRef.current = animation.paused === true;
+  }, [animation.paused]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -345,6 +354,7 @@ export function ProceduralBackground({ background, animation }: ProceduralBackgr
     const render = (now: number) => {
       frameRef.current = requestAnimationFrame(render);
       if (!active) return;
+      if (pausedRef.current) return;
       if (animation.speed <= 0) {
         drawProceduralFrame(ctx, width, height, 0, background, animation);
         cancelAnimationFrame(frameRef.current);
@@ -368,7 +378,7 @@ export function ProceduralBackground({ background, animation }: ProceduralBackgr
       window.removeEventListener('focus', onFocus);
       ctx.clearRect(0, 0, width, height);
     };
-  }, [animation, background]);
+  }, [animationKey, background]);
 
   return (
     <canvas

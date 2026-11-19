@@ -7,33 +7,32 @@ import {
 import { DEFAULT_ANIMATION } from './environmentPresets';
 
 describe('animation scene presets', () => {
-  it('provides the five separate scene presets', () => {
+  it('provides six independent background scenes', () => {
     expect(ANIMATION_SCENE_PRESETS.map((scene) => scene.id)).toEqual([
-      'breathe',
       'flow',
+      'breathe',
+      'orbs',
+      'aurora',
       'rain-traffic',
-      'snow-day',
-      'snow-night',
+      'snow',
     ]);
   });
 
-  it('applies a scene without touching environment or paper settings', () => {
+  it('applies a complete scene with its own colors and parameters', () => {
     const rain = ANIMATION_SCENE_PRESETS.find((scene) => scene.id === 'rain-traffic')!;
     const applied = applyAnimationScene(DEFAULT_ANIMATION, rain);
     expect(applied.enabled).toBe(true);
     expect(applied.type).toBe('rain-traffic');
+    expect(applied.sceneId).toBe('rain-traffic');
     expect(applied.rainDensity).toBe(0.65);
-    expect(applied.trafficDensity).toBe(0.55);
+    expect(rain.colors[0]).toBe('#091522');
   });
 
-  it('distinguishes day and night snow presets', () => {
-    const day = ANIMATION_SCENE_PRESETS.find((scene) => scene.id === 'snow-day')!;
-    const night = ANIMATION_SCENE_PRESETS.find((scene) => scene.id === 'snow-night')!;
-    const dayState = applyAnimationScene(DEFAULT_ANIMATION, day);
-    const nightState = applyAnimationScene(DEFAULT_ANIMATION, night);
-    expect(scenePresetMatches(dayState, day)).toBe(true);
-    expect(scenePresetMatches(dayState, night)).toBe(false);
-    expect(scenePresetMatches(nightState, night)).toBe(true);
-    expect(scenePresetMatches(nightState, day)).toBe(false);
+  it('supports snow day and night through the same scene', () => {
+    const snow = ANIMATION_SCENE_PRESETS.find((scene) => scene.id === 'snow')!;
+    const day = applyAnimationScene(DEFAULT_ANIMATION, snow);
+    expect(scenePresetMatches(day, snow)).toBe(true);
+    const night = { ...day, snowNight: true };
+    expect(scenePresetMatches(night, snow)).toBe(true);
   });
 });

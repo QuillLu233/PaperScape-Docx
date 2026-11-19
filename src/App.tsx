@@ -231,6 +231,8 @@ export default function App() {
     applyPreset,
     applySavedTheme,
     applyEnvironment,
+    applyScene,
+    restoreThemeBackground,
     saveCurrentEnvironment,
     renameEnvironment,
     deleteEnvironment,
@@ -1028,6 +1030,8 @@ export default function App() {
       onDisplayChange={updateDisplay}
       onAnimationChange={updateAnimation}
       onApplyEnvironment={applyEnvironment}
+      onApplyScene={applyScene}
+      onRestoreThemeBackground={restoreThemeBackground}
       onSaveEnvironment={saveCurrentEnvironment}
       onRenameEnvironment={renameEnvironment}
       onDeleteEnvironment={deleteEnvironment}

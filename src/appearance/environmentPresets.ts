@@ -302,28 +302,13 @@ const SEEDS: EnvironmentSeed[] = [
   },
 ];
 
-const THEME_EFFECTS: Record<string, { type: string; enabled: boolean }> = {
-  origin: { type: 'none', enabled: false },
-  pure: { type: 'none', enabled: false },
-  'warm-light': { type: 'breathe', enabled: true },
-  'deep-ocean': { type: 'flow', enabled: true },
-  aurora: { type: 'aurora', enabled: true },
-  midnight: { type: 'none', enabled: false },
-  'violet-night': { type: 'orbs', enabled: true },
-  sunset: { type: 'flow', enabled: true },
-  verdant: { type: 'breathe', enabled: true },
-  'rosy-dream': { type: 'orbs', enabled: true },
-  winter: { type: 'snow', enabled: true },
-  'christmas-carol': { type: 'snow', enabled: true },
-  'spring-festival': { type: 'flow', enabled: true },
-};
-
 function createEnvironment(seed: EnvironmentSeed): EnvironmentPreset {
   const uiColors = createUiColors(seed);
   const background: BackgroundStyle = {
     presetId: `environment-${seed.id}`,
     name: seed.name,
     kind: 'gradient',
+    source: 'environment',
     color: seed.background[0],
     gradientFrom: seed.background[0],
     gradientMid: seed.background[1],
@@ -343,12 +328,11 @@ function createEnvironment(seed: EnvironmentSeed): EnvironmentPreset {
     titleColor: seed.titleColor ?? seed.text,
     fontFamily: '',
   };
-  const defaultEffect = THEME_EFFECTS[seed.id];
-  const animationType = seed.animationType ?? defaultEffect?.type ?? 'none';
   const animation: EnvironmentAnimationSettings = {
-    enabled: seed.animationEnabled ?? defaultEffect?.enabled ?? false,
-    type: animationType,
-    effects: seed.effects ?? [],
+    enabled: false,
+    paused: false,
+    type: 'none',
+    effects: [],
     speed: 1,
     intensity: 0.55,
     color: seed.animationColor ?? seed.accent,
@@ -357,7 +341,7 @@ function createEnvironment(seed: EnvironmentSeed): EnvironmentPreset {
     trafficDensity: 0.5,
     trafficSpeed: 0.55,
     blurAmount: 8,
-    snowDensity: animationType === 'snow' ? 0.6 : 0.5,
+    snowDensity: 0.6,
     snowWind: 0.18,
     snowNight: seed.uiTheme === 'dark',
   };

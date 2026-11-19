@@ -23,8 +23,9 @@ import { EnvironmentPresetDialog } from './EnvironmentPresetDialog';
 import { OFFICIAL_ENVIRONMENTS, environmentThumbnailStyle } from '../appearance/environmentPresets';
 import {
   ANIMATION_SCENE_PRESETS,
-  applyAnimationScene,
   scenePresetMatches,
+  sceneThumbnailStyle,
+  type AnimationScenePreset,
 } from '../appearance/scenePresets';
 
 interface AppearanceSettingsProps {
@@ -44,6 +45,8 @@ interface AppearanceSettingsProps {
   onDeleteSavedTheme: (id: string) => void;
   onSaveTheme: (name: string) => void;
   onApplyEnvironment?: (preset: EnvironmentPreset) => void;
+  onApplyScene?: (scene: AnimationScenePreset) => void;
+  onRestoreThemeBackground?: () => void;
   onSaveEnvironment?: (name: string) => void;
   onRenameEnvironment?: (id: string, name: string) => void;
   onDeleteEnvironment?: (id: string) => void;
@@ -131,6 +134,8 @@ export function AppearanceSettings({
   onDeleteSavedTheme,
   onSaveTheme,
   onApplyEnvironment,
+  onApplyScene,
+  onRestoreThemeBackground,
   onSaveEnvironment,
   onRenameEnvironment,
   onDeleteEnvironment,
@@ -155,6 +160,13 @@ export function AppearanceSettings({
     () => window.localStorage.getItem('paperscape.settings.advanced.open') === 'true',
   );
   const dimensions = getPageDimensions(appearance.paper);
+  const backgroundSource =
+    appearance.background.source ??
+    (appearance.background.kind === 'video'
+      ? 'video'
+      : appearance.background.kind === 'image'
+        ? 'custom'
+        : 'environment');
   const currentEnvironment =
     [...OFFICIAL_ENVIRONMENTS, ...environmentPresets].find(
       (preset) => preset.id === appearance.presetId,
@@ -399,43 +411,67 @@ export function AppearanceSettings({
           <select
             id="background-source"
             className="settings-select"
-            value={
-              appearance.background.kind === 'video'
-                ? 'video'
-                : appearance.animation.enabled
-                  ? 'procedural'
-                  : 'static'
-            }
+            value={backgroundSource}
             onChange={(event) => {
               const value = event.target.value;
+              if (value === 'environment') {
+                onRestoreThemeBackground?.();
+                return;
+              }
               if (value === 'video') {
+                onBackgroundChange({ source: 'video' });
                 videoInputRef.current?.click();
                 return;
               }
-              if (value === 'static') {
-                onAnimationChange?.({ enabled: false });
+              if (value === 'custom') {
                 if (appearance.background.kind === 'video') {
-                  onBackgroundChange({ kind: 'gradient' });
+                  onBackgroundChange({ kind: 'gradient', source: 'custom' });
+                } else {
+                  onBackgroundChange({ source: 'custom' });
                 }
+                onAnimationChange?.({ enabled: false, paused: false });
                 return;
               }
               if (appearance.background.kind === 'video') {
-                onBackgroundChange({ kind: 'gradient' });
+                onBackgroundChange({ kind: 'gradient', source: 'procedural' });
+              } else {
+                onBackgroundChange({ source: 'procedural' });
               }
-              onAnimationChange?.({
-                enabled: true,
-                type:
-                  appearance.animation.type === 'none'
-                    ? 'flow'
-                    : appearance.animation.type,
-              });
+              if (appearance.animation.type === 'none') {
+                onApplyScene?.(ANIMATION_SCENE_PRESETS[0]);
+              } else {
+                onAnimationChange?.({ enabled: true, paused: false });
+              }
             }}
           >
-            <option value="static">静态背景</option>
-            <option value="procedural">程序化动态</option>
-            <option value="video">外部视频</option>
+            <option value="environment">环境预设默认背景</option>
+            <option value="custom">自定义静态背景</option>
+            <option value="procedural">程序化动态背景</option>
+            <option value="video">外部视频背景</option>
           </select>
+          <button type="button" className="text-button" onClick={onRestoreThemeBackground}>
+            恢复主题背景
+          </button>
         </div>
+        {backgroundSource === 'procedural' ? (
+          <div className="procedural-scene-grid" role="group" aria-label="程序化动态场景">
+            {ANIMATION_SCENE_PRESETS.map((scene) => (
+              <button
+                key={scene.id}
+                type="button"
+                className={`procedural-scene-card${scenePresetMatches(appearance.animation, scene) ? ' is-active' : ''}`}
+                aria-pressed={scenePresetMatches(appearance.animation, scene)}
+                onClick={() => onApplyScene?.(scene)}
+              >
+                <span className="procedural-scene-thumb" style={sceneThumbnailStyle(scene)} />
+                <span className="procedural-scene-label">
+                  <strong>{scene.name}</strong>
+                  <small>{scene.description}</small>
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div className="theme-picker" aria-label="背景主题">
           {BACKGROUND_PRESETS.map((preset) => (
             <button
@@ -739,24 +775,6 @@ export function AppearanceSettings({
           <h3 id="animation-heading" className="settings-label">环境动效</h3>
           <span className="settings-badge">30 FPS</span>
         </div>
-        <div className="animation-scene-grid" role="group" aria-label="动效场景预设">
-          {ANIMATION_SCENE_PRESETS.map((scene) => (
-            <button
-              key={scene.id}
-              type="button"
-              className={`animation-scene-card${scenePresetMatches(appearance.animation, scene) ? ' is-active' : ''}`}
-              aria-pressed={scenePresetMatches(appearance.animation, scene)}
-              title={scene.description}
-              onClick={() => onAnimationChange?.(applyAnimationScene(appearance.animation, scene))}
-            >
-              <span className="animation-scene-preview" data-scene={scene.id} />
-              <span className="animation-scene-label">
-                <strong>{scene.name}</strong>
-                <small>{scene.description}</small>
-              </span>
-            </button>
-          ))}
-        </div>
         <label className="toggle-row">
           <input
             type="checkbox"
@@ -765,13 +783,22 @@ export function AppearanceSettings({
           />
           <span>启用环境动效</span>
         </label>
+        <button
+          type="button"
+          className="text-button animation-pause-button"
+          onClick={() => onAnimationChange?.({ paused: !appearance.animation.paused })}
+        >
+          {appearance.animation.paused ? '继续播放' : '暂停画面'}
+        </button>
         <div className="paper-row">
           <label htmlFor="animation-type">动效类型</label>
           <select
             id="animation-type"
             className="settings-select"
             value={appearance.animation.type}
-            onChange={(event) => onAnimationChange?.({ type: event.target.value })}
+            onChange={(event) =>
+              onAnimationChange?.({ type: event.target.value, sceneId: undefined })
+            }
           >
             <option value="none">静态</option>
             <option value="flow">流动渐变</option>

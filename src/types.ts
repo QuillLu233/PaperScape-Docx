@@ -22,7 +22,7 @@ export type SaveMode = 'auto' | 'manual';
 
 export type WritingMode = 'immersive' | 'paper';
 export type BackgroundKind = 'solid' | 'gradient' | 'image' | 'video';
-export type BackgroundSource = 'static' | 'procedural' | 'video';
+export type BackgroundSource = 'environment' | 'custom' | 'procedural' | 'video';
 export type VideoFit = 'cover' | 'contain';
 export type VideoSourceMode = 'reference' | 'copy';
 export type EnvironmentAnimationType =
@@ -78,6 +78,8 @@ export interface EnvironmentDisplaySettings {
 
 export interface EnvironmentAnimationSettings {
   enabled: boolean;
+  paused?: boolean;
+  sceneId?: string;
   type: string;
   effects?: string[];
   speed: number;

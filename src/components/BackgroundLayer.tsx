@@ -44,6 +44,8 @@ export const BackgroundLayer = memo(function BackgroundLayer({
   ]);
 
   const videoAvailable = background.kind === 'video' && Boolean(videoUrl) && !videoError;
+  const proceduralActive =
+    background.source === 'procedural' && animation.enabled && animation.type !== 'none';
 
   useEffect(() => {
     setVideoError(false);
@@ -87,7 +89,7 @@ export const BackgroundLayer = memo(function BackgroundLayer({
       className={`scene-background${focusMode ? ' is-focus' : ''}`}
       aria-hidden="true"
       data-kind={background.kind}
-      data-source={background.kind === 'video' ? 'video' : animation.enabled ? 'procedural' : 'static'}
+      data-source={background.source ?? (background.kind === 'video' ? 'video' : 'environment')}
     >
       {!videoAvailable && background.kind === 'image' && imageUrl ? (
         <div
@@ -101,7 +103,7 @@ export const BackgroundLayer = memo(function BackgroundLayer({
       ) : (
         <div className="scene-background-color" style={{ ...colorStyle, filter }} />
       )}
-      {!videoAvailable && background.kind !== 'video' && animation.enabled && animation.type !== 'none' ? (
+      {!videoAvailable && proceduralActive ? (
         <ProceduralBackground background={background} animation={animation} />
       ) : null}
       {videoAvailable ? (

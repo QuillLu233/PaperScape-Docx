@@ -4433,3 +4433,37 @@ body.is-text-dragging .tiptap {
 .animation-scene-label { display: flex; flex-direction: column; gap: 1px; }
 .animation-scene-label strong { color: var(--ink); font-size: 11px; }
 .animation-scene-label small { color: var(--muted); font-size: 9px; line-height: 1.3; }
+
+.procedural-scene-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 7px 0 8px;
+}
+.procedural-scene-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel-alt);
+  color: var(--ink-soft);
+  text-align: left;
+  cursor: pointer;
+}
+.procedural-scene-card:hover { border-color: var(--accent-line); }
+.procedural-scene-card.is-active {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  background: var(--accent-soft);
+}
+.procedural-scene-thumb {
+  display: block;
+  height: 42px;
+  border-radius: 4px;
+}
+.procedural-scene-label { display: flex; flex-direction: column; gap: 1px; }
+.procedural-scene-label strong { color: var(--ink); font-size: 10px; }
+.procedural-scene-label small { color: var(--muted); font-size: 8px; line-height: 1.25; }
+.animation-pause-button { margin: 2px 0 4px; }

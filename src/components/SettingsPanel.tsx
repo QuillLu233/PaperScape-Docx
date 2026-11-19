@@ -29,6 +29,8 @@ interface SettingsPanelProps {
   onDisplayChange?: (patch: Partial<EnvironmentDisplaySettings>) => void;
   onAnimationChange?: (patch: Partial<EnvironmentAnimationSettings>) => void;
   onApplyEnvironment?: (preset: EnvironmentPreset) => void;
+  onApplyScene?: (scene: import('../appearance/scenePresets').AnimationScenePreset) => void;
+  onRestoreThemeBackground?: () => void;
   onSaveEnvironment?: (name: string) => void;
   onRenameEnvironment?: (id: string, name: string) => void;
   onDeleteEnvironment?: (id: string) => void;
@@ -90,6 +92,8 @@ export const SettingsPanel = memo(function SettingsPanel({
   onDisplayChange,
   onAnimationChange,
   onApplyEnvironment,
+  onApplyScene,
+  onRestoreThemeBackground,
   onSaveEnvironment,
   onRenameEnvironment,
   onDeleteEnvironment,
@@ -229,6 +233,8 @@ export const SettingsPanel = memo(function SettingsPanel({
           onDeleteSavedTheme={onDeleteSavedTheme}
           onSaveTheme={onSaveTheme}
           onApplyEnvironment={onApplyEnvironment}
+          onApplyScene={onApplyScene}
+          onRestoreThemeBackground={onRestoreThemeBackground}
           onSaveEnvironment={onSaveEnvironment}
           onRenameEnvironment={onRenameEnvironment}
           onDeleteEnvironment={onDeleteEnvironment}
