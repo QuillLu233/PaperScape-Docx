@@ -37,7 +37,7 @@
 - 保留旧版背景、纸张、阅读区配置；旧配置迁移为经典界面配色，不强行换肤。
 - 实际验证：13 个官方主题（含圣诞颂歌、岁序新春）；极光应用后 `data-theme=dark`、标题栏 `#182C40`、强调色 `#72C8CF`、纸张 `rgba(27,57,75,0.98)`；经典浅色会清除环境 UI 变量而不改变环境；沉浸模式纸张 `rgba(27,57,75,0.8)`、正文 `rgb(242,238,228)`、宽度 790 px；自定义预设保存成功。
 - `pnpm check` 通过；`pnpm test` **20 个测试文件，89 个测试通过**；Tauri Release 构建通过（版本 2.0.0-dev.0）。
-- 开发便携包：`release/PaperScape-v2.0.0-dev.0-Portable.zip`，3,224,973 字节，SHA256 `99232707C7995D0F7F25CA5E09529820A783550EAC5302E08DEC50890D8EF454`。
+- 开发便携包：`release/PaperScape-v2.0.0-dev.0-Portable.zip`，3,225,281 字节，SHA256 `86DBE845D3F60D884FB11F0FC123DB12F437A821A39041C4E18B9DD86F0321AA`。
 - 阶段一详细计划见 [V2_DEVELOPMENT_PLAN.md](V2_DEVELOPMENT_PLAN.md)。
 
 ## V1.1.2 发布与便携版

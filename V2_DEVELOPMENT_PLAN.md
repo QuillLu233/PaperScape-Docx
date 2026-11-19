@@ -109,7 +109,7 @@ Phase 2 不改变 Phase 1 的预设数据结构。
 - 导入导出单元测试：通过
 - 前端测试：20 个测试文件，89 个测试通过
 - Tauri Release 构建：通过
-- 开发便携包：`release/PaperScape-v2.0.0-dev.0-Portable.zip`，3,224,973 字节，SHA256 `99232707C7995D0F7F25CA5E09529820A783550EAC5302E08DEC50890D8EF454`
+- 开发便携包：`release/PaperScape-v2.0.0-dev.0-Portable.zip`，3,225,281 字节，SHA256 `86DBE845D3F60D884FB11F0FC123DB12F437A821A39041C4E18B9DD86F0321AA`
 
 ## 遗留/限制
 
