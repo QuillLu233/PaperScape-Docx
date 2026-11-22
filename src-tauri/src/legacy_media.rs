@@ -39,19 +39,20 @@ mod platform {
     use super::*;
     use windows::core::BOOL;
     use windows::Win32::Foundation::{HWND, LPARAM};
+    use windows::Win32::UI::Input::KeyboardAndMouse::{
+        keybd_event, KEYEVENTF_KEYUP, VK_LEFT, VK_RIGHT,
+    };
     use windows::Win32::UI::WindowsAndMessaging::{
         EnumWindows, GetClassNameW, GetWindowTextW,
     };
 
     const NETEASE_CLASS: &str = "OrpheusBrowserHost";
-    const WM_APPCOMMAND: u32 = 0x0319;
-    const APPCOMMAND_MEDIA_NEXTTRACK: usize = 11;
-    const APPCOMMAND_MEDIA_PREVIOUSTRACK: usize = 12;
-    const APPCOMMAND_MEDIA_PLAY_PAUSE: usize = 14;
+    const VK_CONTROL: u8 = 0x11;
+    const VK_MENU: u8 = 0x12;
+    const VK_P: u8 = 0x50;
 
     #[derive(Clone)]
     struct PlayerWindow {
-        hwnd: HWND,
         title: String,
     }
 
@@ -79,7 +80,7 @@ mod platform {
         if title.trim().is_empty() {
             return BOOL(1);
         }
-        *found = Some(PlayerWindow { hwnd, title });
+        *found = Some(PlayerWindow { title });
         BOOL(0)
     }
 
@@ -150,27 +151,26 @@ mod platform {
         })
     }
 
-    fn send_app_command(command: usize) -> Result<bool, String> {
-        let window = find_window().ok_or_else(|| "网易云音乐窗口不存在".to_string())?;
-        let result = unsafe {
-            windows::Win32::UI::WindowsAndMessaging::PostMessageW(
-                Some(window.hwnd),
-                WM_APPCOMMAND,
-                windows::Win32::Foundation::WPARAM(0),
-                LPARAM((command << 16) as isize),
-            )
-        };
-        Ok(result.is_ok())
+    fn send_net_ease_hotkey(vk: u8) {
+        unsafe {
+            keybd_event(VK_CONTROL, 0, Default::default(), 0);
+            keybd_event(VK_MENU, 0, Default::default(), 0);
+            keybd_event(vk, 0, Default::default(), 0);
+            keybd_event(vk, 0, KEYEVENTF_KEYUP, 0);
+            keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, 0);
+            keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
+        }
     }
 
     pub fn control(action: &str) -> Result<bool, String> {
-        let command = match action {
-            "play" | "pause" | "toggle" => APPCOMMAND_MEDIA_PLAY_PAUSE,
-            "next" => APPCOMMAND_MEDIA_NEXTTRACK,
-            "previous" => APPCOMMAND_MEDIA_PREVIOUSTRACK,
+        let vk = match action {
+            "play" | "pause" | "toggle" => VK_P,
+            "next" => VK_RIGHT.0 as u8,
+            "previous" => VK_LEFT.0 as u8,
             _ => return Err(format!("不支持的兼容媒体操作：{action}")),
         };
-        send_app_command(command)
+        send_net_ease_hotkey(vk);
+        Ok(true)
     }
 
     pub fn seek(_position_ms: i64) -> Result<bool, String> {

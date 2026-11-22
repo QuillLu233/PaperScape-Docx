@@ -222,7 +222,7 @@ export function MusicPanel({
       </div>
       {compatible ? (
         <p className="music-note">
-          兼容模式：仅从网易云窗口标题读取曲名；进度、封面和播放状态可能不可用，控制通过应用媒体命令发送。
+          兼容模式：仅从网易云窗口标题读取曲名；进度、封面和播放状态可能不可用。控制通过网易云全局快捷键发送（默认 Ctrl+Alt+P / Ctrl+Alt+← / Ctrl+Alt+→）。
         </p>
       ) : null}
       {error ? <p className="music-error">{error}</p> : null}
