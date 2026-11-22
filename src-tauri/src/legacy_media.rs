@@ -40,9 +40,12 @@ mod platform {
     use windows::core::BOOL;
     use windows::Win32::Foundation::{HWND, LPARAM};
     use windows::core::{Interface, GUID};
+    use std::sync::{Mutex, OnceLock};
+    use std::time::{Duration, Instant};
+    use windows::Win32::Media::Audio::Endpoints::IAudioMeterInformation;
     use windows::Win32::Media::Audio::{
-        eMultimedia, eRender, AudioSessionStateActive, IAudioSessionControl2,
-        IAudioSessionManager2, IMMDeviceEnumerator,
+        eMultimedia, eRender, AudioSessionStateActive,
+        IAudioSessionControl2, IAudioSessionManager2, IMMDeviceEnumerator,
     };
     use windows::Win32::System::Com::{
         CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED,
@@ -60,6 +63,13 @@ mod platform {
     const VK_P: u8 = 0x50;
     const CLSID_MM_DEVICE_ENUMERATOR: GUID =
         GUID::from_u128(0xBCDE0395_E52F_467C_8E3D_C4579291692E);
+    const AUDIO_PEAK_THRESHOLD: f32 = 0.0005;
+    const AUDIO_HOLD: Duration = Duration::from_millis(900);
+    static LAST_AUDIO: OnceLock<Mutex<Option<Instant>>> = OnceLock::new();
+
+    fn last_audio() -> &'static Mutex<Option<Instant>> {
+        LAST_AUDIO.get_or_init(|| Mutex::new(None))
+    }
 
     #[derive(Clone)]
     struct PlayerWindow {
@@ -129,6 +139,7 @@ mod platform {
             };
             let count = sessions.GetCount().unwrap_or(0);
             let mut found = false;
+            let mut session_active = false;
             for index in 0..count {
                 let Ok(control) = sessions.GetSession(index) else {
                     continue;
@@ -141,10 +152,44 @@ mod platform {
                 }
                 found = true;
                 if control.GetState().ok() == Some(AudioSessionStateActive) {
-                    return "playing";
+                    session_active = true;
                 }
             }
-            if found { "paused" } else { "unknown" }
+            if !found {
+                return "unknown";
+            }
+
+            // NetEase keeps its WASAPI session active while paused, so the
+            // session state alone is not enough. Sample the render endpoint
+            // peak and keep a short hold window to avoid flickering during
+            // quiet passages.
+            let meter = device.Activate::<IAudioMeterInformation>(CLSCTX_ALL, None);
+            if let Ok(meter) = meter {
+                let mut peak = 0.0f32;
+                for _ in 0..3 {
+                    if let Ok(value) = meter.GetPeakValue() {
+                        peak = peak.max(value);
+                    }
+                    std::thread::sleep(Duration::from_millis(18));
+                }
+                let now = Instant::now();
+                if peak > AUDIO_PEAK_THRESHOLD {
+                    if let Ok(mut last) = last_audio().lock() {
+                        *last = Some(now);
+                    }
+                    return "playing";
+                }
+                if let Ok(last) = last_audio().lock() {
+                    if let Some(last) = *last {
+                        if now.duration_since(last) < AUDIO_HOLD {
+                            return "playing";
+                        }
+                    }
+                }
+                return "paused";
+            }
+
+            if session_active { "playing" } else { "paused" }
         }
     }
 
