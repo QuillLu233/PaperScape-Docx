@@ -13,22 +13,38 @@ PaperScape 是一个面向 Windows 的安静写作空间。V1.1 已完成文件�
 
 本项目的原创界面、源代码和文档版权归 QuillLulu 所有；本 README 不构成或更改任何软件授权协议。第三方组件继续遵循各自原有许可证与版权声明，详见 [NOTICE.md](NOTICE.md)。版本记录见 [CHANGELOG.md](CHANGELOG.md)。
 
-> 当前发布版本：**1.1.3（V1.1.3 正式绿色版）**
+> 最新正式版：**2.0.0**（`release/2.0` 分支、`v2.0.0` 标签）
 >
-> 本阶段**没有生成 NSIS 或 MSI 安装包**。发布物为 `release/PaperScape-v1.1.3-Portable.zip`；Windows 需要已有 WebView2 Runtime。
+> 1.1.3 稳定版：**main** 分支、`v1.1.3` 标签，继续保留
+>
+> 2.0 提供 Windows 绿色便携 ZIP，不包含 NSIS/MSI 安装包；需要已有 WebView2 Runtime。
+>
+> 2.0 发布物：`release/PaperScape-v2.0.0-Cleanroom-Portable.zip`
 
-## 2.0 开发进度（内部）
-
-- 2.0 全局主题与环境预设系统正在内部开发。
-- 已完成 13 款环境预设（11 款常驻、2 款节日）、界面配色跟随、正文显示颜色、纸张/沉浸双模式参数。
-- 已支持官方/个人预设选择、保存、复制、重命名、删除和版本化 JSON 导入导出。
-- 节日主题「圣诞颂歌」「岁序新春」已接入统一主题变量。
-- 2.0 源码和开发包暂不公开；稳定版仍为 1.1.3。
+## V2.0 正式版
+- 2.0.0 正式发布：DOCX 双文稿分屏、Windows 系统音乐控制台、13 款官方环境预设。
+- 文件栏右键菜单、分屏中线、默认跟随主题界面配色已修复。
+- 环境动效功能已彻底移除。
+- Cleanroom 包使用独立应用标识 `com.paperscape.cleanroom`，不读取现有 PaperScape 的最近项目、主题或会话记录。
+- 1.1.3 稳定代码：`main` 分支、`v1.1.3` 标签
+- 1.1.2 源码快照：`release/archive/PaperScape-1.1.2-source.zip`
+- 1.1.2 便携版仍可从 GitHub Release 下载
+- Phase 1.1 新增：13 款官方环境预设（含节日主题）、统一主题 Tokens、四类界面配色、自适应正文颜色、纸张/沉浸双模式参数、官方/自定义预设选择器、版本化 JSON 导入导出
+- 应用预设时界面配色默认跟随环境；显式选择经典配色后，切换主题保留用户选择。
+- 修复最大化/还原后窗口尺寸增长，并确保 WebView2 视口无需点击边框即可刷新。
+- 正式便携包：`release/PaperScape-v2.0.0-Cleanroom-Portable.zip`（3,316,279 字节，SHA256 `B9CCDF958ABF00D91AA2DAA751CD6E0624A75A4C9B6BEFF67C8E8403B6815F99`）
+- 详细计划与限制见 [V2_DEVELOPMENT_PLAN.md](V2_DEVELOPMENT_PLAN.md)
 
 ## V1.1.3 绿色便携版
 
 - 发布文件：`release/PaperScape-v1.1.3-Portable.zip`
 - 包内：`PaperScape-v1.1.3-Portable/PaperScape.exe`、`README.txt`
+- 1.1.3 发布与标签保持不变，不与 2.0 数据目录混用。
+
+## V1.1.2 绿色便携版
+
+- 发布文件：`release/PaperScape-v1.1.2-Portable.zip`
+- 包内：`PaperScape-v1.1.2-Portable/PaperScape.exe`、`README.txt`
 - 不包含源代码、`node_modules`、Cargo `target`、测试文稿或开发缓存。
 - 无需安装向导、管理员权限、注册表修改或后台服务。
 - 不包含 WebView2 Runtime；Windows 10/11 通常已自带。
