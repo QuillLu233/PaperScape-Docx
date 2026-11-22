@@ -39,21 +39,32 @@ mod platform {
     use super::*;
     use windows::core::BOOL;
     use windows::Win32::Foundation::{HWND, LPARAM};
+    use windows::core::{Interface, GUID};
+    use windows::Win32::Media::Audio::{
+        eMultimedia, eRender, AudioSessionStateActive, IAudioSessionControl2,
+        IAudioSessionManager2, IMMDeviceEnumerator,
+    };
+    use windows::Win32::System::Com::{
+        CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED,
+    };
     use windows::Win32::UI::Input::KeyboardAndMouse::{
         keybd_event, KEYEVENTF_KEYUP, VK_LEFT, VK_RIGHT,
     };
     use windows::Win32::UI::WindowsAndMessaging::{
-        EnumWindows, GetClassNameW, GetWindowTextW,
+        EnumWindows, GetClassNameW, GetWindowTextW, GetWindowThreadProcessId,
     };
 
     const NETEASE_CLASS: &str = "OrpheusBrowserHost";
     const VK_CONTROL: u8 = 0x11;
     const VK_MENU: u8 = 0x12;
     const VK_P: u8 = 0x50;
+    const CLSID_MM_DEVICE_ENUMERATOR: GUID =
+        GUID::from_u128(0xBCDE0395_E52F_467C_8E3D_C4579291692E);
 
     #[derive(Clone)]
     struct PlayerWindow {
         title: String,
+        process_id: u32,
     }
 
     fn read_title(hwnd: HWND) -> String {
@@ -80,7 +91,9 @@ mod platform {
         if title.trim().is_empty() {
             return BOOL(1);
         }
-        *found = Some(PlayerWindow { title });
+        let mut process_id = 0u32;
+        let _ = GetWindowThreadProcessId(hwnd, Some(&mut process_id));
+        *found = Some(PlayerWindow { title, process_id });
         BOOL(0)
     }
 
@@ -93,6 +106,46 @@ mod platform {
             );
         }
         found
+    }
+
+    fn audio_status(process_id: u32) -> &'static str {
+        unsafe {
+            let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+            let Ok(enumerator) = CoCreateInstance::<_, IMMDeviceEnumerator>(
+                &CLSID_MM_DEVICE_ENUMERATOR,
+                None,
+                CLSCTX_ALL,
+            ) else {
+                return "unknown";
+            };
+            let Ok(device) = enumerator.GetDefaultAudioEndpoint(eRender, eMultimedia) else {
+                return "unknown";
+            };
+            let Ok(manager) = device.Activate::<IAudioSessionManager2>(CLSCTX_ALL, None) else {
+                return "unknown";
+            };
+            let Ok(sessions) = manager.GetSessionEnumerator() else {
+                return "unknown";
+            };
+            let count = sessions.GetCount().unwrap_or(0);
+            let mut found = false;
+            for index in 0..count {
+                let Ok(control) = sessions.GetSession(index) else {
+                    continue;
+                };
+                let Ok(control) = control.cast::<IAudioSessionControl2>() else {
+                    continue;
+                };
+                if control.GetProcessId().ok() != Some(process_id) {
+                    continue;
+                }
+                found = true;
+                if control.GetState().ok() == Some(AudioSessionStateActive) {
+                    return "playing";
+                }
+            }
+            if found { "paused" } else { "unknown" }
+        }
     }
 
     fn parse_title(raw: &str) -> (String, String, String) {
@@ -124,7 +177,7 @@ mod platform {
             title,
             artist,
             album,
-            status: "unknown".into(),
+            status: audio_status(window.process_id).into(),
         })
     }
 

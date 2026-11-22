@@ -183,7 +183,7 @@ export function MusicPanel({
         <button
           type="button"
           className="music-control music-play"
-          aria-label={compatible ? '播放或暂停' : playing ? '暂停' : '播放'}
+          aria-label={compatible && media?.status === 'unknown' ? '播放或暂停' : playing ? '暂停' : '播放'}
           disabled={playing ? !media?.canPause : !media?.canPlay}
           onClick={() => onControl(compatible ? 'toggle' : playing ? 'pause' : 'play')}
         >
