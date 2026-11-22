@@ -62,7 +62,7 @@ interface MusicPanelProps {
   loading: boolean;
   onClose: () => void;
   onToggle: () => void;
-  onControl: (action: 'play' | 'pause' | 'next' | 'previous') => void;
+  onControl: (action: 'play' | 'pause' | 'toggle' | 'next' | 'previous') => void;
   onSeek: (positionMs: number) => void;
   onSelectSession: (sessionId: string) => void;
   onFollowAuto: () => void;
@@ -110,6 +110,7 @@ export function MusicPanel({
   const duration = Math.max(media?.durationMs ?? 0, 1);
   const position = Math.min(media?.positionMs ?? 0, duration);
   const playing = media?.status === 'playing';
+  const compatible = media?.platform === 'windows-legacy';
 
   return (
     <div
@@ -182,9 +183,9 @@ export function MusicPanel({
         <button
           type="button"
           className="music-control music-play"
-          aria-label={playing ? '暂停' : '播放'}
+          aria-label={compatible ? '播放或暂停' : playing ? '暂停' : '播放'}
           disabled={playing ? !media?.canPause : !media?.canPlay}
-          onClick={() => onControl(playing ? 'pause' : 'play')}
+          onClick={() => onControl(compatible ? 'toggle' : playing ? 'pause' : 'play')}
         >
           <Icon name={playing ? 'pause' : 'play'} size={18} />
         </button>
@@ -219,6 +220,11 @@ export function MusicPanel({
           ))}
         </select>
       </div>
+      {compatible ? (
+        <p className="music-note">
+          兼容模式：仅从网易云窗口标题读取曲名；进度、封面和播放状态可能不可用，控制通过应用媒体命令发送。
+        </p>
+      ) : null}
       {error ? <p className="music-error">{error}</p> : null}
       {!media && !loading ? (
         <p className="music-note">

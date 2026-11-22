@@ -3,6 +3,7 @@
 // Created by QuillLulu
 mod focus_hook;
 mod font;
+mod legacy_media;
 mod media;
 mod project;
 mod workspace;

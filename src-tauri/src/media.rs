@@ -363,21 +363,62 @@ mod platform {
 }
 
 pub fn available() -> bool {
-    platform::available()
+    platform::available() || crate::legacy_media::available()
 }
 
 pub fn list_sessions() -> Result<Vec<MediaSessionSummary>, String> {
-    platform::list_sessions()
+    let mut sessions = platform::list_sessions().unwrap_or_default();
+    for legacy in crate::legacy_media::list_sessions() {
+        sessions.push(MediaSessionSummary {
+            id: legacy.id,
+            source_app_id: legacy.source_app_id,
+            source_name: legacy.source_name,
+            title: legacy.title,
+            artist: legacy.artist,
+            album: legacy.album,
+            status: legacy.status,
+            is_current: false,
+        });
+    }
+    Ok(sessions)
 }
 
 pub fn state(session_id: &str) -> Result<MediaState, String> {
+    if session_id.starts_with("legacy:") {
+        let legacy = crate::legacy_media::state(session_id)?;
+        return Ok(MediaState {
+            available: legacy.available,
+            platform: legacy.platform,
+            session_id: legacy.session_id,
+            source_app_id: legacy.source_app_id,
+            source_name: legacy.source_name,
+            title: legacy.title,
+            artist: legacy.artist,
+            album: legacy.album,
+            status: legacy.status,
+            position_ms: legacy.position_ms,
+            duration_ms: legacy.duration_ms,
+            cover: legacy.cover,
+            can_play: legacy.can_play,
+            can_pause: legacy.can_pause,
+            can_next: legacy.can_next,
+            can_previous: legacy.can_previous,
+            can_seek: legacy.can_seek,
+        });
+    }
     platform::state(session_id)
 }
 
 pub fn control(session_id: &str, action: &str) -> Result<bool, String> {
+    if session_id.starts_with("legacy:") {
+        return crate::legacy_media::control(action);
+    }
     platform::control(session_id, action)
 }
 
 pub fn seek(session_id: &str, position_ms: i64) -> Result<bool, String> {
+    if session_id.starts_with("legacy:") {
+        return crate::legacy_media::seek(position_ms);
+    }
     platform::seek(session_id, position_ms)
 }

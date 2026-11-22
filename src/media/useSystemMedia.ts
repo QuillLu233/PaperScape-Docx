@@ -170,7 +170,7 @@ export function useSystemMedia(panelOpen: boolean) {
   }, []);
 
   const control = useCallback(
-    async (action: 'play' | 'pause' | 'next' | 'previous') => {
+    async (action: 'play' | 'pause' | 'toggle' | 'next' | 'previous') => {
       if (!media?.sessionId) return;
       try {
         await mediaControl(media.sessionId, action);
