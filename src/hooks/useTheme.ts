@@ -4,9 +4,9 @@ import type { ThemeMode } from '../types';
 const THEME_KEY = 'paperscape.theme';
 
 function readInitialMode(): ThemeMode {
-  if (typeof localStorage === 'undefined') return 'light';
+  if (typeof localStorage === 'undefined') return 'system';
   const stored = localStorage.getItem(THEME_KEY);
-  return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'light';
+  return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
 }
 
 function prefersDark(): boolean {

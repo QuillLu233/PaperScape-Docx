@@ -1,6 +1,5 @@
 import type {
   BackgroundStyle,
-  EnvironmentAnimationSettings,
   EnvironmentDisplaySettings,
   EnvironmentPreset,
   EnvironmentUiColors,
@@ -28,10 +27,7 @@ interface EnvironmentSeed {
   selection?: string;
   titleColor?: string;
   gradientAccent?: string;
-  effects?: string[];
   group: 'permanent' | 'festival';
-  animationType?: string;
-  animationColor?: string;
   uiTheme: 'light' | 'dark';
 }
 
@@ -274,10 +270,7 @@ const SEEDS: EnvironmentSeed[] = [
     selection: '#EAD0C3',
     titleColor: '#503038',
     gradientAccent: '#F1D5A0',
-    effects: ['snow', 'gradient', 'golden-glow'],
     group: 'festival',
-    animationType: 'snow',
-    animationColor: '#F1D5A0',
     uiTheme: 'dark',
   },
   {
@@ -295,8 +288,6 @@ const SEEDS: EnvironmentSeed[] = [
     border: '#D8B9A5',
     selected: '#ECD1C4',
     group: 'festival',
-    animationType: 'gradient',
-    animationColor: '#F5D79C',
     uiTheme: 'light',
   },
 ];
@@ -326,15 +317,6 @@ function createEnvironment(seed: EnvironmentSeed): EnvironmentPreset {
     titleColor: seed.titleColor ?? seed.text,
     fontFamily: '',
   };
-  const animation: EnvironmentAnimationSettings = {
-    enabled: false,
-    type: seed.animationType ?? 'none',
-    effects: seed.effects ?? [],
-    speed: 1,
-    intensity: 0.5,
-    color: seed.animationColor ?? seed.accent,
-    lowPower: true,
-  };
   const paper = createPaper(seed.paper, 0.98);
   const immersive = createPaper(seed.paper, 0.8, 790);
   return {
@@ -351,7 +333,6 @@ function createEnvironment(seed: EnvironmentSeed): EnvironmentPreset {
     paper,
     immersive,
     display,
-    animation,
     resourceReferences: [],
   };
 }
@@ -371,7 +352,6 @@ export const DEFAULT_BACKGROUND = ORIGIN_ENVIRONMENT.background;
 export const DEFAULT_PAPER = ORIGIN_ENVIRONMENT.paper;
 export const DEFAULT_IMMERSIVE = ORIGIN_ENVIRONMENT.immersive;
 export const DEFAULT_DISPLAY = ORIGIN_ENVIRONMENT.display;
-export const DEFAULT_ANIMATION = ORIGIN_ENVIRONMENT.animation;
 
 export function environmentThumbnailStyle(preset: EnvironmentPreset): { backgroundImage: string } {
   const linear = `linear-gradient(135deg, ${preset.gradientColors[0]} 0%, ${preset.gradientColors[1]} 52%, ${preset.gradientColors[2]} 100%)`;

@@ -57,7 +57,6 @@ describe('V2 environment presets', () => {
     expect(christmas.display.color).toBe('#533C35');
     expect(christmas.display.titleColor).toBe('#503038');
     expect(christmas.background.gradientAccent).toBe('#F1D5A0');
-    expect(christmas.animation.effects).toEqual(['snow', 'gradient', 'golden-glow']);
 
     const spring = getOfficialEnvironment('spring-festival')!;
     expect(spring.group).toBe('festival');

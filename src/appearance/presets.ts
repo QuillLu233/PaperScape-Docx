@@ -6,7 +6,6 @@ import type {
   ProjectAppearance,
 } from '../types';
 import {
-  DEFAULT_ANIMATION,
   DEFAULT_BACKGROUND,
   DEFAULT_DISPLAY,
   DEFAULT_IMMERSIVE,
@@ -17,7 +16,6 @@ import {
 } from './environmentPresets';
 
 export {
-  DEFAULT_ANIMATION,
   DEFAULT_BACKGROUND,
   DEFAULT_DISPLAY,
   DEFAULT_IMMERSIVE,
@@ -129,7 +127,6 @@ export const DEFAULT_APPEARANCE: ProjectAppearance = {
   uiColorModeExplicit: false,
   uiColors: DEFAULT_UI_COLORS,
   display: DEFAULT_DISPLAY,
-  animation: DEFAULT_ANIMATION,
 };
 
 export function cloneBackground(background: BackgroundStyle): BackgroundStyle {
@@ -148,7 +145,6 @@ export function cloneAppearance(appearance: ProjectAppearance): ProjectAppearanc
     immersive: clonePaper(appearance.immersive),
     uiColors: { ...appearance.uiColors },
     display: { ...appearance.display },
-    animation: { ...appearance.animation },
   };
 }
 

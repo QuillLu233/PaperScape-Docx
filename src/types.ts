@@ -61,16 +61,6 @@ export interface EnvironmentDisplaySettings {
   fontFamily: string;
 }
 
-export interface EnvironmentAnimationSettings {
-  enabled: boolean;
-  type: string;
-  effects?: string[];
-  speed: number;
-  intensity: number;
-  color: string;
-  lowPower: boolean;
-}
-
 export interface EnvironmentPreset {
   id: string;
   name: string;
@@ -85,7 +75,6 @@ export interface EnvironmentPreset {
   paper: PaperSettings;
   immersive: PaperSettings;
   display: EnvironmentDisplaySettings;
-  animation: EnvironmentAnimationSettings;
   resourceReferences: string[];
 }
 
@@ -136,7 +125,6 @@ export interface ProjectAppearance {
   uiColorModeExplicit?: boolean;
   uiColors: EnvironmentUiColors;
   display: EnvironmentDisplaySettings;
-  animation: EnvironmentAnimationSettings;
 }
 
 export interface SavedTheme {
@@ -150,7 +138,6 @@ export interface SavedTheme {
   uiTheme?: 'light' | 'dark';
   uiColors?: EnvironmentUiColors;
   display?: EnvironmentDisplaySettings;
-  animation?: EnvironmentAnimationSettings;
 }
 
 export interface WorkspaceSnapshot {

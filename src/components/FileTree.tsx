@@ -14,6 +14,7 @@ interface FileTreeProps {
   onOpenProject: (path: string) => void;
   onRefresh: () => void;
   onReveal: () => void;
+  onRevealPath?: (node: WorkspaceNode) => void;
   onClose: () => void;
 }
 
@@ -69,8 +70,8 @@ function TreeRow({
         title={node.path}
         aria-expanded={node.isDir ? isOpen : undefined}
         onContextMenu={(event) => {
-          if (!isDocx) return;
           event.preventDefault();
+          event.stopPropagation();
           onContextRequest(node, event.clientX, event.clientY);
         }}
         onClick={() => {
@@ -128,6 +129,7 @@ export function FileTree({
   onOpenProject,
   onRefresh,
   onReveal,
+  onRevealPath,
   onClose,
 }: FileTreeProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -165,6 +167,21 @@ export function FileTree({
     });
   };
 
+  const copyPath = async (path: string) => {
+    try {
+      await navigator.clipboard.writeText(path);
+    } catch {
+      const helper = document.createElement('textarea');
+      helper.value = path;
+      helper.style.position = 'fixed';
+      helper.style.opacity = '0';
+      document.body.appendChild(helper);
+      helper.select();
+      if (typeof document.execCommand === 'function') document.execCommand('copy');
+      helper.remove();
+    }
+  };
+
   return (
     <aside
       className={`chapter-sidebar file-sidebar panel${open ? '' : ' is-collapsed'}`}
@@ -172,6 +189,7 @@ export function FileTree({
       aria-hidden={!open}
       data-testid="file-tree"
       data-open={open}
+      onContextMenu={(event) => event.preventDefault()}
     >
       <div className="panel-heading">
         <div className="project-heading-copy">
@@ -213,7 +231,11 @@ export function FileTree({
         </div>
       </div>
 
-      <nav className="chapter-list file-list" aria-label="文件列表">
+      <nav
+        className="chapter-list file-list"
+        aria-label="文件列表"
+        onContextMenu={(event) => event.preventDefault()}
+      >
         {tree.length === 0 ? (
           <p className="file-empty">这个文件夹里还没有可显示的文稿。</p>
         ) : (
@@ -236,23 +258,109 @@ export function FileTree({
       </nav>
 
       {contextMenu ? (
-        <div
-          className="file-context-menu"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
-          role="menu"
-          onPointerDown={(event) => event.stopPropagation()}
-        >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              onOpenRight(contextMenu.node);
-              setContextMenu(null);
-            }}
-          >
-            在右侧打开
-          </button>
-        </div>
+        (() => {
+          const node = contextMenu.node;
+          const isDocx = !node.isDir && !node.isProject && node.editable;
+          const left = Math.min(contextMenu.x, Math.max(8, window.innerWidth - 190));
+          const top = Math.min(contextMenu.y, Math.max(8, window.innerHeight - 220));
+          return (
+            <div
+              className="file-context-menu"
+              style={{ left, top }}
+              role="menu"
+              aria-label={`${node.name} 文件菜单`}
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              {node.isProject ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    onOpenProject(node.path);
+                    setContextMenu(null);
+                  }}
+                >
+                  打开项目
+                </button>
+              ) : null}
+
+              {node.isDir && !node.isProject ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    toggle(node.path);
+                    setContextMenu(null);
+                  }}
+                >
+                  {expanded.has(node.path) ? '折叠文件夹' : '展开文件夹'}
+                </button>
+              ) : null}
+
+              {isDocx ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    onOpenFile(node);
+                    setContextMenu(null);
+                  }}
+                >
+                  打开
+                </button>
+              ) : null}
+
+              {isDocx ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    onOpenRight(node);
+                    setContextMenu(null);
+                  }}
+                >
+                  在右侧打开
+                </button>
+              ) : null}
+
+              <div className="file-context-separator" role="separator" />
+
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  if (onRevealPath) onRevealPath(node);
+                  else onReveal();
+                  setContextMenu(null);
+                }}
+              >
+                在资源管理器中显示
+              </button>
+
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  void copyPath(node.path);
+                  setContextMenu(null);
+                }}
+              >
+                复制路径
+              </button>
+
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  onRefresh();
+                  setContextMenu(null);
+                }}
+              >
+                刷新文件列表
+              </button>
+            </div>
+          );
+        })()
       ) : null}
 
       <div className="sidebar-footer">

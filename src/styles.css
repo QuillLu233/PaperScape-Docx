@@ -4238,9 +4238,6 @@ body.is-text-dragging .tiptap {
 .environment-quick-row { display: grid; gap: 7px; }
 .environment-quick-row label { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--ink-soft); font-size: 11px; }
 .environment-quick-row .settings-select { max-width: 150px; }
-.environment-animation-toggle { color: var(--muted) !important; }
-.environment-animation-toggle small { margin-left: auto; color: var(--muted); font-size: 9px; }
-.environment-animation-toggle input { accent-color: var(--accent); }
 .settings-advanced { border-top: 1px solid var(--line); }
 .settings-advanced > summary {
   padding: 11px 0 8px;
@@ -4419,6 +4416,11 @@ body.is-text-dragging .tiptap {
   cursor: pointer;
 }
 .file-context-menu button:hover { background: var(--accent-soft); color: var(--accent); }
+.file-context-separator {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--line);
+}
 @media (max-width: 900px) {
   .document-editor-pane { min-width: 200px; }
 }
@@ -4503,8 +4505,13 @@ body.is-text-dragging .tiptap {
 .music-panel-close {
   border: 0; background: transparent; color: var(--muted);
   width: 22px; height: 22px; border-radius: 5px; cursor: pointer;
+  display: grid; place-items: center;
 }
-.music-panel-close:hover { background: var(--accent-soft); color: var(--accent); }
+.music-panel-close:hover,
+.music-panel-close:focus-visible {
+  background: rgba(154, 79, 67, 0.12);
+  color: var(--danger);
+}
 .music-track { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .music-cover { width: 52px; height: 52px; border-radius: 7px; object-fit: cover; flex: 0 0 auto; }
 .music-cover-empty { display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
@@ -4541,6 +4548,11 @@ body.is-text-dragging .tiptap {
 .music-panel-refresh {
   width: 22px; height: 22px; border: 0; border-radius: 5px;
   background: transparent; color: var(--muted); cursor: pointer;
+  display: grid; place-items: center;
 }
-.music-panel-refresh:hover { background: var(--accent-soft); color: var(--accent); }
+.music-panel-refresh:hover,
+.music-panel-refresh:focus-visible {
+  background: var(--panel-alt);
+  color: var(--ink-soft);
+}
 .music-mini-empty { color: var(--muted); }

@@ -1,7 +1,6 @@
 import type {
   BackgroundKind,
   BackgroundStyle,
-  EnvironmentAnimationSettings,
   EnvironmentDisplaySettings,
   EnvironmentPreset,
   EnvironmentUiColors,
@@ -23,7 +22,6 @@ import {
   paperTextColors,
 } from './presets';
 import {
-  DEFAULT_ANIMATION,
   DEFAULT_DISPLAY,
   DEFAULT_UI_COLORS,
   OFFICIAL_ENVIRONMENTS,
@@ -160,21 +158,6 @@ function sanitizeDisplay(value: unknown): EnvironmentDisplaySettings {
   };
 }
 
-function sanitizeAnimation(value: unknown): EnvironmentAnimationSettings {
-  const record = isRecord(value) ? value : {};
-  return {
-    enabled: record.enabled === true,
-    type: typeof record.type === 'string' ? record.type.slice(0, 40) : 'none',
-    effects: Array.isArray(record.effects)
-      ? record.effects.filter((item): item is string => typeof item === 'string').slice(0, 8)
-      : [],
-    speed: clampNumber(record.speed, 0.2, 3, DEFAULT_ANIMATION.speed),
-    intensity: clampNumber(record.intensity, 0, 1, DEFAULT_ANIMATION.intensity),
-    color: safeColor(record.color, DEFAULT_ANIMATION.color),
-    lowPower: record.lowPower !== false,
-  };
-}
-
 export function sanitizeAppearance(value: unknown): ProjectAppearance {  if (!isRecord(value)) return cloneAppearance(DEFAULT_APPEARANCE);
   const paper = sanitizePaper(value.paper);
   const legacyMode = value.uiColorMode;
@@ -207,7 +190,6 @@ export function sanitizeAppearance(value: unknown): ProjectAppearance {  if (!is
     uiColorModeExplicit,
     uiColors: sanitizeUiColors(value.uiColors),
     display: sanitizeDisplay(value.display),
-    animation: sanitizeAnimation(value.animation),
   };
   // V2 Phase 1.1 refreshed the official Christmas palette. Only upgrade the
   // untouched old official snapshot; personal/customized presets stay intact.
@@ -280,7 +262,6 @@ export function loadSavedThemes(): SavedTheme[] {
         uiTheme: item.uiTheme === 'dark' ? 'dark' : 'light',
         uiColors: sanitizeUiColors(item.uiColors),
         display: sanitizeDisplay(item.display),
-        animation: sanitizeAnimation(item.animation),
       }));
   } catch {
     return [];
@@ -322,7 +303,6 @@ function legacyThemeToEnvironment(theme: SavedTheme): EnvironmentPreset {
     paper,
     immersive: theme.immersive ? clonePaper(theme.immersive) : clonePaper(paper),
     display: theme.display ? { ...theme.display } : { ...DEFAULT_DISPLAY },
-    animation: theme.animation ? { ...theme.animation } : { ...DEFAULT_ANIMATION },
     resourceReferences: theme.background.imageId ? [theme.background.imageId] : [],
   };
 }
@@ -370,7 +350,6 @@ export function sanitizeEnvironmentPreset(value: unknown): EnvironmentPreset | n
     paper,
     immersive,
     display: sanitizeDisplay(value.display),
-    animation: sanitizeAnimation(value.animation),
     resourceReferences: Array.isArray(value.resourceReferences)
       ? value.resourceReferences.filter((item): item is string => typeof item === 'string').slice(0, 20)
       : [],
@@ -432,7 +411,6 @@ export function createEnvironmentFromAppearance(
     paper: clonePaper(appearance.paper),
     immersive: clonePaper(appearance.immersive),
     display: { ...appearance.display },
-    animation: { ...appearance.animation },
     resourceReferences: appearance.background.imageId ? [appearance.background.imageId] : [],
   };
 }
@@ -452,7 +430,6 @@ export function applyEnvironmentPreset(
     immersive: clonePaper(preset.immersive),
     readingOpacity: preset.immersive.opacity,
     display: { ...preset.display },
-    animation: { ...preset.animation },
   };
 }
 
@@ -513,7 +490,6 @@ export function createSavedTheme(
     uiTheme: appearance.uiTheme,
     uiColors: { ...appearance.uiColors },
     display: { ...appearance.display },
-    animation: { ...appearance.animation },
   };
 }
 

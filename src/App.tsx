@@ -51,6 +51,7 @@ import { useProject } from './project/useProject';
 import { useFonts } from './fonts/useFonts';
 import { FontManagerDialog } from './components/FontManagerDialog';
 import { useProofreading } from './proofreading/useProofreading';
+import { splitRatioFromPointer } from './lib/splitPane';
 import type { ChapterSummary, HistoryEntry, RecoveryCandidate } from './project/types';
 import type { Editor } from '@tiptap/core';
 
@@ -324,16 +325,6 @@ export default function App() {
 
   const updateDisplay = useCallback(    (patch: Partial<ProjectAppearance['display']>) => {
       updateAppearanceInMode({ ...appearance, display: { ...appearance.display, ...patch } });
-    },
-    [appearance, updateAppearanceInMode],
-  );
-
-  const updateAnimation = useCallback(
-    (patch: Partial<ProjectAppearance['animation']>) => {
-      updateAppearanceInMode({
-        ...appearance,
-        animation: { ...appearance.animation, ...patch },
-      });
     },
     [appearance, updateAppearanceInMode],
   );
@@ -746,8 +737,8 @@ export default function App() {
     if (!host) return;
     const rect = host.getBoundingClientRect();
     const move = (moveEvent: PointerEvent) => {
-      const ratio = ((moveEvent.clientX - rect.left) / Math.max(1, rect.width)) * 100;
-      setSplitRatio(Math.min(72, Math.max(28, ratio)));
+      // pointer position is the left pane width; splitRatio is the right pane width.
+      setSplitRatio(splitRatioFromPointer(moveEvent.clientX, rect.left, rect.width));
     };
     const up = () => {
       window.removeEventListener('pointermove', move);
@@ -771,6 +762,18 @@ export default function App() {
       showNotice(revealError instanceof Error ? revealError.message : '无法打开资源管理器');
     }
   }, [activeDocument?.path, documentRoot, showNotice]);
+
+  const handleRevealPath = useCallback(
+    async (path: string) => {
+      if (!path) return;
+      try {
+        await revealWorkspacePath(path);
+      } catch (revealError) {
+        showNotice(revealError instanceof Error ? revealError.message : '无法打开资源管理器');
+      }
+    },
+    [showNotice],
+  );
 
   const handleCloseDocument = useCallback(async () => {
     await closeDocument();
@@ -1157,7 +1160,6 @@ export default function App() {
       onThemeChange={changeClassicTheme}
       onUiColorModeChange={changeUiColorMode}
       onDisplayChange={updateDisplay}
-      onAnimationChange={updateAnimation}
       onApplyEnvironment={applyEnvironment}
       onSaveEnvironment={saveCurrentEnvironment}
       onRenameEnvironment={renameEnvironment}
@@ -1334,6 +1336,7 @@ export default function App() {
                 onOpenProject={(path) => void handleOpenProjectPath(path)}
                 onRefresh={() => void refreshTree()}
                 onReveal={() => void handleRevealDocument()}
+                onRevealPath={(node: WorkspaceNode) => void handleRevealPath(node.path)}
                 onClose={toggleLeft}
               />
             ) : null}

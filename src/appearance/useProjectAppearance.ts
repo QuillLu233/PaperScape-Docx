@@ -108,7 +108,6 @@ export function useProjectAppearance(
         uiTheme: theme.uiTheme ?? appearance.uiTheme,
         uiColors: theme.uiColors ? { ...theme.uiColors } : appearance.uiColors,
         display: theme.display ? { ...theme.display } : appearance.display,
-        animation: theme.animation ? { ...theme.animation } : appearance.animation,
       });
     },
     [appearance, onChange],
@@ -191,7 +190,6 @@ export function useProjectAppearance(
       immersive: { ...preset.immersive, customMargins: { ...preset.immersive.customMargins } },
       uiColors: { ...preset.uiColors },
       display: { ...preset.display },
-      animation: { ...preset.animation },
       resourceReferences: [...preset.resourceReferences],
     };
     setEnvironmentPresets((current) => [copy, ...current]);
@@ -211,8 +209,14 @@ export function useProjectAppearance(
 
   const restoreDefaultEnvironment = useCallback(() => {
     const origin = OFFICIAL_ENVIRONMENTS[0];
-    if (origin) applyEnvironment(origin);
-  }, [applyEnvironment]);
+    if (origin) {
+      onChange({
+        ...applyEnvironmentPreset(appearanceRef.current, origin),
+        uiColorMode: 'environment',
+        uiColorModeExplicit: false,
+      });
+    }
+  }, [onChange]);
 
   const setBackgroundFromFile = useCallback(
     async (file: File) => {

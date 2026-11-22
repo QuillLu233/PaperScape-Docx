@@ -1,7 +1,6 @@
 import { memo } from 'react';
 import type {
   BackgroundStyle,
-  EnvironmentAnimationSettings,
   EnvironmentDisplaySettings,
   EnvironmentPreset,
   ProjectAppearance,
@@ -30,7 +29,6 @@ interface SettingsPanelProps {
   onThemeChange: (mode: ThemeMode) => void;
   onUiColorModeChange?: (mode: UiColorMode) => void;
   onDisplayChange?: (patch: Partial<EnvironmentDisplaySettings>) => void;
-  onAnimationChange?: (patch: Partial<EnvironmentAnimationSettings>) => void;
   onApplyEnvironment?: (preset: EnvironmentPreset) => void;
   onSaveEnvironment?: (name: string) => void;
   onRenameEnvironment?: (id: string, name: string) => void;
@@ -91,7 +89,6 @@ export const SettingsPanel = memo(function SettingsPanel({
   onThemeChange,
   onUiColorModeChange,
   onDisplayChange,
-  onAnimationChange,
   onApplyEnvironment,
   onSaveEnvironment,
   onRenameEnvironment,
@@ -225,7 +222,6 @@ export const SettingsPanel = memo(function SettingsPanel({
           onReadingOpacityChange={onReadingOpacityChange}
           onPaperChange={onPaperChange}
           onDisplayChange={onDisplayChange}
-          onAnimationChange={onAnimationChange}
           onUiColorModeChange={onUiColorModeChange}
           onApplyPreset={onApplyPreset}
           onApplySavedTheme={onApplySavedTheme}

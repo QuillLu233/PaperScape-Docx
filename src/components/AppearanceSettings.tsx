@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties } from 'react';
 import type {
   BackgroundStyle,
-  EnvironmentAnimationSettings,
   EnvironmentDisplaySettings,
   EnvironmentPreset,
   MarginPreset,
@@ -32,7 +31,6 @@ interface AppearanceSettingsProps {
   onReadingOpacityChange: (value: number) => void;
   onPaperChange: (patch: Partial<ProjectAppearance['paper']>) => void;
   onDisplayChange?: (patch: Partial<EnvironmentDisplaySettings>) => void;
-  onAnimationChange?: (patch: Partial<EnvironmentAnimationSettings>) => void;
   onUiColorModeChange?: (mode: UiColorMode) => void;
   onApplyPreset: (presetId: string) => void;
   onApplySavedTheme: (theme: SavedTheme) => void;
@@ -116,7 +114,6 @@ export function AppearanceSettings({
   onReadingOpacityChange,
   onPaperChange,
   onDisplayChange,
-  onAnimationChange,
   onUiColorModeChange,
   onApplyPreset,
   onApplySavedTheme,
@@ -199,21 +196,11 @@ export function AppearanceSettings({
                 onUiColorModeChange?.(event.target.value as UiColorMode)
               }
             >
-              <option value="environment">跟随环境预设</option>
+              <option value="environment">跟随主题</option>
               <option value="light">经典浅色</option>
               <option value="dark">经典深色</option>
               <option value="system">跟随系统</option>
             </select>
-          </label>
-          <label className="environment-animation-toggle" title="阶段二接入实际动效渲染">
-            <input
-              type="checkbox"
-              checked={appearance.animation.enabled}
-              disabled
-              onChange={(event) => onAnimationChange?.({ enabled: event.target.checked })}
-            />
-            <span>环境动效</span>
-            <small>阶段二启用</small>
           </label>
         </div>
       </section>
@@ -599,62 +586,6 @@ export function AppearanceSettings({
           </select>
         </div>
         <p className="settings-note">只改变写作视图，不修改 DOCX 中的字体、字号或颜色。</p>
-      </section>
-
-      <section className="settings-section" aria-labelledby="animation-heading">
-        <div className="settings-label-row">
-          <h3 id="animation-heading" className="settings-label">环境动效</h3>
-          <span className="settings-badge">阶段二</span>
-        </div>
-        <label className="toggle-row">
-          <input
-            type="checkbox"
-            checked={appearance.animation.enabled}
-            onChange={(event) => onAnimationChange?.({ enabled: event.target.checked })}
-          />
-          <span>启用环境动效</span>
-        </label>
-        <div className="paper-row">
-          <label htmlFor="animation-type">动效类型</label>
-          <select
-            id="animation-type"
-            className="settings-select"
-            value={appearance.animation.type}
-            onChange={(event) => onAnimationChange?.({ type: event.target.value })}
-          >
-            <option value="none">无</option>
-            <option value="rain">雨</option>
-            <option value="snow">雪</option>
-            <option value="fireflies">萤火</option>
-            <option value="dust">微尘</option>
-          </select>
-        </div>
-        <RangeControl
-          id="animation-speed"
-          label="速度"
-          value={appearance.animation.speed}
-          min={0.2}
-          max={3}
-          step={0.1}
-          onChange={(speed) => onAnimationChange?.({ speed })}
-        />
-        <RangeControl
-          id="animation-intensity"
-          label="强度"
-          value={appearance.animation.intensity}
-          min={0}
-          max={1}
-          step={0.05}
-          onChange={(intensity) => onAnimationChange?.({ intensity })}
-        />
-        <label className="toggle-row">
-          <input
-            type="checkbox"
-            checked={appearance.animation.lowPower}
-            onChange={(event) => onAnimationChange?.({ lowPower: event.target.checked })}
-          />
-          <span>低功耗模式</span>
-        </label>
       </section>
 
       <section className="settings-section" aria-labelledby="saved-theme-heading">

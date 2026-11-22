@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { createEvent } from '@testing-library/dom';
 import { FileTree } from './FileTree';
 import type { WorkspaceNode } from '../workspace/types';
 
@@ -94,5 +95,37 @@ describe('FileTree', () => {
     fireEvent.contextMenu(screen.getByText('第一章.docx'));
     await user.click(await screen.findByText('在右侧打开'));
     expect(onOpenRight).toHaveBeenCalledWith(tree[0].children[0]);
+  });
+
+  it('restores file actions for non-DOCX rows and suppresses the native menu', async () => {
+    const user = userEvent.setup();
+    const onRevealPath = vi.fn();
+    render(
+      <FileTree
+        root="C:\\Docs"
+        tree={tree}
+        activePath={null}
+        open
+        loading={false}
+        onOpenFile={vi.fn()}
+        onOpenRight={vi.fn()}
+        onOpenProject={vi.fn()}
+        onRefresh={vi.fn()}
+        onReveal={vi.fn()}
+        onRevealPath={onRevealPath}
+        onClose={vi.fn()}
+      />,
+    );
+
+    const target = screen.getByText('说明.txt');
+    const contextEvent = createEvent.contextMenu(target);
+    fireEvent(target, contextEvent);
+    expect(contextEvent.defaultPrevented).toBe(true);
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+    expect(screen.getByText('复制路径')).toBeInTheDocument();
+    expect(screen.getByText('刷新文件列表')).toBeInTheDocument();
+
+    await user.click(screen.getByText('在资源管理器中显示'));
+    expect(onRevealPath).toHaveBeenCalledWith(tree[1]);
   });
 });
