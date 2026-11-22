@@ -449,7 +449,7 @@ export const SettingsPanel = memo(function SettingsPanel({
         </section>
 
         <div className="settings-version">
-          <span>2.0.0-dev.3</span>
+          <span>2.0.0-dev.4</span>
           <span>正式版</span>
         </div>
       </div>
