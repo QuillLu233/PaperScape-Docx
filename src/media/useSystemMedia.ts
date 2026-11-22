@@ -57,6 +57,11 @@ export function useSystemMedia(panelOpen: boolean) {
   const [loading, setLoading] = useState(false);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
+  const refreshInFlight = useRef(false);
+  const panelOpenRef = useRef(panelOpen);
+  panelOpenRef.current = panelOpen;
+  const lastSignatureRef = useRef('');
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -67,37 +72,68 @@ export function useSystemMedia(panelOpen: boolean) {
       setAvailable(false);
       setSessions([]);
       setMedia(null);
+      lastSignatureRef.current = 'disabled';
       return;
     }
-    setLoading(true);
+    if (refreshInFlight.current) return;
+    refreshInFlight.current = true;
+    if (!hasLoadedRef.current) setLoading(true);
     try {
       const nextAvailable = await mediaAvailable();
-      setAvailable(nextAvailable);
       if (!nextAvailable) {
-        setSessions([]);
-        setMedia(null);
-        setError('当前系统或平台不支持媒体控制');
+        const signature = 'unsupported';
+        if (signature !== lastSignatureRef.current) {
+          lastSignatureRef.current = signature;
+          setAvailable(false);
+          setSessions([]);
+          setMedia(null);
+          setError('当前系统或平台不支持媒体控制');
+        }
         return;
       }
       const nextSessions = await mediaSessions();
-      setSessions(nextSessions);
       const current = settingsRef.current;
       const fixedExists = nextSessions.some((session) => session.id === current.fixedSessionId);
       const target =
         current.mode === 'fixed' && fixedExists
           ? current.fixedSessionId
           : nextSessions.find((session) => session.isCurrent)?.id ?? nextSessions[0]?.id;
-      if (!target) {
-        setMedia(null);
+      const nextMedia = target ? await mediaState(target) : null;
+      const signature = JSON.stringify({
+        available: nextAvailable,
+        sessions: nextSessions.map((session) => [
+          session.id,
+          session.title,
+          session.artist,
+          session.status,
+          session.isCurrent,
+        ]),
+        media: nextMedia
+          ? [
+              nextMedia.sessionId,
+              nextMedia.title,
+              nextMedia.artist,
+              nextMedia.album,
+              nextMedia.status,
+              nextMedia.durationMs,
+              nextMedia.cover.length,
+              panelOpenRef.current ? nextMedia.positionMs : 0,
+            ]
+          : null,
+      });
+      if (signature !== lastSignatureRef.current) {
+        lastSignatureRef.current = signature;
+        setAvailable(true);
+        setSessions(nextSessions);
+        setMedia(nextMedia);
         setError('');
-        return;
       }
-      const nextMedia = await mediaState(target);
-      setMedia(nextMedia);
-      setError('');
     } catch (refreshError) {
-      setError(refreshError instanceof Error ? refreshError.message : '读取系统媒体失败');
+      const message = refreshError instanceof Error ? refreshError.message : '读取系统媒体失败';
+      setError((current) => (current === message ? current : message));
     } finally {
+      hasLoadedRef.current = true;
+      refreshInFlight.current = false;
       setLoading(false);
     }
   }, []);

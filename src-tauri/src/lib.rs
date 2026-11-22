@@ -640,28 +640,38 @@ fn install_focus_accelerator(_app: &AppHandle) {}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 #[tauri::command]
-fn media_available() -> bool {
-    media::available()
+async fn media_available() -> bool {
+    tauri::async_runtime::spawn_blocking(media::available)
+        .await
+        .unwrap_or(false)
 }
 
 #[tauri::command]
-fn media_sessions() -> Result<Vec<media::MediaSessionSummary>, String> {
-    media::list_sessions()
+async fn media_sessions() -> Result<Vec<media::MediaSessionSummary>, String> {
+    tauri::async_runtime::spawn_blocking(media::list_sessions)
+        .await
+        .map_err(|error| format!("媒体线程失败：{error}"))?
 }
 
 #[tauri::command]
-fn media_state(session_id: String) -> Result<media::MediaState, String> {
-    media::state(&session_id)
+async fn media_state(session_id: String) -> Result<media::MediaState, String> {
+    tauri::async_runtime::spawn_blocking(move || media::state(&session_id))
+        .await
+        .map_err(|error| format!("媒体线程失败：{error}"))?
 }
 
 #[tauri::command]
-fn media_control(session_id: String, action: String) -> Result<bool, String> {
-    media::control(&session_id, &action)
+async fn media_control(session_id: String, action: String) -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(move || media::control(&session_id, &action))
+        .await
+        .map_err(|error| format!("媒体线程失败：{error}"))?
 }
 
 #[tauri::command]
-fn media_seek(session_id: String, position_ms: i64) -> Result<bool, String> {
-    media::seek(&session_id, position_ms)
+async fn media_seek(session_id: String, position_ms: i64) -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(move || media::seek(&session_id, position_ms))
+        .await
+        .map_err(|error| format!("媒体线程失败：{error}"))?
 }
 
 pub fn run() {
